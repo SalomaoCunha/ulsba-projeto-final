@@ -1,0 +1,32 @@
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Base de dados e dados locais
+*.sqlite3
+*.db
+pgdata/
+
+# Editores e sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
