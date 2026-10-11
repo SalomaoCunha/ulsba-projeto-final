@@ -6,14 +6,14 @@
 |---|---|
 | Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (IPBeja, ESTG) |
 | Tutora | Elsa Rodrigues |
-| Versão | 0.2, rascunho para validação (revisão proposta à versão 0.1) |
-| Data | 10 de outubro de 2026 |
+| Versão | 0.2, para validação pela tutora |
+| Data | 11 de outubro de 2026 |
 
 ---
 
 ## Alterações face à versão 0.1
 
-Esta versão mantém a organização temática da versão 0.1, mas reorganiza a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
+Esta versão mantém a organização temática da versão 0.1, mas reorganiza a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos não funcionais mantêm a numeração da versão 0.1 e os novos (RNF22 a RNF28) continuam a sequência. Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
 
 - **Informação da ULSBA.** As notas recebidas passam a constar do Anexo A e servem de base aos requisitos com origem U, sujeitos a validação.
 - **Requisitos funcionais novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42. Correspondem à gestão de locais, aos estados e à lista de utentes, à geocodificação, à classificação IPCPAL, às visitas pendentes, aos profissionais, à sugestão de ordem das paragens, à exportação em PDF, à importação de dados e ao aviso de ambiente de teste.
@@ -126,7 +126,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF15 (alt.) | Mostrar os utentes num mapa (Leaflet e OpenStreetMap), com marcadores coloridos pelo nível de triagem e legenda lida da parametrizações do sistema. Cada nível tem também texto ou ícone (RNF08). | Objetivo O2, desenhado no mockup. A legenda não pode ficar escrita no código, porque os níveis podem mudar. | P, M | Must |
+| RF15 (alt.) | Mostrar os utentes num mapa (Leaflet e OpenStreetMap), com marcadores coloridos pelo nível de triagem e legenda lida dos parâmetros do sistema. Cada nível tem também texto ou ícone (RNF08). | Objetivo O2, desenhado no mockup. A legenda não pode ficar escrita no código, porque os níveis podem mudar. | P, M | Must |
 | RF16 (alt.) | Filtrar o mapa por prioridade, concelho, tipo de local e estado. | O mockup tem o botão "Filtrar Utentes". Num território com vários concelhos, ver todos os pontos de uma vez deixa de ser útil. Os filtros por concelho, tipo de local e estado são uma decisão da equipa. | M, E | Must |
 | RF17 (alt.) | Mostrar indicadores do conjunto visível: utentes no mapa, urgentes, não urgentes e distância total aproximada da rota planeada selecionada (uma equipa num dia). | Barra inferior do mockup. Que níveis contam como "urgentes" fica por confirmar (ponto 8.1). | M | Should |
 | RF18 | Abrir a ficha do utente ao selecioná-lo no mapa. | Evita repetir a pesquisa quando já se está a trabalhar sobre o mapa. | E | Should |
@@ -180,7 +180,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 |---|---|---|---|---|
 | RF37 (alt.) | Autenticação com perfis (coordenador, profissional de saúde, administrador) e sessão com expiração. | Mesmo em sandbox, o desenho deve refletir o uso real: nem todos podem alterar prioridades ou ver tudo. | M, E | Must |
 | RF38 (alt.) | Interface para gerir utilizadores e as suas permissões. Entretanto, os utilizadores de teste poderão ser providenciados pelo sistema centralmente. | Consequência de RF37. Numa equipa de quatro pessoas e quatro meses, a interface de gestão pode ficar para depois da autenticação base. | E | Should |
-| RF39 (alt.) | Parametrizar horário de visitas, ponto de partida, duração média por tipo de visita, limite de dias sem visita e níveis de prioridade. | Menu "Configurações". Evita escrever regras da ULSBA no código, que ainda podem mudar. | M, E | Should |
+| RF39 (alt.) | Parametrizar horário de visitas, ponto de partida, duração média por tipo de visita, limite de dias sem visita. Os níveis de triagem são geridos no RF11. | Menu "Configurações". Evita escrever regras da ULSBA no código, que ainda podem mudar. | M, E | Should |
 | RF40 (alt.) | Carregar um conjunto de dados fictícios, com distribuição geográfica realista no Baixo Alentejo, de forma reproduzível: a mesma execução dá sempre os mesmos dados. | A proposta exige sandbox com dados fictícios. Sem dados verosímeis, não se testam o mapa, as distâncias nem a priorização. O mockup usa uma zona da área de Lisboa (Oeiras, Carnaxide), pelo que o conjunto de dados tem de ser construído de raiz para o Baixo Alentejo. | P | Must |
 | RF41 (novo) | Importar utentes e visitas a partir de um ficheiro CSV com estrutura previamente definida e validada, apresentando um relatório das linhas rejeitadas. | A importação poderá facilitar o carregamento inicial ou a atualização dos dados. A estrutura e as regras de validação do CSV terão de ser definidas e confirmadas com a equipa da ULSBA (ponto 8.9). | U, E | Could |
 | RF42 (novo) | Indicar de forma visível, em todas as páginas, que o ambiente é de teste com dados fictícios. | Evita confundir a sandbox com dados reais, sobretudo em demonstrações. | E | Should |
@@ -197,7 +197,7 @@ Os valores numéricos são metas de trabalho. Servem para as fases de teste (fas
 | RF04 | Marcar um ponto no mapa grava as coordenadas. Um ponto fora de Portugal continental, ou com latitude e longitude trocadas, é recusado com uma mensagem. |
 | RF05 | Cada utente tem exatamente um local associado. Os locais do tipo lar ou unidade exigem nome. |
 | RF06 | Um local pode ser partilhado por vários utentes. Alterar a morada ou as coordenadas do local reflete-se em todos os utentes desse local. |
-| RF10 | Cada alteração de estado clínico guarda os detalhes como histórico. A lista mostra a mais recente como atual e permite ver as anteriores. |
+| RF10 | Cada avaliação de triagem guarda data, autor e motivo. A ficha mostra a mais recente como atual e permite consultar as anteriores. |
 | RF11 | Acrescentar ou alterar um nível de triagem não exige alterar código. O mapa e a legenda refletem os parâmetros. |
 | RF15 | Cada marcador tem a cor do nível e a legenda tem texto. Com 500 utentes, o mapa carrega em menos de 3 segundos (RNF09). |
 | RF16 | Cada filtro reduz em conjunto os marcadores e os contadores. Combinar filtros dá a interseção. |
@@ -205,9 +205,9 @@ Os valores numéricos são metas de trabalho. Servem para as fases de teste (fas
 | RF20 | O sistema permite gerir frota e equipas. Não é possível associar a mesma viatura a duas equipas simultaneamente. |
 | RF21 | Planear a mesma equipa em dois locais diferentes à mesma hora, ou o mesmo utente em duas visitas simultâneas, é recusado. Planear fora das 9h30 às 16h, ou com regresso depois das 16h, mostra um aviso e só grava depois de confirmado com motivo. Três utentes no mesmo lar à mesma hora são aceites. |
 | RF23 | É possível criar uma visita sem equipa nem hora. Aparece na lista de pendentes, ordenada por prioridade, e passa a planeada quando recebe equipa e hora. |
-| RF26 | A exportação de um dia gera um ficheiro válido segundo o formato acordado, sem nome, morada nem número de utente, e com as distâncias entre as paragens calculadas estruturalmente. |
+| RF26 | A exportação de um dia gera um ficheiro válido segundo o formato acordado, sem nome, morada nem número de utente, e inclui as distâncias entre as paragens. |
 | RF29 | Uma visita realizada só grava com início e fim reais e com equipa. Uma visita cancelada exige motivo de cancelamento suportado pelo modelo. |
-| RF30 | Um utente sem visitas realizadas mostra "sem visitas" e não provoca erro. Depois de registar uma visita, o resumo atualiza-se dinamicamente sem intervenção. |
+| RF30 | Um utente sem visitas realizadas mostra "sem visitas" e não provoca erro. Depois de registar uma visita, a última visita atualiza-se sem ser preciso preencher o campo à mão. |
 | RF31 | O histórico filtra por utente, equipa e viatura e está ordenado da visita mais recente para a mais antiga. |
 | RF37 | Sem sessão iniciada, não se acede a nenhuma página com dados. A sessão expira. As palavras-passe só podem existir na forma encriptada. |
 | RF40 | Executar o carregamento de dados de demonstração recria sempre o mesmo conjunto base realista, com utentes distribuídos pelos concelhos do Baixo Alentejo. |
@@ -222,14 +222,14 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF01 (alt.) | Só dados fictícios no desenvolvimento e nos testes. A estrutura de dados deverá guardar apenas o necessário para o planeamento e o acompanhamento. | Os dados de saúde são categoria especial no RGPD (art. 9.º). A proposta usa a sandbox precisamente para proteger dados pessoais e clínicos. Limitar os campos já agora evita problemas se o sistema vier a passar a produção. | P | Must | Modelação dos dados rigorosamente controlada; avaliação do script de demonstração gerado. |
-| RNF02 | Autenticação obrigatória, palavras-passe tratadas com mecanismos criptográficos (Argon2 ou bcrypt), sessões ou tokens com expiração e acesso limitado por perfil. | A sandbox deve comportar-se como o sistema real, para que a passagem a produção não obrigue a refazer o controlo de acessos. | E | Must | Teste de acesso por perfil e inspeção do sistema de registo. |
+| RNF01 (alt.) | Só dados fictícios no desenvolvimento e nos testes. A estrutura de dados deverá guardar apenas o necessário para o planeamento e o acompanhamento. | Os dados de saúde são categoria especial no RGPD (art. 9.º). A proposta usa a sandbox precisamente para proteger dados pessoais e clínicos. Limitar os campos já agora evita problemas se o sistema vier a passar a produção. | P | Must | Inspeção do modelo de dados e do script de dados de demonstração. |
+| RNF02 | Autenticação obrigatória, palavras-passe tratadas com mecanismos criptográficos (Argon2 ou bcrypt), sessões ou tokens com expiração e acesso limitado por perfil. | A sandbox deve comportar-se como o sistema real, para que a passagem a produção não obrigue a refazer o controlo de acessos. | E | Must | Teste de acesso por perfil e inspeção da gestão de sessões e do armazenamento das palavras-passe. |
 | RNF03 | Comunicação cifrada (HTTPS) sempre que a plataforma seja acedida fora da máquina de desenvolvimento. Segredos e credenciais fora do repositório Git. | O repositório é partilhado no GitHub. Uma credencial enviada por engano para o repositório fica no histórico mesmo depois de apagada. | E | Must | Inspeção do `.gitignore` e do histórico do repositório. |
-| RNF04 (alt.) | Registo de auditoria das alterações a fichas, avaliações e visitas (quem, quando, o quê). O registo das consultas é desejável, mas dispensável. | Em dados clínicos é preciso poder saber quem alterou um registo. Registar também todas as consultas dá muito trabalho e muito volume. | E | Should | Definição de tabelas de log ou triggers de base de dados e teste em interface. |
-| RNF22 (novo) | Cada perfil vê só o que precisa. O administrador não acede a dados clínicos. | Princípio do menor privilégio. Depende da definição dos perfis (ponto 8.14). | E | Should | Teste de acesso e vistas dedicadas aos níveis de segurança. |
-| RNF23 (novo) | Definir prazos de conservação e um mecanismo de eliminação ou anonimização dos dados dos utentes inativos. | O RF03 diz "sem apagamento físico", mas o RGPD prevê limites de conservação e o direito ao apagamento. Em produção, os dois têm de ser conciliados. | E | Should | Desenho de procedimento lógico e arquitetura documental. |
-| RNF24 (novo) | As exportações para o algoritmo de rotas não devem conter dados identificativos diretos. | Protege os dados fora do sistema. Liga-se ao RF26. | E | Must | Modelação de vistas (`views`) de exportação filtradas e inspeção do output. |
-| RNF25 (novo) | Proteção contra os riscos mais comuns de aplicações web: consultas parametrizadas (sem montar SQL a partir de texto do utilizador), validação das entradas e limite de tentativas de início de sessão. | O RNF02 trata das palavras-passe e da sessão, mas não destes riscos. | E | Should | Revisão contra a lista OWASP Top 10 e arquitetura de queries em ORM ou métodos seguros. |
+| RNF04 (alt.) | Registo de auditoria das alterações a fichas, avaliações e visitas (quem, quando, o quê). O registo das consultas é desejável, mas dispensável. | Em dados clínicos é preciso poder saber quem alterou um registo. Registar também todas as consultas dá muito trabalho e muito volume. | E | Should | Inspeção das tabelas de auditoria (ou triggers) e teste de alteração de uma ficha. |
+| RNF22 (novo) | Cada perfil vê só o que precisa. O administrador não acede a dados clínicos. | Princípio do menor privilégio. Depende da definição dos perfis (ponto 8.14). | E | Should | Teste de acesso com cada perfil. |
+| RNF23 (novo) | Definir prazos de conservação e um mecanismo de eliminação ou anonimização dos dados dos utentes inativos. | O RF03 diz "sem apagamento físico", mas o RGPD prevê limites de conservação e o direito ao apagamento. Em produção, os dois têm de ser conciliados. | E | Should | Inspeção do procedimento documentado. |
+| RNF24 (novo) | As exportações para o algoritmo de rotas não devem conter dados identificativos diretos. | Protege os dados fora do sistema. Liga-se ao RF26. | E | Must | Inspeção do ficheiro exportado. |
+| RNF25 (novo) | Proteção contra os riscos mais comuns de aplicações web: consultas parametrizadas (sem montar SQL a partir de texto do utilizador), validação das entradas e limite de tentativas de início de sessão. | O RNF02 trata das palavras-passe e da sessão, mas não destes riscos. | E | Should | Revisão do código contra a lista OWASP Top 10, com consultas parametrizadas ou ORM. |
 
 ### 6.2 Usabilidade e acessibilidade
 
@@ -245,18 +245,18 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
 | RNF09 | Pesquisa de utente e abertura da ficha em até 1 segundo; mapa com 500 utentes carregado em até 3 segundos, usando agrupamento de marcadores se necessário. | O mockup tem 24 utentes, mas o dimensionamento não deve ficar apertado ao exemplo. | E | Should | Medição de performance sobre o conjunto de testes planeado. |
-| RNF10 | A arquitetura deverá permitir acrescentar viaturas, equipas e concelhos estruturalmente sem exigir reescrita do sistema. | Hoje são duas viaturas; é razoável que a unidade cresça. | E | Should | Garantia de que estas variáveis serão modeladas através de tabelas independentes e não campos rígidos. |
-| RNF11 | Interrogações geográficas (utentes por zona, distâncias) apoiadas num motor espacial dedicado e índices adequados. | Evita que o mapa e os filtros degradem à medida que os dados crescem. | E | Should | Uso planeado de PostgreSQL/PostGIS com índices GiST otimizados. |
+| RNF10 | A arquitetura deverá permitir acrescentar viaturas, equipas e concelhos estruturalmente sem exigir reescrita do sistema. | Hoje são duas viaturas; é razoável que a unidade cresça. | E | Should | Inspeção do modelo de dados: viaturas, equipas e concelhos em tabelas próprias. |
+| RNF11 | Interrogações geográficas (utentes por zona, distâncias) apoiadas num motor espacial dedicado e índices adequados. | Evita que o mapa e os filtros degradem à medida que os dados crescem. | E | Should | Medição de tempos de consulta com PostgreSQL/PostGIS e índices espaciais (GiST). |
 
 ### 6.4 Fiabilidade e disponibilidade
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF12 | Validação dos dados no cliente e no servidor, exigindo restrições de integridade estruturais relacionalmente blindadas, com operações compostas feitas em transação. | Uma visita registada pela metade (sem atualizar a última visita, por exemplo) deixa o planeamento errado sem ninguém dar por isso. | E | Must | Desenho de tabelas com chaves forasteiras estritas, constraints, e tratamento transacional. |
-| RNF13 (alt.) | A base de dados deverá ser recriável de forma limpa a partir de *scripts* automáticos (ex: ferramentas de migração) e dados genéricos de ensaio. Cópias de segurança regulares são apenas recomendação para produção. | Em sandbox, o que importa é a fiabilidade da infraestrutura partilhada de desenvolvimento. | E | Should | Executar o workflow de "destruição e criação" de ambiente em menos de 10 minutos. |
+| RNF12 | Validação dos dados no cliente e no servidor, com restrições de integridade na base de dados (chaves estrangeiras, unicidade e verificações) e operações compostas feitas em transação. | Uma visita registada pela metade (sem atualizar a última visita, por exemplo) deixa o planeamento errado sem ninguém dar por isso. | E | Must | Inspeção das chaves estrangeiras e restrições, e teste de falha a meio de uma operação composta. |
+| RNF13 (alt.) | A base de dados deverá ser recriável de forma limpa a partir de *scripts* automáticos (ex: ferramentas de migração) e dados genéricos de ensaio. Cópias de segurança regulares são apenas recomendação para produção. | Em sandbox, o que importa é a fiabilidade da infraestrutura partilhada de desenvolvimento. | E | Should | Recriar a base de dados do zero em menos de 10 minutos. |
 | RNF14 (alt.) | Disponibilidade durante o horário de atividade da equipa (aproximadamente 8h–18h em dias úteis) como recomendação para produção. Em sandbox não há requisito de disponibilidade. | Não há requisito formal na proposta, e um nível de serviço de 24 horas seria desproporcionado para este contexto. | E | Could | Não aplicável em sandbox. |
-| RNF26 (novo) | Os instantes de registo deverão garantir a retenção de dados de fuso horário. | O RNF07 só trata da apresentação. Uma visita planeada à volta da mudança de hora de outubro pode ficar uma hora errada. | E | Must | Uso do tipo de dados adequados na infraestrutura (ex: `timestamptz`). |
-| RNF27 (novo) | Suporte rigoroso de um único sistema de coordenadas (ex: WGS84 - SRID 4326), validando limites de fronteiras geográficas. | A ordem trocada é o erro mais comum no interface com bibliotecas Leaflet. | E | Must | Restrições ao nível do motor de persistência recusando pontos inválidos. |
+| RNF26 (novo) | Os instantes (datas e horas) devem ser guardados com fuso horário. | O RNF07 só trata da apresentação. Uma visita planeada à volta da mudança de hora de outubro pode ficar uma hora errada. | E | Must | Inspeção do modelo de dados (por exemplo, o tipo `timestamptz`). |
+| RNF27 (novo) | Usar um único sistema de coordenadas (WGS84, SRID 4326) e validar que os pontos estão dentro do território. | Trocar latitude e longitude é um erro comum, porque o Leaflet e o PostGIS usam ordens diferentes. | E | Must | Teste com pontos inválidos, que a base de dados deve recusar. |
 
 ### 6.5 Manutenibilidade, testes e documentação
 
@@ -264,16 +264,16 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 |---|---|---|---|---|---|
 | RNF15 | Código separado em camadas (interface, lógica de negócio, acesso a dados), em TypeScript no *frontend* e com tipagem no *backend*. | Equipa a trabalhar em paralelo exige fronteiras claras e modulares. | P, E | Should | Revisão estrutural do repositório. |
 | RNF17 | API testada com ferramentas de validação de endpoints (ex: Postman). Regras de prioridade e de planeamento cobertas com testes. | A proposta nomeia ferramentas de endpoint validation. As regras de negócio são o ponto crítico do sistema. | P, E | Must | Evidência de coleções de testes ou execução CI. |
-| RNF18 | API documentada (ex: OpenAPI), arquitetura global detalhada e modelo de dados perfeitamente mapeado na documentação de projeto. | A proposta inclui documentação técnica entre as competências a desenvolver. | P | Must | Inspeção dos artefactos documentais de sistema e diagramas ER. |
-| RNF28 (novo) | O esquema da futura base de dados deverá ser versionado sequencialmente. O modelo, o diagrama e o dicionário deverão evoluir coerentemente com as implementações. | Alterar o desenho sem controlo de estado gera discrepâncias irreparáveis de ambiente entre os vários programadores. | E | Must | Uso de bibliotecas de migração e alinhamento restrito à documentação. |
+| RNF18 | API documentada (ex: OpenAPI), arquitetura geral e modelo de dados documentados. | A proposta inclui documentação técnica entre as competências a desenvolver. | P | Must | Inspeção da documentação da API e do diagrama entidade-relação. |
+| RNF28 (novo) | O esquema da base de dados deve ser versionado com migrações. O modelo, o diagrama e o dicionário de dados devem ser atualizados em conjunto com cada alteração. | Sem versionamento, cada programador acaba com uma base de dados diferente. | E | Must | Inspeção das migrações e da documentação do modelo de dados. |
 
 ### 6.6 Portabilidade e interoperabilidade
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF19 | Ambiente reproduzível com contentores (ex: Docker) e configuração por variáveis de ambiente. | Ambiente colaborativo heterogéneo exige base comum. | E | Must | Comprovação de "arranque num clique" por todos os membros. |
-| RNF20 | API REST desacoplada da interface, suportando formatos estandardizados (JSON, CSV). | Facilita a portabilidade das lógicas matemáticas de otimização de rotas para linguagens externas (ex: em algoritmos). | P | Must | Disponibilidade de descrições e testes open data. |
-| RNF21 | Compatibilidade com as duas últimas versões dos navegadores atuais (Chrome, Edge, Firefox, Safari). | A ULSBA pode utilizar dispositivos não previstos no espectro local de teste. | E | Should | Uso de frameworks normalizadas ou testes explícitos. |
+| RNF19 | Ambiente reproduzível com contentores (ex: Docker) e configuração por variáveis de ambiente. | Ambiente colaborativo heterogéneo exige base comum. | E | Must | Todos os membros conseguem arrancar o ambiente com um só comando. |
+| RNF20 | API REST desacoplada da interface, suportando formatos estandardizados (JSON, CSV). | Facilita a ligação ao algoritmo de otimização de rotas, que pode estar noutra linguagem. | P | Must | Inspeção da especificação da API e teste das exportações. |
+| RNF21 | Compatibilidade com as duas últimas versões dos navegadores atuais (Chrome, Edge, Firefox, Safari). | A ULSBA pode usar dispositivos e navegadores que a equipa não testa por omissão. | E | Should | Teste nos quatro navegadores. |
 
 O RNF16 da versão 0.1 (Git, GitHub, Conventional Commits e *pull requests*) passou para a secção 7, porque é uma regra de trabalho da equipa e não uma qualidade do sistema.
 
@@ -301,7 +301,7 @@ Questões que devem ser fechadas na próxima reunião de acompanhamento ou diret
 5. **Fonte das distâncias.** Linha reta, serviço de encaminhamento externo ou motor próprio? Condiciona lógicas de processamento do espaço (RF17, RF25 e RF32).
 6. **Utilização no terreno.** As equipas vão consultar a plataforma no telemóvel durante as visitas? Se sim, poderá existir necessidade de suporte off-line (RNF06).
 7. **Mensagens e notificações.** Existe necessidade real de comunicação dentro da plataforma? O que representa o número no sino do mockup? Afeta desenho do chat e interações (RF13 e RF36).
-8. **Números de referência.** Quantos utentes ativos, quantos utilizadores simultâneos? Afeta dimensionamento e stress tests (RNF09 e RNF14).
+8. **Números de referência.** Quantos utentes ativos, quantos utilizadores simultâneos? Afeta dimensionamento e testes de carga (RNF09 e RNF10).
 9. **Estrutura dos dados para importação.** Confirmar com a ULSBA, sem partilha de dados pessoais, os campos necessários, os tipos de dados, os valores permitidos e as regras de validação do CSV. Como devem ser representados o género e o local? Afeta a modelação dos dados e a importação (RF02, RF05 e RF41).
 10. **Registo de visitas.** Quem regista as visitas e quando (no momento ou no fim do dia)? Há contactos não presenciais (telefone) a registar? Que campos são obrigatórios e que motivos de cancelamento existem? Afeta workflow de conclusão de visita (RF29).
 11. **Estados do utente e reavaliações.** Que estados existem (referenciado, admitido, alta, óbito)? Um utente pode ser readmitido? Com que frequência se reavaliam a triagem, o PPS e o IPCPAL? Afeta histórico e campos de estado (RF10 e RF07).
@@ -352,3 +352,16 @@ Bibliografia indicada na proposta e relevante para este documento:
 - Ramires, P., Pardal, A. C., & Godinho, M. T. (2023). Towards an Integrated Information System for a Higher Education Institution Volunteering Group. *CAPSI 2023 Proceedings*, 1. https://aisel.aisnet.org/capsi2023/1
 - Sar, K., & Ghadimi, P. (2024). A Web-Interface Based Decision Support System for Optimizing Home Healthcare Waste Collection Vehicle Routing. *Logistics*, 8(4). https://doi.org/10.3390/logistics8040119
 - Emiliano, W. M., et al. (2025). Optimizing home health care: a decision support system for districting and fleet management in urban health services. *Environment, Development and Sustainability*. https://doi.org/10.1007/s10668-025-06736-w
+
+---
+
+## Anexo A. Informação recebida da ULSBA
+
+Informação indicada pela equipa da ULSBA, reunida pela equipa do projeto. Tem de ser confirmada por escrito com a ULSBA (origem U). A ULSBA não pode partilhar o ficheiro de dados reais, por conter dados sensíveis. Os dados usados no projeto são totalmente inventados, mas com a mesma estrutura.
+
+1. **Dias de visita.** Não existem dias fixos para as visitas. Dependem das situações de urgência.
+2. **Triagem (urgência).** A, muito urgente; B, urgente; C, pouco urgente; Não urgente.
+3. **Priorização (complexidade), baseada no PPS.** Classificação IPCPAL: altamente complexo, complexo, não complexo.
+4. **Dados do utente.** Nome, número de utente, data de referenciação, data de triagem, data de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas (para a georreferenciação). O local é a casa do utente, um lar ou uma unidade (Serpa ou Montemor). Há também estado ativo ou inativo e histórico de visitas.
+5. **Horário.** As visitas decorrem entre as 9h30 e as 16h. Às 16h as equipas devem estar de volta a Beja (unidade hospitalar).
+6. **Viaturas e equipas.** Há duas viaturas, ou seja, duas equipas em simultâneo. O território é o Baixo Alentejo.
