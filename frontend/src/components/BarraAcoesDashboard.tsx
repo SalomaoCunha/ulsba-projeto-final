@@ -1,21 +1,25 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const BarraAcoesDashboard: React.FC = () => {
+  const navigate = useNavigate(); // Ferramenta do React para navegar entre páginas
+
   return (
     <div className="card shadow-sm border-0 mt-4">
       <div className="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
         
-        {/* Lado Esquerdo: Botões de Ação */}
+        {/* Lado Esquerdo: Botões de Ação com navegação real */}
         <div className="d-flex gap-3">
           <button 
             className="btn btn-success fw-medium d-flex align-items-center gap-2 px-4 shadow-sm"
-            onClick={() => alert('[ÁREA PARA API] Algoritmo de Rotas será ativado aqui!')}
+            onClick={() => navigate('/rotas')}
           >
             <i className="bi bi-signpost-split-fill"></i> Gerar Rota Ótima
           </button>
           
           <button 
             className="btn btn-light border text-dark fw-medium d-flex align-items-center gap-2 px-4 shadow-sm"
+            onClick={() => navigate('/utentes')}
           >
             <i className="bi bi-list-ul"></i> Ver Lista de Utentes
           </button>
