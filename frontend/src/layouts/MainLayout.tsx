@@ -17,6 +17,7 @@ const MainLayout: React.FC = () => {
         <nav className="flex-grow-1 p-3 d-flex flex-column gap-2">
           <Link to="/" className="btn btn-dark text-start w-100">Dashboard</Link>
           <Link to="/utentes" className="btn btn-dark text-start w-100">Utentes</Link>
+          <Link to="/agenda" className="btn btn-dark text-start w-100">Agenda</Link>
         </nav>
       </aside>
 
