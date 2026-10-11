@@ -15,12 +15,12 @@
 
 Esta versão mantém a organização temática da versão 0.1, mas reorganiza a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos não funcionais mantêm a numeração da versão 0.1 e os novos (RNF22 a RNF28) continuam a sequência. Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
 
-- **Informação da ULSBA.** As notas recebidas passam a constar do Anexo A e servem de base aos requisitos com origem U, sujeitos a validação.
+- **Hipóteses sobre a ULSBA.** Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a sua operação constam do Anexo A e servem de base aos requisitos com origem U, que têm de ser validados com a ULSBA.
 - **Requisitos funcionais novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42. Correspondem à gestão de locais, aos estados e à lista de utentes, à geocodificação, à classificação IPCPAL, às visitas pendentes, aos profissionais, à sugestão de ordem das paragens, à exportação em PDF, à importação de dados e ao aviso de ambiente de teste.
 - **Requisitos funcionais alterados:** RF02, RF03, RF04, RF05, RF10, RF11, RF12, RF13, RF15, RF16, RF17, RF19, RF20, RF21, RF22, RF25, RF26, RF29, RF30, RF32, RF33, RF34, RF37, RF38, RF39 e RF40.
 - **Prioridades alteradas:** RF05 de Should para Must; RF38 de Must para Should; RF04 passa a cobrir só a marcação manual do ponto (a geocodificação automática é o novo RF09, Should).
 - **Requisitos não funcionais.** Passam a ter prioridade e método de verificação. Há sete novos (RNF22 a RNF28). O RNF13 e o RNF14 foram reformulados, porque falam de produção e a produção está fora do âmbito. O RNF01 e o RNF04 foram precisados. O RNF16 passou para a secção 7.
-- **Novas secções:** 5.10 (critérios de aceitação dos requisitos Must), pontos em aberto 9 a 14 e Anexo A (notas da ULSBA).
+- **Novas secções:** 5.10 (critérios de aceitação dos requisitos Must), pontos em aberto 9 a 15 e Anexo A (hipóteses de trabalho sobre a operação da ULSBA).
 - **Totais:** 42 requisitos funcionais (20 Must, 16 Should, 6 Could) e 27 requisitos não funcionais em vigor.
 
 ---
@@ -33,7 +33,7 @@ Este documento fixa o que a plataforma deve fazer (requisitos funcionais) e com 
 
 Nem todos os requisitos têm o mesmo grau de certeza. A proposta e o mockup dão uma base firme, mas a própria proposta diz que os critérios de prioridade e as regras de planeamento têm de ser definidos e validados com a equipa da ULSBA. O que ainda depende dessa validação está assinalado e reunido na secção 8.
 
-As notas recebidas da ULSBA estão reunidas no Anexo A. Os campos e os procedimentos de gestão da informação deverão ser validados com a equipa, sem utilização de dados pessoais ou clínicos reais nesta fase.
+Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a sua operação estão reunidas no Anexo A e têm de ser validadas com a equipa da ULSBA, sem utilização de dados pessoais ou clínicos reais nesta fase.
 
 ## 2. Âmbito
 
@@ -78,7 +78,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 |---|---|
 | P | Proposta de Projeto |
 | M | Mockup |
-| U | Informação recolhida junto da ULSBA (Anexo A), a confirmar por escrito |
+| U | Hipótese de trabalho sobre a operação da ULSBA (Anexo A), ainda por validar com a ULSBA |
 | E | Decisão da equipa, deduzida do contexto, a validar |
 
 **Objetivos da proposta.** A proposta não os numera. Neste documento seguem a ordem em que aparecem e usam-se os códigos O1 a O6.
@@ -103,12 +103,12 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF01 | Pesquisar um utente por número ou por nome, com sugestões à medida que se escreve. | O mockup tem os dois campos de pesquisa. Os nomes repetem-se muito (a lista de exemplo tem quatro "Maria Teresa"), por isso o número serve para desambiguar. | M | Must |
-| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, cuidador principal, local (tipo, morada, código postal, localidade e concelho) e coordenadas, médico assistente, situação clínica, datas de referenciação, de triagem e de admissão, data da última visita, notas e estado. | É o primeiro objetivo da proposta (O1) e o painel central do mockup. Os campos de datas, género e concelho vêm da informação da ULSBA (Anexo A, nota 4). | P, M, U | Must |
+| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, cuidador principal, local (tipo, morada, código postal, localidade e concelho) e coordenadas, médico assistente, situação clínica, datas de referenciação, de triagem e de admissão, data da última visita, notas e estado. | É o primeiro objetivo da proposta (O1) e o painel central do mockup. Os campos de datas, género e concelho são uma hipótese de trabalho (Anexo A, nota 4), a validar com a ULSBA. | P, M, U | Must |
 | RF03 (alt.) | Criar, editar e inativar utentes, sem apagamento físico durante a atividade. Os prazos de conservação e eliminação ficam por definir (RNF23). | A ficha tem um estado ("Ativo"). Um utente que sai do acompanhamento deixa de entrar no planeamento, mas o histórico de visitas tem de se manter. | M, E | Must |
 | RF04 (alt.) | Definir ou corrigir as coordenadas de um utente ou de um local marcando o ponto no mapa, com validação de que o ponto está no território. | A população é dispersa e muitas moradas rurais não são resolvidas bem por geocodificação automática. Sem coordenadas certas, mapa e rotas não servem. | P | Must |
-| RF05 (alt.) | Registar o local onde o utente se encontra (domicílio, lar, unidade de cuidados continuados ou unidade de cuidados paliativos), com nome da instituição, morada, localidade, contacto telefónico e concelho. | A ULSBA tem utentes em lares e unidades (Serpa e Montemor, por exemplo), com implicações no acesso, na duração da visita e nas rotas (Anexo A, nota 4). | U | Must |
+| RF05 (alt.) | Registar o local onde o utente se encontra (domicílio, lar, unidade de cuidados continuados ou unidade de cuidados paliativos), com nome da instituição, morada, localidade, contacto telefónico e concelho. | Admite-se que haja utentes em lares e unidades (Serpa e Montemor, por exemplo), com implicações no acesso, na duração da visita e nas rotas (Anexo A, nota 4). | U | Must |
 | RF06 (novo) | Gerir os locais como entidades próprias (domicílios, lares, unidades e a base de partida em Beja), partilháveis por vários utentes. | Vários utentes no mesmo lar ou unidade são uma só paragem para a equipa. Sem o local como entidade, a morada e as coordenadas repetem-se e podem ficar diferentes. | U, E | Must |
-| RF07 (novo) | Registar as datas de referenciação e de admissão e acompanhar o estado do utente (referenciado, ativo, inativo). | A informação recolhida junto da ULSBA identifica estas datas (Anexo A, nota 4). Os estados e as readmissões estão por confirmar (ponto 8.11). | U, E | Should |
+| RF07 (novo) | Registar as datas de referenciação e de admissão e acompanhar o estado do utente (referenciado, ativo, inativo). | Admite-se que a ULSBA registe estas datas (Anexo A, nota 4). Os estados e as readmissões estão por confirmar (ponto 8.11). | U, E | Should |
 | RF08 (novo) | Listar utentes com filtros (prioridade, concelho, tipo de local, estado, sem visita há mais de um número de dias) e ordenação, exportável em CSV. | O mockup tem a secção "Utentes" e o botão "Ver Lista de Utentes". O RF16 filtra só o mapa. | M, E | Should |
 | RF09 (novo) | Sugerir coordenadas a partir da morada (geocodificação) e guardar o resultado, para o utilizador confirmar ou corrigir. | Poupa trabalho ao criar fichas. Depende de um serviço externo com política de utilização (secção 7), por isso não é indispensável. | E | Should |
 
@@ -117,9 +117,9 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF10 (alt.) | Atribuir e atualizar a triagem de cada utente através de avaliações, guardando data, autor e motivo de cada uma. A avaliação mais recente é a prioridade atual e as anteriores ficam como histórico. | Objetivo O3. O histórico permite perceber porque é que um utente passou a urgente e quando. O mockup prevê a atualização a partir do painel de prioridade, com reflexo imediato no mapa. A frequência das reavaliações está por confirmar (ponto 8.11). | P, M | Must |
-| RF11 (alt.) | Manter os níveis de triagem numa tabela configurável (código, designação, cor e ordem), sem alterar código. Os níveis iniciais são A, B, C e Não urgente. | O mockup usa cinco níveis em dias (urgente 0, 1 e 2 dias; não urgente 1 e 2), mas a ULSBA trabalha com triagem A, B, C e não urgente (Anexo A, nota 2). A proposta diz que os critérios têm de ser validados com a equipa, por isso o modelo tem de aguentar mudanças. | P, M, U | Must |
-| RF12 (alt.) | Registar, em cada avaliação, o PPS (percentagem) e a classificação IPCPAL (altamente complexo, complexo, não complexo). | A priorização na ULSBA assenta no PPS e na classificação IPCPAL (Anexo A, nota 3). | U | Should |
-| RF13 (alt.) | Assinalar os utentes sem visita há mais do que um limite de dias configurável, por nível de prioridade. | O mockup tem um sino de notificações e uma contagem de urgentes. A ULSBA disse que não há dias definidos para as visitas (Anexo A, nota 1), por isso o alerta não assenta num prazo da prioridade mas num limite configurável de dias sem visita. | M, E | Should |
+| RF11 (alt.) | Manter os níveis de triagem numa tabela configurável (código, designação, cor e ordem), sem alterar código. Os níveis iniciais são A, B, C e Não urgente. | O mockup usa cinco níveis em dias (urgente 0, 1 e 2 dias; não urgente 1 e 2), mas a hipótese de trabalho é uma triagem A, B, C e não urgente (Anexo A, nota 2). A proposta diz que os critérios têm de ser validados com a equipa, por isso o modelo tem de aguentar mudanças. | P, M, U | Must |
+| RF12 (alt.) | Registar, em cada avaliação, o PPS (percentagem) e a classificação IPCPAL (altamente complexo, complexo, não complexo). | Admite-se que a priorização assente no PPS e na classificação IPCPAL (Anexo A, nota 3). | U | Should |
+| RF13 (alt.) | Assinalar os utentes sem visita há mais do que um limite de dias configurável, por nível de prioridade. | O mockup tem um sino de notificações e uma contagem de urgentes. Admite-se que não há dias definidos para as visitas (Anexo A, nota 1), por isso o alerta não assenta num prazo da prioridade mas num limite configurável de dias sem visita. | M, E | Should |
 | RF14 (novo) | Derivar a classificação IPCPAL a partir do PPS, só depois de a regra ser confirmada pela equipa clínica. | Não se sabe se o IPCPAL resulta do PPS ou se são avaliações separadas (ponto 8.1). Até lá, registam-se os dois valores (RF12). | U, E | Could |
 
 ### 5.3 Mapa
@@ -136,10 +136,10 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF19 (alt.) | Criar, reagendar e cancelar visitas, com vista diária e semanal. | Objetivo O4 e secção "Agenda" do menu. Como não há dias fixos de visita, a agenda tem de aceitar alterações constantes. | P, M, U | Must |
-| RF20 (alt.) | Gerir as viaturas e as equipas e associar cada equipa a uma viatura. A associação é fixa por omissão e pode ser alterada. | A proposta fala de "agenda de visitas e viaturas". A operação atual usa duas viaturas, cada uma com a sua equipa (Anexo A, nota 6). Se a associação variar de dia para dia, o modelo muda (ponto 8.2). | P, U | Must |
-| RF21 (alt.) | Atribuir visitas a uma equipa e viatura. Impedir o que é impossível: a mesma equipa em dois locais diferentes ao mesmo tempo, ou o mesmo utente em duas visitas simultâneas. Avisar quando o plano sai do habitual (horário das 9h30 às 16h, regresso a Beja às 16h), permitindo ao coordenador confirmar a exceção com um motivo. Várias visitas no mesmo local e à mesma hora (lar ou unidade) são permitidas e contam como uma só paragem. | São as regras de planeamento que a ULSBA descreveu. As 9h30 e as 16h são o horário "habitual" (Anexo A, nota 5), por isso são avisos e não bloqueios: uma urgência pode exigir uma exceção. | U, E | Must |
+| RF20 (alt.) | Gerir as viaturas e as equipas e associar cada equipa a uma viatura. A associação é fixa por omissão e pode ser alterada. | A proposta fala de "agenda de visitas e viaturas". Admite-se que a operação use duas viaturas, cada uma com a sua equipa (Anexo A, nota 6). Se a associação variar de dia para dia, o modelo muda (ponto 8.2). | P, U | Must |
+| RF21 (alt.) | Atribuir visitas a uma equipa e viatura. Impedir o que é impossível: a mesma equipa em dois locais diferentes ao mesmo tempo, ou o mesmo utente em duas visitas simultâneas. Avisar quando o plano sai do habitual (horário das 9h30 às 16h, regresso a Beja às 16h), permitindo ao coordenador confirmar a exceção com um motivo. Várias visitas no mesmo local e à mesma hora (lar ou unidade) são permitidas e contam como uma só paragem. | São regras de planeamento admitidas como hipótese (Anexo A), a validar com a ULSBA. As 9h30 e as 16h são o horário "habitual" (Anexo A, nota 5), por isso são avisos e não bloqueios: uma urgência pode exigir uma exceção. | U, E | Must |
 | RF22 (alt.) | Propor, para um dia, a lista de utentes a visitar ordenada por triagem, depois por dias desde a última visita e depois por proximidade, que o coordenador pode ajustar. | Corresponde ao botão "Ver Lista de Utentes". É uma ajuda de planeamento que não depende do algoritmo. O peso de cada critério fica por confirmar (ponto 8.1). | M, E | Should |
-| RF23 (novo) | Registar a necessidade de uma visita (estado pendente), sem equipa nem hora, e atribuir a equipa e o horário mais tarde, quando a visita passa a planeada. Listar as visitas pendentes por prioridade. | Como não há dias fixos, o fluxo real é primeiro surgir a necessidade e só depois haver planeamento. Sem este conceito, o alerta (RF13) e a lista sugerida (RF22) não têm base. | M, U, E | Must |
+| RF23 (novo) | Registar a necessidade de uma visita (estado pendente), sem equipa nem hora, e atribuir a equipa e o horário mais tarde, quando a visita passa a planeada. Listar as visitas pendentes por prioridade. | Como se admite que não há dias fixos, o fluxo provável é primeiro surgir a necessidade e só depois haver planeamento. Sem este conceito, o alerta (RF13) e a lista sugerida (RF22) não têm base. | M, U, E | Must |
 | RF24 (novo) | Gerir os profissionais (nome, função, contacto, ativo), a composição habitual de cada equipa e registar quem foi a cada visita. | A composição das equipas pode mudar de dia para dia (ponto 8.2). Sem isto, o registo da visita não diz quem a fez. | P, U, E | Should |
 
 ### 5.5 Rotas
@@ -305,9 +305,10 @@ Questões que devem ser fechadas na próxima reunião de acompanhamento ou diret
 9. **Estrutura dos dados para importação.** Confirmar com a ULSBA, sem partilha de dados pessoais, os campos necessários, os tipos de dados, os valores permitidos e as regras de validação do CSV. Como devem ser representados o género e o local? Afeta a modelação dos dados e a importação (RF02, RF05 e RF41).
 10. **Registo de visitas.** Quem regista as visitas e quando (no momento ou no fim do dia)? Há contactos não presenciais (telefone) a registar? Que campos são obrigatórios e que motivos de cancelamento existem? Afeta workflow de conclusão de visita (RF29).
 11. **Estados do utente e reavaliações.** Que estados existem (referenciado, admitido, alta, óbito)? Um utente pode ser readmitido? Com que frequência se reavaliam a triagem, o PPS e o IPCPAL? Afeta histórico e campos de estado (RF10 e RF07).
-12. **Lares e unidades.** Quantos utentes se visitam por cada ida a um lar ou unidade, e quanto dura uma visita coletiva? Qual é o concelho da unidade referida como "Montemor"? Afeta estruturação da relação local-utente e planeamento (RF05, RF21 e RF06).
+12. **Lares e unidades.** Quantos utentes se visitam por cada ida a um lar ou unidade, e quanto dura uma visita coletiva? Qual é o concelho da unidade de Montemor admitida no Anexo A? Afeta estruturação da relação local-utente e planeamento (RF05, RF21 e RF06).
 13. **Conservação dos dados.** Por quanto tempo se guardam os dados de utentes inativos e o que acontece depois? Afeta compliance de integridade referencial (RF03 e RNF23).
 14. **Perfis e permissões.** Quem pode alterar prioridades? Quem vê as coordenadas exatas e os dados clínicos? Afeta tabelas de privilégios ou encriptação por roles (RF37, RNF02 e RNF22).
+15. **Validação das hipóteses de trabalho.** Todas as hipóteses do Anexo A (triagem A/B/C, classificação IPCPAL, horário das visitas, viaturas e equipas, tipos de local e campos do utente) têm de ser confirmadas pela equipa da ULSBA. Afeta todos os requisitos com origem U.
 
 ## 9. Rastreabilidade
 
@@ -343,7 +344,6 @@ Documentos do projeto:
 
 - Proposta de Projeto, *Uma Plataforma de Apoio à Equipa de Serviços Integrados de Cuidados Paliativos da ULSBA*, IPBeja, 22/09/2026.
 - `mockup.png`, anexo à proposta.
-- Notas da ULSBA (Anexo A), recebidas através da docente da unidade curricular.
 
 Bibliografia indicada na proposta e relevante para este documento:
 
@@ -355,13 +355,13 @@ Bibliografia indicada na proposta e relevante para este documento:
 
 ---
 
-## Anexo A. Informação recebida da ULSBA
+## Anexo A. Hipóteses de trabalho sobre a operação da ULSBA
 
-Informação indicada pela equipa da ULSBA, reunida pela equipa do projeto. Tem de ser confirmada por escrito com a ULSBA (origem U). A ULSBA não pode partilhar o ficheiro de dados reais, por conter dados sensíveis. Os dados usados no projeto são totalmente inventados, mas com a mesma estrutura.
+Ainda não foi recebida da ULSBA nenhuma informação além da proposta de projeto e do mockup. Para poder avançar, a equipa admitiu as hipóteses abaixo sobre a operação da Unidade. São a base dos requisitos com origem U. Foram registadas pela equipa no quadro de trabalho, sem fonte documental da ULSBA. Têm de ser confirmadas com a equipa da ULSBA (ponto 8.15) e não devem ser apresentadas como factos.
 
-1. **Dias de visita.** Não existem dias fixos para as visitas. Dependem das situações de urgência.
-2. **Triagem (urgência).** A, muito urgente; B, urgente; C, pouco urgente; Não urgente.
-3. **Priorização (complexidade), baseada no PPS.** Classificação IPCPAL: altamente complexo, complexo, não complexo.
-4. **Dados do utente.** Nome, número de utente, data de referenciação, data de triagem, data de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas (para a georreferenciação). O local é a casa do utente, um lar ou uma unidade (Serpa ou Montemor). Há também estado ativo ou inativo e histórico de visitas.
-5. **Horário.** As visitas decorrem entre as 9h30 e as 16h. Às 16h as equipas devem estar de volta a Beja (unidade hospitalar).
-6. **Viaturas e equipas.** Há duas viaturas, ou seja, duas equipas em simultâneo. O território é o Baixo Alentejo.
+1. **Dias de visita.** Admite-se que não há dias fixos para as visitas e que dependem das situações de urgência.
+2. **Triagem (urgência).** Admite-se uma triagem com quatro níveis: A (muito urgente), B (urgente), C (pouco urgente) e Não urgente.
+3. **Priorização (complexidade), baseada no PPS.** Admite-se a classificação IPCPAL: altamente complexo, complexo e não complexo.
+4. **Dados do utente.** Admite-se que a ficha tem nome, número de utente, datas de referenciação, de triagem e de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas. Admite-se que o local é a casa do utente, um lar ou uma unidade (por exemplo, em Serpa ou em Montemor), com estado ativo ou inativo e histórico de visitas.
+5. **Horário.** Admite-se que as visitas decorrem entre as 9h30 e as 16h e que às 16h as equipas estão de volta a Beja.
+6. **Viaturas e equipas.** Admite-se que há duas viaturas, ou seja, duas equipas em simultâneo, e que o território é o Baixo Alentejo.
