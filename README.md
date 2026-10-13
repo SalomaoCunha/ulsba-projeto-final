@@ -10,17 +10,23 @@ Este repositório reúne todo o projeto (monorepo):
 
 ```
 .
-├── frontend/         # Aplicação web (React + TypeScript + Vite + Bootstrap)
-├── backend/          # API e lógica de servidor
-├── docs/             # Documentação: requisitos, arquitetura, relatórios
-├── CONTRIBUTING.md   # Convenções de branches, commits e pull requests
-└── README.md         # Este ficheiro
+├── frontend/              # Aplicação web (React + TypeScript + Vite + Bootstrap)
+├── backend/               # API (FastAPI)
+├── db/
+│   └── init/              # Scripts de inicialização da BD (ativação do PostGIS)
+├── docs/                  # Documentação: requisitos, arquitetura, relatórios
+├── .github/workflows/     # CI (lint, build e verificação do backend em cada PR)
+├── docker-compose.yml     # Orquestração de frontend + backend + base de dados
+├── .env.example           # Modelo de variáveis de ambiente (Postgres)
+├── CONTRIBUTING.md        # Convenções de branches, commits e pull requests
+└── README.md              # Este ficheiro
 ```
 
 | Pasta       | Conteúdo                                                        | Documentação                             |
 | ----------- | --------------------------------------------------------------- | ---------------------------------------- |
 | `frontend/` | Interface da aplicação                                          | [frontend/README.md](frontend/README.md) |
-| `backend/`  | API (FastAPI) e base de dados (PostgreSQL + PostGIS)            | [backend/README.md](backend/README.md)   |
+| `backend/`  | API (FastAPI)                                                   | [backend/README.md](backend/README.md)   |
+| `db/`       | Base de dados (PostgreSQL + PostGIS), scripts de inicialização  | —                                         |
 | `docs/`     | Documentos do projeto                                           | [docs/README.md](docs/README.md)         |
 
 ## Como arrancar
