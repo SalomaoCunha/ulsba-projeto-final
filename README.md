@@ -36,6 +36,18 @@ git checkout develop
 Depois, arrancar cada parte seguindo o README da respetiva pasta:
 
 - **Frontend:** ver [frontend/README.md](frontend/README.md). Em resumo: `cd frontend`, `npm install`, copiar `.env.example` para `.env` e `npm run dev`.
+
+## Arranque com Docker
+
+1. `cp .env.example .env` (e mudar a password)
+2. `docker compose up --build`
+3. Frontend: http://localhost:5173 · API: http://localhost:8000/docs · Health: http://localhost:8000/health
+
+### Problemas comuns
+- `/health` falha por causa do PostGIS: o volume da BD é antigo. Corre `docker compose down -v` e depois `docker compose up --build`.
+- "Module not found" no frontend depois de um `git pull` com dependências novas: `docker compose up --build -V`.
+- Porta 5432 ocupada: parar o Postgres local ou mudar a porta no `docker-compose.yml`.
+
 - **Backend:** ver [backend/README.md](backend/README.md) (ainda por iniciar).
 
 > **Windows / PowerShell:** se aparecer o erro *"running scripts is disabled on this system"*, usar `npm.cmd` em vez de `npm`, ou executar uma vez `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`.

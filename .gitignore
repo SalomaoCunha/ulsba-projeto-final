@@ -30,3 +30,14 @@ pgdata/
 .DS_Store
 Thumbs.db
 *.log
+
+# Docker / Backend
+# Variáveis de ambiente reais (passwords). Nunca vão para o Git.
+.env
+
+# Ficheiros temporários gerados pelo Python
+__pycache__/
+*.pyc
+
+# Ambiente virtual Python (caso corras o backend fora do Docker)
+.venv/
