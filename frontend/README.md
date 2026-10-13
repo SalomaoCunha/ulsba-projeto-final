@@ -55,7 +55,7 @@ As variáveis ficam no ficheiro `.env` (local, **não é versionado**). O fichei
 
 | Variável       | Descrição                    | Exemplo                 |
 | -------------- | ---------------------------- | ----------------------- |
-| `VITE_API_URL` | URL base da API (backend)    | `http://localhost:3000` |
+| `VITE_API_URL` | URL base da API (backend)    | `http://localhost:8000` |
 
 Notas:
 
@@ -95,10 +95,13 @@ import type { Utente } from '@/types/utente';
 
 ### Rotas
 
-| Caminho    | Página          |
-| ---------- | --------------- |
-| `/`        | Dashboard       |
-| `/utentes` | Lista de utentes |
+| Caminho          | Página             |
+| ---------------- | ------------------ |
+| `/`              | Dashboard          |
+| `/utentes`       | Lista de utentes   |
+| `/utentes/novo`  | Novo utente        |
+| `/agenda`        | Agenda             |
+| `/visitas`       | Visitas            |
 
 Novas páginas: criar o ficheiro em `src/pages/` e registar a rota em `src/App.tsx`, dentro do `MainLayout`.
 

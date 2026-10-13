@@ -20,7 +20,7 @@ Este repositório reúne todo o projeto (monorepo):
 | Pasta       | Conteúdo                                                        | Documentação                             |
 | ----------- | --------------------------------------------------------------- | ---------------------------------------- |
 | `frontend/` | Interface da aplicação                                          | [frontend/README.md](frontend/README.md) |
-| `backend/`  | API (FastAPI) e base de dados (PostgreSQL + PostGIS), a iniciar | [backend/README.md](backend/README.md)   |
+| `backend/`  | API (FastAPI) e base de dados (PostgreSQL + PostGIS)            | [backend/README.md](backend/README.md)   |
 | `docs/`     | Documentos do projeto                                           | [docs/README.md](docs/README.md)         |
 
 ## Como arrancar
@@ -28,14 +28,12 @@ Este repositório reúne todo o projeto (monorepo):
 Clonar o repositório:
 
 ```bash
-git clone https://github.com/SalomaoCunha/ulsba-projeto1.git
-cd ulsba-projeto1
+git clone https://github.com/SalomaoCunha/ulsba-projeto-final.git
+cd ulsba-projeto-final
 git checkout develop
 ```
 
-Depois, arrancar cada parte seguindo o README da respetiva pasta:
-
-- **Frontend:** ver [frontend/README.md](frontend/README.md). Em resumo: `cd frontend`, `npm install`, copiar `.env.example` para `.env` e `npm run dev`.
+A forma recomendada de arrancar o projeto completo (frontend + backend + base de dados) é via Docker — ver secção seguinte. Para arrancar só o frontend em modo de desenvolvimento, ver [frontend/README.md](frontend/README.md): em resumo, `cd frontend`, `npm install`, copiar `.env.example` para `.env` e `npm run dev`.
 
 ## Arranque com Docker
 
@@ -47,8 +45,6 @@ Depois, arrancar cada parte seguindo o README da respetiva pasta:
 - `/health` falha por causa do PostGIS: o volume da BD é antigo. Corre `docker compose down -v` e depois `docker compose up --build`.
 - "Module not found" no frontend depois de um `git pull` com dependências novas: `docker compose up --build -V`.
 - Porta 5432 ocupada: parar o Postgres local ou mudar a porta no `docker-compose.yml`.
-
-- **Backend:** ver [backend/README.md](backend/README.md) (ainda por iniciar).
 
 > **Windows / PowerShell:** se aparecer o erro *"running scripts is disabled on this system"*, usar `npm.cmd` em vez de `npm`, ou executar uma vez `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`.
 
