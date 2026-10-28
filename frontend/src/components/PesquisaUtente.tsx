@@ -1,28 +1,20 @@
 import React, { useState } from 'react';
+import type { Utente } from '../types/utente';
 
 interface Props {
+  utentes: Utente[];
   onPesquisar: (termo: string) => void;
 }
 
-// Simulamos a base de dados com os exatos utentes do teu mockup
-const mockUtentes = [
-  { num: '12560', nome: 'Maria Teresa Godinho' },
-  { num: '12561', nome: 'Maria Teresa Sousa' },
-  { num: '12562', nome: 'Maria Isabel Ferreira' },
-  { num: '12569', nome: 'Maria Teresa Almeida' },
-  { num: '12570', nome: 'Maria Teresa Silva' },
-  { num: '12571', nome: 'Maria Teresa Santos' },
-];
-
-const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
+const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
   const [numero, setNumero] = useState('');
   const [nome, setNome] = useState('');
   
   // Estados para controlar as listas flutuantes
-  const [resultadosNum, setResultadosNum] = useState<{num: string, nome: string}[]>([]);
+  const [resultadosNum, setResultadosNum] = useState<Utente[]>([]);
   const [mostrarDropNum, setMostrarDropNum] = useState(false);
   
-  const [resultadosNome, setResultadosNome] = useState<{num: string, nome: string}[]>([]);
+  const [resultadosNome, setResultadosNome] = useState<Utente[]>([]);
   const [mostrarDropNome, setMostrarDropNome] = useState(false);
 
   // --- Lógica para o campo do Número ---
@@ -30,7 +22,7 @@ const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
     const val = e.target.value;
     setNumero(val);
     if (val.trim()) {
-      const filtrados = mockUtentes.filter(u => u.num.includes(val));
+      const filtrados = utentes.filter(u => u.numeroUtente.includes(val));
       setResultadosNum(filtrados);
       setMostrarDropNum(true);
     } else {
@@ -43,7 +35,7 @@ const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
     const val = e.target.value;
     setNome(val);
     if (val.trim()) {
-      const filtrados = mockUtentes.filter(u => u.nome.toLowerCase().includes(val.toLowerCase()));
+      const filtrados = utentes.filter(u => u.nome.toLowerCase().includes(val.toLowerCase()));
       setResultadosNome(filtrados);
       setMostrarDropNome(true);
     } else {
@@ -52,12 +44,12 @@ const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
   };
 
   // --- Lógica ao clicar numa das sugestões ---
-  const selecionarUtente = (ut: {num: string, nome: string}) => {
-    setNumero(ut.num);
+  const selecionarUtente = (ut: Utente) => {
+    setNumero(ut.numeroUtente);
     setNome(ut.nome);
     setMostrarDropNum(false);
     setMostrarDropNome(false);
-    onPesquisar(ut.num); // Dispara logo a pesquisa no Dashboard
+    onPesquisar(ut.numeroUtente); 
   };
 
   return (
@@ -94,14 +86,14 @@ const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
           {/* Lista Flutuante (Dropdown) do Número */}
           {mostrarDropNum && resultadosNum.length > 0 && (
             <div className="list-group position-absolute w-100 shadow mt-1 border" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
-              {resultadosNum.map((ut, idx) => (
+              {resultadosNum.map((ut) => (
                 <button 
-                  key={idx}
+                  key={ut.id}
                   type="button" 
                   className="list-group-item list-group-item-action d-flex gap-3 py-2 text-start"
                   onClick={() => selecionarUtente(ut)}
                 >
-                  <span className="text-muted" style={{ width: '45px' }}>{ut.num}</span>
+                  <span className="text-muted" style={{ width: '45px' }}>{ut.numeroUtente}</span>
                   <span className="fw-medium text-dark">{ut.nome}</span>
                 </button>
               ))}
@@ -141,14 +133,14 @@ const PesquisaUtente: React.FC<Props> = ({ onPesquisar }) => {
           {/* Lista Flutuante (Dropdown) do Nome */}
           {mostrarDropNome && resultadosNome.length > 0 && (
             <div className="list-group position-absolute w-100 shadow mt-1 border" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
-              {resultadosNome.map((ut, idx) => (
+              {resultadosNome.map((ut) => (
                 <button 
-                  key={idx}
+                  key={ut.id}
                   type="button" 
                   className="list-group-item list-group-item-action d-flex gap-3 py-2 text-start"
                   onClick={() => selecionarUtente(ut)}
                 >
-                  <span className="text-muted" style={{ width: '45px' }}>{ut.num}</span>
+                  <span className="text-muted" style={{ width: '45px' }}>{ut.numeroUtente}</span>
                   <span className="fw-medium text-dark">{ut.nome}</span>
                 </button>
               ))}

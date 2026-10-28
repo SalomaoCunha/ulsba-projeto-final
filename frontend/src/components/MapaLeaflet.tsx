@@ -1,13 +1,15 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
+import type { Utente } from '../types/utente'
 
 interface Props {
+  utentes: Utente[];
   filtroAtivo?: string | null;
 }
 
 const criarIconePersonalizado = (prioridade: string) => {
-  let cor = '#6c757d'; 
+  let cor = '#6c757d';
   switch (prioridade) {
     case 'Urgente 0 dias': cor = '#dc3545'; break;
     case 'Urgente 1 dia': cor = '#fd7e14'; break;
@@ -33,21 +35,13 @@ const criarIconePersonalizado = (prioridade: string) => {
   });
 };
 
-const MapaLeaflet: React.FC<Props> = ({ filtroAtivo }) => {
+const MapaLeaflet: React.FC<Props> = ({ utentes, filtroAtivo }) => {
   const center: [number, number] = [38.015, -7.863];
 
-  const utentesMapa = [
-    { nome: 'Maria Teresa Almeida', coords: [38.015, -7.863] as [number, number], prioridade: 'Urgente 0 dias' },
-    { nome: 'Maria Teresa Godinho', coords: [38.012, -7.867] as [number, number], prioridade: 'Urgente 1 dia' },
-    { nome: 'Maria Teresa Silva', coords: [38.018, -7.859] as [number, number], prioridade: 'Urgente 2 dias' },
-    { nome: 'Maria Teresa Sousa', coords: [38.009, -7.861] as [number, number], prioridade: 'Não urgente 1' },
-    { nome: 'Maria Isabel Ferreira', coords: [38.021, -7.865] as [number, number], prioridade: 'Não urgente 2' },
-  ];
-
   // A magia acontece aqui: Filtramos os pinos se houver um botão clicado!
-  const pinosVisiveis = filtroAtivo 
-    ? utentesMapa.filter(ut => ut.prioridade === filtroAtivo)
-    : utentesMapa;
+  const pinosVisiveis = filtroAtivo
+    ? utentes.filter(ut => ut.prioridade === filtroAtivo)
+    : utentes;
 
   return (
     <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative">
@@ -68,10 +62,10 @@ const MapaLeaflet: React.FC<Props> = ({ filtroAtivo }) => {
       <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%', minHeight: '400px' }} zoomControl={false}>
         <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomControl position="bottomright" />
-        
+
         {/* Renderiza apenas os pinos que passaram no filtro */}
-        {pinosVisiveis.map((ut, index) => (
-          <Marker key={index} position={ut.coords} icon={criarIconePersonalizado(ut.prioridade)}>
+        {pinosVisiveis.map((ut) => (
+          <Marker key={ut.id} position={[ut.lat, ut.lng]} icon={criarIconePersonalizado(ut.prioridade)}>
             <Popup><strong>Utente:</strong> {ut.nome}<br />Prioridade: {ut.prioridade}</Popup>
           </Marker>
         ))}

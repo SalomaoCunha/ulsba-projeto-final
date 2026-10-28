@@ -24,11 +24,11 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
           {utente.estado}
         </span>
       </div>
-      
+
       <div className="card-body p-4">
         {/* Identificação Base */}
         <div className="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-light">
-          <div className="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style={{width: '64px', height: '64px'}}>
+          <div className="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style={{ width: '64px', height: '64px' }}>
             <i className="bi bi-person-fill" style={{ fontSize: '2rem' }}></i>
           </div>
           <div>
@@ -45,14 +45,14 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
             <DetailItem icon="bi-telephone" label="Telefone:" value={utente.telefone} />
             <DetailItem icon="bi-person-heart" label="Cuidador Principal:" value={utente.cuidadorPrincipal} />
             <DetailItem icon="bi-geo-alt" label="Morada:" value={utente.morada} />
-            <DetailItem icon="bi-geo" label="Coordenadas GPS:" value={utente.coordenadas} />
+            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
           </div>
-          
+
           {/* Coluna Direita */}
           <div className="col-md-6 d-flex flex-column gap-3">
             <DetailItem icon="bi-clock" label="Última Visita:" value={utente.ultimaVisita} />
             <DetailItem icon="bi-stethoscope" label="Médico Assistente:" value={utente.medicoAssistente} />
-            
+
             {/* Situação Clínica (Lista) */}
             <div className="d-flex gap-2">
               <i className="bi bi-clipboard2-pulse text-success fs-5 mt-1"></i>
@@ -64,7 +64,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
               </div>
             </div>
 
-            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
+
           </div>
         </div>
       </div>
