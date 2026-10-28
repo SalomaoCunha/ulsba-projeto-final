@@ -9,8 +9,9 @@ export interface Utente {
   cuidadorPrincipal: string;
   situacaoClinica: string[];
   morada: string;
-  coordenadas: string;
+  lat: number;
+  lng: number;
   notas: string;
-  prioridade: 'Urgente 0 dias' | 'Urgente 1 dia' | 'Urgente 2 dias' | 'Não urgente 1' | 'Não urgente 2' | 'Prioritário' | 'Normal';
+  prioridade: 'Urgente 0 dias' | 'Urgente 1 dia' | 'Urgente 2 dias' | 'Não urgente 1' | 'Não urgente 2';
   estado: 'Ativo' | 'Inativo';
 }
