@@ -3,6 +3,7 @@ import MainLayout from '@/layouts/MainLayout';
 import DashboardPage from '@/pages/DashboardPage';
 import UtentesPage from '@/pages/UtentesPage';
 import NovoUtentePage from './pages/NovoUtentePage';
+import MapaPage from './pages/MapaPage';
 import AgendaPage from './pages/AgendaPage';
 import VisitasPage from './pages/VisitasPage';
 
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/utentes" element={<UtentesPage />} />
           <Route path="/utentes/novo" element={<NovoUtentePage />} />
+          <Route path="/mapa" element={<MapaPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/visitas" element={<VisitasPage />} />
         </Route>
