@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Dados fictícios para preencher a tabela e dar um aspeto real
-const mockUtentesList = [
-  { id: 1, num: '12569', nome: 'Maria Teresa Almeida', contacto: '912 345 678', ultimaVisita: '02-10-2026', prioridade: 'Urgente 0 dias', estado: 'Ativo' },
-  { id: 2, num: '12560', nome: 'Maria Teresa Godinho', contacto: '912 345 671', ultimaVisita: '01-10-2026', prioridade: 'Urgente 1 dia', estado: 'Ativo' },
-  { id: 3, num: '12570', nome: 'Maria Teresa Silva', contacto: '912 345 674', ultimaVisita: '05-10-2026', prioridade: 'Urgente 2 dias', estado: 'Ativo' },
-  { id: 4, num: '12561', nome: 'Maria Teresa Sousa', contacto: '912 345 672', ultimaVisita: '28-09-2026', prioridade: 'Não urgente 1', estado: 'Ativo' },
-  { id: 5, num: '12562', nome: 'Maria Isabel Ferreira', contacto: '912 345 673', ultimaVisita: '15-09-2026', prioridade: 'Não urgente 2', estado: 'Inativo' },
-];
+import { getUtentesFicticios } from '../services/utenteService'
+import type { Utente } from '../types/utente'
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
+  const [utentes, setUtentes] = useState<Utente[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getUtentesFicticios().then(setUtentes);  
+  }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
   const getBadgePrioridade = (prioridade: string) => {
@@ -26,7 +24,7 @@ const UtentesPage: React.FC = () => {
     }
   };
 
-  // Função auxiliar para renderizar o estado com o estilo do teu mockup
+  // Função auxiliar para renderizar o estado com o estilo do mockup
   const getBadgeEstado = (estado: string) => {
     if (estado === 'Ativo') {
       return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill">Ativo</span>;
@@ -95,9 +93,9 @@ const UtentesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {mockUtentesList.map((utente) => (
+              {utentes.map((utente) => (
                 <tr key={utente.id}>
-                  <td className="ps-4 py-3 text-muted">{utente.num}</td>
+                  <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
                   <td className="py-3 fw-medium text-dark">
                     <div className="d-flex align-items-center gap-3">
                       <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
@@ -106,7 +104,7 @@ const UtentesPage: React.FC = () => {
                       {utente.nome}
                     </div>
                   </td>
-                  <td className="py-3 text-muted">{utente.contacto}</td>
+                  <td className="py-3 text-muted">{utente.telefone}</td>
                   <td className="py-3 text-muted">{utente.ultimaVisita}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
