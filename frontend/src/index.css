@@ -1,0 +1,145 @@
+/* ===== Tokens de tema ULSBA — cuidados paliativos ===== */
+/* Paleta sóbria/clínica: verde-escuro + cartões brancos sobre fundo cinza-claro. */
+
+:root {
+  /* Marca / sidebar */
+  --ulsba-verde-escuro: #16352a;
+  --ulsba-verde-escuro-hover: #214f3d;
+  --ulsba-verde-primario: #2f9e63;
+  --ulsba-verde-primario-hover: #27824f;
+  --ulsba-verde-claro: #e3f5ec;
+  --ulsba-verde-claro-texto: #1c5a3d;
+
+  /* Neutros */
+  --ulsba-fundo: #f4f6f5;
+  --ulsba-superficie: #ffffff;
+  --ulsba-borda: #e3e7e5;
+  --ulsba-texto: #1f2a24;
+  --ulsba-texto-secundario: #677267;
+  --ulsba-texto-invertido: #ffffff;
+
+  /* Cartões */
+  --ulsba-card-radius: 14px;
+  --ulsba-card-shadow: 0 1px 2px rgba(16, 36, 28, 0.06), 0 4px 12px rgba(16, 36, 28, 0.05);
+  --ulsba-card-padding: 1.25rem;
+
+  /* Prioridade — do mais urgente ao menos urgente */
+  --prioridade-1-bg: #fde3e1;
+  --prioridade-1-texto: #9a2a1f;
+  --prioridade-1-dot: #e0392b;
+
+  --prioridade-2-bg: #fde8d2;
+  --prioridade-2-texto: #9a5712;
+  --prioridade-2-dot: #ef8a1c;
+
+  --prioridade-3-bg: #fdf1c7;
+  --prioridade-3-texto: #8a6c10;
+  --prioridade-3-dot: #eec11d;
+
+  --prioridade-4-bg: #fbf6d6;
+  --prioridade-4-texto: #7c7020;
+  --prioridade-4-dot: #e8d968;
+
+  --prioridade-5-bg: #dcf3ec;
+  --prioridade-5-texto: #1f7a66;
+  --prioridade-5-dot: #38b89a;
+
+  /* Complexidade */
+  --complexidade-alta-bg: #fde8d2;
+  --complexidade-alta-texto: #9a5712;
+  --complexidade-media-bg: #dde9fb;
+  --complexidade-media-texto: #28508f;
+  --complexidade-baixa-bg: #e9f1ea;
+  --complexidade-baixa-texto: #4b6450;
+
+  /* Estados (viaturas, voltas, visitas) */
+  --estado-ok-bg: #e1f3e6;
+  --estado-ok-texto: #1f7a40;
+  --estado-ok-dot: #2f9e63;
+
+  --estado-info-bg: #dde9fb;
+  --estado-info-texto: #28508f;
+  --estado-info-dot: #3a72c4;
+
+  --estado-alerta-bg: #fde8d2;
+  --estado-alerta-texto: #9a5712;
+  --estado-alerta-dot: #ef8a1c;
+
+  /* Tipografia */
+  --ulsba-font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+
+  /* Overrides Bootstrap usados em toda a app */
+  --bs-body-font-family: var(--ulsba-font);
+  --bs-body-bg: var(--ulsba-fundo);
+  --bs-body-color: var(--ulsba-texto);
+  --bs-primary: var(--ulsba-verde-primario);
+  --bs-primary-rgb: 47, 158, 99;
+  --bs-border-radius: 10px;
+  --bs-border-radius-lg: var(--ulsba-card-radius);
+}
+
+body {
+  background-color: var(--ulsba-fundo);
+  color: var(--ulsba-texto);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+}
+
+/* ===== Cartões ===== */
+.ulsba-card {
+  background-color: var(--ulsba-superficie);
+  border: 1px solid var(--ulsba-borda);
+  border-radius: var(--ulsba-card-radius);
+  box-shadow: var(--ulsba-card-shadow);
+  padding: var(--ulsba-card-padding);
+}
+
+/* ===== Kicker (rótulo pequeno acima do título de página) ===== */
+.ulsba-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ulsba-verde-claro-texto);
+}
+
+/* ===== Pill genérica: bolinha + texto (prioridade/complexidade/estado) ===== */
+.ulsba-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ulsba-pill-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* ===== Banner informativo (fundo verde-claro) ===== */
+.ulsba-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background-color: var(--ulsba-verde-claro);
+  color: var(--ulsba-verde-claro-texto);
+  border-radius: var(--ulsba-card-radius);
+  padding: 0.85rem 1rem;
+}
+
+/* ===== Cabeçalhos de tabela (maiúsculas pequenas) ===== */
+.ulsba-table-head {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ulsba-texto-secundario);
+}
