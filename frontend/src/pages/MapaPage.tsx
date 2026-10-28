@@ -1,7 +1,14 @@
 import React from 'react';
 import MapaLeaflet from '../components/MapaLeaflet';
+import { useEffect, useState } from 'react'
+import { getUtentesFicticios } from '../services/utenteService'
+import type { Utente } from '../types/utente'
 
 const MapaPage: React.FC = () => {
+  const [utentes, setUtentes] = useState<Utente[]>([]);
+  useEffect(() => { getUtentesFicticios().then(setUtentes);}, []);
+
+
   return (
     <div className="h-100 d-flex flex-column">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -12,7 +19,7 @@ const MapaPage: React.FC = () => {
       </div>
 
       <div className="flex-grow-1">
-        <MapaLeaflet />
+        <MapaLeaflet utentes={utentes} />
       </div>
     </div>
   );
