@@ -96,3 +96,14 @@ export const NIVEIS_COMPLEXIDADE: NivelComplexidade[] = [
   },
 ]
 
+
+// -- Helpers --
+
+export function getNivelPrioridade(valor: string): NivelPrioridade | undefined {
+    return NIVEIS_PRIORIDADE.find(n => n.valor === valor)
+}
+
+
+export function getNivelComplexidade(valor: string): NivelComplexidade | undefined {
+    return NIVEIS_COMPLEXIDADE.find(n => n.valor === valor)
+}
