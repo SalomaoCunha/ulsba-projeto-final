@@ -51,7 +51,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
           {/* Coluna Direita */}
           <div className="col-md-6 d-flex flex-column gap-2">
             <DetailItem icon="bi-clock" label="Última Visita:" value={utente.ultimaVisita} />
-            <DetailItem icon="bi-stethoscope" label="Médico Assistente:" value={utente.medicoAssistente} />
+            <DetailItem icon="bi-people" label="Equipa Responsável:" value={utente.equipaResponsavel} />
 
             {/* Situação Clínica (Lista) */}
             <div className="d-flex gap-2">

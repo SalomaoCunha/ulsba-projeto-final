@@ -7,7 +7,7 @@ export interface Utente {
   dataNascimento: string;
   ultimaVisita: string;
   telefone: string;
-  medicoAssistente: string;
+  equipaResponsavel: string;
   cuidadorPrincipal: string;
   situacaoClinica: string[];
   morada: string;
