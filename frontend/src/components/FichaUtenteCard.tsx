@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Utente } from '../types/utente';
+import { getNivelComplexidade } from '@/config/niveis';
 
 interface Props {
   utente: Utente | null;
@@ -15,14 +16,26 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
     );
   }
 
+  const nivelComplexidade = getNivelComplexidade(utente.complexidade);
+
   return (
     <div className="card shadow-sm border-0 h-100 d-flex flex-column" style={{ minHeight: 0 }}>
       {/* Cabeçalho */}
       <div className="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center flex-shrink-0">
         <h6 className="fw-bold mb-0 text-dark">Ficha do Utente</h6>
-        <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
-          {utente.estado}
-        </span>
+        <div className="d-flex align-items-center gap-2">
+          {nivelComplexidade && (
+            <span
+              className="ulsba-pill"
+              style={{ backgroundColor: nivelComplexidade.corBg, color: nivelComplexidade.corTexto }}
+            >
+              {nivelComplexidade.label}
+            </span>
+          )}
+          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+            {utente.estado}
+          </span>
+        </div>
       </div>
 
       <div className="card-body p-3" style={{ overflowY: 'auto', minHeight: 0 }}>
