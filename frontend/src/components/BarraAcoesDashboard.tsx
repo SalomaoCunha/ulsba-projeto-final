@@ -5,8 +5,8 @@ const BarraAcoesDashboard: React.FC = () => {
   const navigate = useNavigate(); // Ferramenta do React para navegar entre páginas
 
   return (
-    <div className="card shadow-sm border-0 mt-4">
-      <div className="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div className="card shadow-sm border-0">
+      <div className="card-body p-2 d-flex flex-wrap justify-content-between align-items-center gap-3">
         
         {/* Lado Esquerdo: Botões de Ação com navegação real */}
         <div className="d-flex gap-3">
@@ -55,15 +55,6 @@ const BarraAcoesDashboard: React.FC = () => {
             <div>
               <div className="fw-medium mb-0 lh-1">Não urgentes</div>
               <strong className="text-dark fs-6">12</strong>
-            </div>
-          </div>
-
-          {/* Divisória vertical e Distância Total */}
-          <div className="d-flex align-items-center gap-2 ms-2 border-start ps-4">
-            <i className="bi bi-geo-alt fs-4 text-secondary"></i>
-            <div>
-              <div className="fw-medium mb-0 lh-1">Distância total (aprox.)</div>
-              <strong className="text-dark fs-6">42 km</strong>
             </div>
           </div>
 

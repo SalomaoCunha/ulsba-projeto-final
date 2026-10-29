@@ -36,26 +36,28 @@ const DashboardPage: React.FC = () => {
   const utentesNoMapa = utentes.filter(u => u.estado === 'Ativo');
 
   return (
-    <div className="h-100 d-flex flex-column pb-3">
-      <div className="row g-4 flex-grow-1">
-        <div className="col-md-4 d-flex flex-column gap-4">
+    <div className="h-100 d-flex flex-column overflow-hidden">
+      <div className="row g-3 flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
+        <div className="col-md-4 d-flex flex-column gap-2" style={{ minHeight: 0, overflowY: 'auto' }}>
           <PesquisaUtente utentes={utentes} onPesquisar={executarPesquisa} />
-          <div className="flex-grow-1">
+          <div className="flex-grow-1" style={{ minHeight: '220px' }}>
             <FichaUtenteCard utente={utenteSelecionado} />
           </div>
         </div>
-        
-        <div className="col-md-6 h-100">
+
+        <div className="col-md-5 h-100" style={{ minHeight: 0, maxHeight: '100%', overflow: 'hidden' }}>
           {/* Passamos a lista (sem inativos) e o filtro para o mapa */}
           <MapaLeaflet utentes={utentesNoMapa} filtroAtivo={filtroPrioridade} />
         </div>
 
-        <div className="col-md-2 h-100">
+        <div className="col-md-3 h-100" style={{ minHeight: 0, maxHeight: '100%', overflow: 'hidden' }}>
           <PainelPrioridades filtroAtivo={filtroPrioridade} onAlterarFiltro={aplicarFiltroMapa} />
         </div>
       </div>
 
-      <BarraAcoesDashboard />
+      <div className="pt-2 flex-shrink-0">
+        <BarraAcoesDashboard />
+      </div>
     </div>
   );
 };

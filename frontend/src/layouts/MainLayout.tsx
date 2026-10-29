@@ -20,8 +20,8 @@ const MainLayout: React.FC = () => {
 
   const getMenuClass = (path: string) => {
     return location.pathname === path
-      ? "btn btn-success text-start w-100 d-flex align-items-center gap-3 shadow-sm"
-      : "btn text-white text-start w-100 d-flex align-items-center gap-3 border-0 bg-transparent";
+      ? "ulsba-nav-item ulsba-nav-item-ativo fw-semibold"
+      : "ulsba-nav-item";
   };
 
   return (
@@ -56,7 +56,7 @@ const MainLayout: React.FC = () => {
 
         {/* Botão Sair */}
         <div className="p-3 mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          <button className="btn text-white text-start w-100 d-flex align-items-center gap-3 border-0 bg-transparent opacity-75">
+          <button className="ulsba-nav-item">
             <i className="bi bi-box-arrow-left fs-5"></i> Sair
           </button>
         </div>

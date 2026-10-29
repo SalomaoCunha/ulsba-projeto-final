@@ -1,7 +1,26 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Utente } from '../types/utente'
+
+// O mapa vive numa grelha flexível (altura calculada em runtime); sem isto,
+// o Leaflet mede o contentor antes do layout estabilizar e fica com o
+// tamanho errado (tiles cortados/"a sair da caixa").
+const AjustarTamanhoMapa: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    map.invalidateSize();
+
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+};
 
 interface Props {
   utentes: Utente[];
@@ -44,7 +63,7 @@ const MapaLeaflet: React.FC<Props> = ({ utentes, filtroAtivo }) => {
     : utentes;
 
   return (
-    <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative">
+    <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative" style={{ maxHeight: '100%' }}>
       <div className="position-absolute bg-white p-3 rounded shadow-sm border" style={{ top: '20px', left: '20px', zIndex: 1000, width: '180px', opacity: 0.95 }}>
         <h6 className="fw-bold text-dark mb-3 small">Legenda</h6>
         <div className="d-flex flex-column gap-2 small mb-3">
@@ -59,9 +78,10 @@ const MapaLeaflet: React.FC<Props> = ({ utentes, filtroAtivo }) => {
         </button>
       </div>
 
-      <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%', minHeight: '400px' }} zoomControl={false}>
+      <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
         <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomControl position="bottomright" />
+        <AjustarTamanhoMapa />
 
         {/* Renderiza apenas os pinos que passaram no filtro */}
         {pinosVisiveis.map((ut) => (

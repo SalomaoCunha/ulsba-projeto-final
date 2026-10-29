@@ -20,10 +20,10 @@ const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) =>
   };
 
   return (
-    <div className="ulsba-card h-100 d-flex flex-column">
-      <h6 className="fw-bold text-dark text-center mb-3">Prioridade / Urgência</h6>
+    <div className="ulsba-card h-100 d-flex flex-column" style={{ minHeight: 0 }}>
+      <h6 className="fw-bold text-dark text-center mb-3 flex-shrink-0">Prioridade / Urgência</h6>
 
-      <div className="d-flex flex-column gap-2">
+      <div className="d-flex flex-column gap-2" style={{ overflowY: 'auto', minHeight: 0 }}>
         {NIVEIS.map((nivel) => {
           const ativo = filtroAtivo === null || filtroAtivo === nivel.valor;
           return (
@@ -40,19 +40,14 @@ const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) =>
                 fontSize: '0.85rem',
               }}
             >
-              <span
-                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                style={{ width: '26px', height: '26px', backgroundColor: 'rgba(255,255,255,0.35)' }}
-              >
-                <i className={`bi ${nivel.icone}`} style={{ fontSize: '0.75rem' }}></i>
-              </span>
+              <i className={`bi ${nivel.icone}`}></i>
               {nivel.valor}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-3 pt-3 border-top">
+      <div className="mt-3 pt-3 border-top flex-shrink-0">
         <p className="text-muted text-center mb-0" style={{ fontSize: '0.75rem' }}>
           Selecione a prioridade para filtrar o mapa. Clique novamente para limpar.
         </p>
