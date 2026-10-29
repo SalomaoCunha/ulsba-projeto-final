@@ -37,8 +37,6 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="h-100 d-flex flex-column pb-3">
-      <h1 className="h4 fw-bold mb-4 text-dark">Painel Operacional</h1>
-      
       <div className="row g-4 flex-grow-1">
         <div className="col-md-4 d-flex flex-column gap-4">
           <PesquisaUtente utentes={utentes} onPesquisar={executarPesquisa} />

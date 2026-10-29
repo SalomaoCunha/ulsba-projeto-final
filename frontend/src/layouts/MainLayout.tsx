@@ -1,12 +1,24 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
-const MainLayout: React.FC = () => {
-  const location = useLocation(); // Isto descobre em que página estamos
+const NAV_ITEMS = [
+  { path: '/', label: 'Dashboard', icon: 'bi-grid-1x2-fill' },
+  { path: '/utentes', label: 'Utentes', icon: 'bi-person-fill' },
+  { path: '/equipas', label: 'Equipas', icon: 'bi-people-fill' },
+  { path: '/viaturas', label: 'Viaturas', icon: 'bi-truck' },
+  { path: '/agenda', label: 'Agenda', icon: 'bi-calendar3' },
+  { path: '/visitas', label: 'Visitas', icon: 'bi-clipboard2-check-fill' },
+  { path: '/mapa', label: 'Mapa', icon: 'bi-geo-alt-fill' },
+  { path: '/rotas', label: 'Rotas', icon: 'bi-signpost-split-fill' },
+  { path: '/relatorios', label: 'Relatórios', icon: 'bi-bar-chart-fill' },
+  { path: '/mensagens', label: 'Mensagens', icon: 'bi-envelope-fill' },
+  { path: '/configuracoes', label: 'Configurações', icon: 'bi-gear-fill' },
+];
 
-  // Função que decide a cor do botão com base no URL atual
+const MainLayout: React.FC = () => {
+  const location = useLocation();
+
   const getMenuClass = (path: string) => {
-    // Se o caminho atual for igual ao do botão, fica verde (ativo), senão fica escuro
     return location.pathname === path
       ? "btn btn-success text-start w-100 d-flex align-items-center gap-3 shadow-sm"
       : "btn text-white text-start w-100 d-flex align-items-center gap-3 border-0 bg-transparent";
@@ -14,49 +26,37 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="d-flex vh-100 bg-light">
-      
+
       {/* Menu Lateral (Sidebar) */}
-      <aside className="bg-dark text-white d-flex flex-column" style={{ width: '260px' }}>
-        <div className="p-3 d-flex align-items-center border-bottom border-secondary gap-2 mb-2">
-          <div className="text-white d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px' }}>
-            <i className="bi bi-heart-pulse fs-3"></i>
+      <aside className="d-flex flex-column" style={{ width: '260px', backgroundColor: 'var(--ulsba-verde-escuro)' }}>
+        <div className="p-3 d-flex align-items-center gap-2 mb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+          <div
+            className="text-white d-flex align-items-center justify-content-center fw-bold rounded-3"
+            style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-primario)' }}
+          >
+            <i className="bi bi-heart-pulse-fill fs-5"></i>
           </div>
-          <h1 className="h6 mb-0 lh-sm ms-2">Cuidados<br/>Domiciliários</h1>
+          <div className="lh-sm">
+            <h1 className="h6 mb-0 text-white fw-bold">ULSBA</h1>
+            <p className="mb-0 text-white-50" style={{ fontSize: '0.7rem' }}>Cuidados Paliativos</p>
+          </div>
         </div>
-        
-        <nav className="flex-grow-1 px-3 py-2 d-flex flex-column gap-2 overflow-auto">
-          <Link to="/" className={getMenuClass('/')}>
-            <i className="bi bi-house-door fs-5"></i> Dashboard
-          </Link>
-          <Link to="/utentes" className={getMenuClass('/utentes')}>
-            <i className="bi bi-person fs-5"></i> Utentes
-          </Link>
-          <Link to="/mapa" className={getMenuClass('/mapa')}>
-            <i className="bi bi-map fs-5"></i> Mapa
-          </Link>
-          <Link to="/agenda" className={getMenuClass('/agenda')}>
-            <i className="bi bi-calendar3 fs-5"></i> Agenda
-          </Link>
-          <Link to="/visitas" className={getMenuClass('/visitas')}>
-            <i className="bi bi-clipboard-check fs-5"></i> Visitas
-          </Link>
-          <Link to="/rotas" className={getMenuClass('/rotas')}>
-            <i className="bi bi-signpost-split fs-5"></i> Rotas
-          </Link>
-          <Link to="/relatorios" className={getMenuClass('/relatorios')}>
-            <i className="bi bi-bar-chart fs-5"></i> Relatórios
-          </Link>
-          <Link to="/mensagens" className={getMenuClass('/mensagens')}>
-            <i className="bi bi-envelope fs-5"></i> Mensagens
-          </Link>
-          <Link to="/configuracoes" className={getMenuClass('/configuracoes')}>
-            <i className="bi bi-gear fs-5"></i> Configurações
-          </Link>
+
+        <p className="px-3 mb-2 text-white-50" style={{ fontSize: '0.7rem', letterSpacing: '0.08em', fontWeight: 600 }}>
+          PLATAFORMA
+        </p>
+
+        <nav className="flex-grow-1 px-3 py-1 d-flex flex-column gap-2 overflow-auto">
+          {NAV_ITEMS.map((item) => (
+            <Link key={item.path} to={item.path} className={getMenuClass(item.path)}>
+              <i className={`bi ${item.icon} fs-5`}></i> {item.label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Botão Sair no fundo */}
-        <div className="p-3 mt-auto border-top border-secondary">
-          <button className="btn text-white text-start w-100 d-flex align-items-center gap-3 border-0 bg-transparent opacity-75 hover-opacity-100">
+        {/* Botão Sair */}
+        <div className="p-3 mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          <button className="btn text-white text-start w-100 d-flex align-items-center gap-3 border-0 bg-transparent opacity-75">
             <i className="bi bi-box-arrow-left fs-5"></i> Sair
           </button>
         </div>
@@ -65,8 +65,13 @@ const MainLayout: React.FC = () => {
       {/* Área Principal */}
       <main className="flex-grow-1 d-flex flex-column overflow-hidden">
         <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-4 shadow-sm" style={{ height: '64px' }}>
-          <h2 className="h6 mb-0 text-dark fw-bold">Plataforma de Gestão de Cuidados Domiciliários</h2>
-          
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0 small">
+              <li className="breadcrumb-item text-muted">Plataforma de apoio</li>
+              <li className="breadcrumb-item active fw-medium text-dark" aria-current="page">Gestão de cuidados domiciliários</li>
+            </ol>
+          </nav>
+
           <div className="d-flex align-items-center gap-3">
             {/* Sino de Notificações com o número 3 */}
             <div className="position-relative cursor-pointer">
@@ -75,16 +80,20 @@ const MainLayout: React.FC = () => {
                 3
               </span>
             </div>
-            
-            <div className="d-flex align-items-center gap-2 ms-3 border-start ps-3 cursor-pointer">
+
+            {/* Perfil + seletor de acesso */}
+            <div className="d-flex align-items-center gap-2 ms-1 border-start ps-3 cursor-pointer">
+              <div
+                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-primario)', fontSize: '0.8rem' }}
+              >
+                AS
+              </div>
               <div className="text-end d-none d-sm-block">
                 <p className="mb-0 fw-bold small text-dark lh-1 mt-1">Enf. Ana Silva</p>
                 <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Coordenadora</p>
               </div>
-              {/* Imagem de perfil real (placeholder) em vez do ícone */}
-              <div className="rounded-circle shadow-sm" style={{ width: '36px', height: '36px', overflow: 'hidden' }}>
-                <img src="https://i.pravatar.cc/150?img=47" alt="Perfil" className="w-100 h-100 object-fit-cover" />
-              </div>
+              <i className="bi bi-chevron-down text-muted small ms-1"></i>
             </div>
           </div>
         </header>
@@ -94,7 +103,7 @@ const MainLayout: React.FC = () => {
           <Outlet />
         </div>
       </main>
-      
+
     </div>
   );
 };

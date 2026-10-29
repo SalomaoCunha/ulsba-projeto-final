@@ -76,6 +76,14 @@
   --bs-primary-rgb: 47, 158, 99;
   --bs-border-radius: 10px;
   --bs-border-radius-lg: var(--ulsba-card-radius);
+
+  /* MainLayout usa bg-dark/btn-success/bg-light — sobrepor para herdarem a paleta */
+  --bs-dark: var(--ulsba-verde-escuro);
+  --bs-dark-rgb: 22, 53, 42;
+  --bs-success: var(--ulsba-verde-primario);
+  --bs-success-rgb: 47, 158, 99;
+  --bs-light: var(--ulsba-fundo);
+  --bs-light-rgb: 244, 246, 245;
 }
 
 body {
