@@ -19,45 +19,38 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
 
   const getMenuClass = (path: string) => {
-    return location.pathname === path
-      ? "ulsba-nav-item ulsba-nav-item-ativo fw-semibold"
-      : "ulsba-nav-item";
+    return location.pathname === path ? "side-link side-link-active" : "side-link";
   };
 
   return (
     <div className="d-flex vh-100 bg-light">
 
       {/* Menu Lateral (Sidebar) */}
-      <aside className="d-flex flex-column" style={{ width: '260px', backgroundColor: 'var(--ulsba-verde-escuro)' }}>
-        <div className="p-3 d-flex align-items-center gap-2 mb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-          <div
-            className="text-white d-flex align-items-center justify-content-center fw-bold rounded-3"
-            style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-primario)' }}
-          >
-            <i className="bi bi-heart-pulse-fill fs-5"></i>
+      <aside className="side-panel">
+        <div className="brand-lockup">
+          <div className="brand-symbol">
+            <i className="bi bi-heart-pulse"></i>
           </div>
-          <div className="lh-sm">
-            <h1 className="h6 mb-0 text-white fw-bold">ULSBA</h1>
-            <p className="mb-0 text-white-50" style={{ fontSize: '0.7rem' }}>Cuidados Paliativos</p>
+          <div>
+            <strong>ULSBA</strong>
+            <small>Cuidados Paliativos</small>
           </div>
         </div>
 
-        <p className="px-3 mb-2 text-white-50" style={{ fontSize: '0.7rem', letterSpacing: '0.08em', fontWeight: 600 }}>
-          PLATAFORMA
-        </p>
+        <div className="side-section-label">PLATAFORMA</div>
 
-        <nav className="flex-grow-1 px-3 py-1 d-flex flex-column gap-2 overflow-auto">
+        <nav className="side-nav flex-grow-1 overflow-auto" aria-label="Navegação principal">
           {NAV_ITEMS.map((item) => (
             <Link key={item.path} to={item.path} className={getMenuClass(item.path)}>
-              <i className={`bi ${item.icon} fs-5`}></i> {item.label}
+              <i className={`bi ${item.icon}`}></i> {item.label}
             </Link>
           ))}
         </nav>
 
         {/* Botão Sair */}
-        <div className="p-3 mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          <button className="ulsba-nav-item">
-            <i className="bi bi-box-arrow-left fs-5"></i> Sair
+        <div className="side-bottom">
+          <button className="side-link border-0 bg-transparent w-100">
+            <i className="bi bi-box-arrow-left"></i> Sair
           </button>
         </div>
       </aside>

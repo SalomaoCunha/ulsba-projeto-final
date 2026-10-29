@@ -143,33 +143,108 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.85rem 1rem;
 }
 
-/* ===== Itens de navegação da sidebar ===== */
-.ulsba-nav-item {
+/* ===== Sidebar (valores tirados do CSS de referência ulsba-demo.netlify.app) ===== */
+.side-panel {
+  background: #102a25;
+  color: #eef4f1;
+  width: 244px;
+  height: 100vh;
+  min-height: 100vh;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+}
+
+.brand-lockup {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  text-align: left;
-  border: none;
-  background-color: transparent;
-  color: rgba(255, 255, 255, 0.82);
-  padding: 0.65rem 0.9rem;
-  border-radius: 12px;
-  text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  gap: 12px;
+  padding: 29px 25px 32px;
 }
 
-.ulsba-nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+.brand-symbol {
+  color: #fff;
+  background: #2d755d;
+  border-radius: 13px;
+  width: 42px;
+  height: 42px;
+  font-size: 23px;
+  display: grid;
+  place-items: center;
+}
+
+.brand-lockup strong {
+  letter-spacing: 0.6px;
+  font-size: 20px;
+  line-height: 1.1;
+  display: block;
+}
+
+.brand-lockup small {
+  color: #adc4ba;
+  margin-top: 5px;
+  font-size: 11px;
+  display: block;
+}
+
+.side-section-label {
+  letter-spacing: 1.5px;
+  color: #829c92;
+  margin: 0 26px 14px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.side-nav {
+  display: grid;
+  gap: 5px;
+  padding: 0 12px;
+}
+
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 44px;
+  padding: 10px 15px;
+  border-radius: 10px;
+  color: #becfc7;
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: background 0.16s;
+}
+
+.side-link .bi {
+  font-size: 18px;
+}
+
+.side-link:hover {
+  color: #fff;
+  background: #224438;
   text-decoration: none;
 }
 
-.ulsba-nav-item-ativo,
-.ulsba-nav-item-ativo:hover {
-  background: linear-gradient(135deg, #3fa47a 0%, #1f6b4a 100%);
-  color: #ffffff;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.side-link-active,
+.side-link-active:hover {
+  color: #fff;
+  background: #2d7258;
+  box-shadow: inset 3px 0 #89d6ab;
+}
+
+.side-bottom {
+  margin-top: auto;
+  padding: 18px 17px 23px;
+}
+
+.side-foot {
+  color: #6f9385;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 10px;
+  display: block;
 }
 
 /* ===== Cabeçalhos de tabela (maiúsculas pequenas) ===== */
