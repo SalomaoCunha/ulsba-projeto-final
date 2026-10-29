@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUtentesFicticios } from '../services/utenteService'
 import type { Utente } from '../types/utente'
+import {getNivelPrioridade} from '@/config/niveis';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
@@ -14,14 +15,15 @@ const UtentesPage: React.FC = () => {
 
   // Função auxiliar para renderizar a cor certa da prioridade
   const getBadgePrioridade = (prioridade: string) => {
-    switch (prioridade) {
-      case 'Urgente 0 dias': return <span className="badge bg-danger fw-normal px-2 py-1">Urgente 0 dias</span>;
-      case 'Urgente 1 dia': return <span className="badge text-white fw-normal px-2 py-1" style={{ backgroundColor: '#fd7e14' }}>Urgente 1 dia</span>;
-      case 'Urgente 2 dias': return <span className="badge bg-warning text-dark fw-normal px-2 py-1">Urgente 2 dias</span>;
-      case 'Não urgente 1': return <span className="badge text-dark fw-normal px-2 py-1" style={{ backgroundColor: '#ffda6a' }}>Não urgente 1</span>;
-      case 'Não urgente 2': return <span className="badge bg-success fw-normal px-2 py-1">Não urgente 2</span>;
-      default: return <span className="badge bg-secondary fw-normal px-2 py-1">{prioridade}</span>;
-    }
+    const nivel = getNivelPrioridade(prioridade);
+    const { corDot, corTexto, label } = nivel ?? { corDot: '#6c757d', corTexto: '#fff', label: prioridade };
+
+    return (
+      <span className='badge fw-normal px-2 py-1' style={{ backgroundColor: corDot, color: corTexto }}>
+        {label}
+      </span>
+    );
+
   };
 
   // Função auxiliar para renderizar o estado com o estilo do mockup

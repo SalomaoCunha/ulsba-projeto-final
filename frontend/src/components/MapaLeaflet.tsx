@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Utente } from '../types/utente'
-import { getNivelPrioridade } from '@/config/niveis';
+import { NIVEIS_PRIORIDADE, getNivelPrioridade } from '@/config/niveis';
 
 // O mapa vive numa grelha flexível (altura calculada em runtime); sem isto,
 // o Leaflet mede o contentor antes do layout estabilizar e fica com o
@@ -61,11 +61,12 @@ const MapaLeaflet: React.FC<Props> = ({ utentes, filtroAtivo }) => {
       <div className="position-absolute bg-white p-3 rounded shadow-sm border" style={{ top: '20px', left: '20px', zIndex: 1000, width: '180px', opacity: 0.95 }}>
         <h6 className="fw-bold text-dark mb-3 small">Legenda</h6>
         <div className="d-flex flex-column gap-2 small mb-3">
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-danger" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Urgente 0 dias</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#fd7e14' }}></span><span className="text-muted">Urgente 1 dia</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-warning" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Urgente 2 dias</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#ffda6a' }}></span><span className="text-muted">Não urgente 1</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-success" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Não urgente 2</span></div>
+          {NIVEIS_PRIORIDADE.map(nivel => (
+            <div key={nivel.valor} className="d-flex align-items-center gap-2">
+              <span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: nivel.corDot }}></span>
+              <span className="text-muted">{nivel.label}</span>
+            </div>
+          ))}
         </div>
         <button className="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
           <i className="bi bi-funnel"></i> Filtrar Utentes
