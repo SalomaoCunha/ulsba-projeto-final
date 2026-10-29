@@ -29,7 +29,7 @@ interface Props {
 }
 
 const criarIconePersonalizado = (prioridade: string) => {
-  let cor = getNivelPrioridade(prioridade)?.corDot;
+  const cor = getNivelPrioridade(prioridade)?.corDot;
 
   const svgIcon = `
     <div style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">
