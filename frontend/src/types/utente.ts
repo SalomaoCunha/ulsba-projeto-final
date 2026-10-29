@@ -1,3 +1,5 @@
+import type { ComplexidadeValor, PrioridadeValor } from "@/config/niveis";
+
 export interface Utente {
   id: string | number;
   numeroUtente: string;
@@ -12,6 +14,7 @@ export interface Utente {
   lat: number;
   lng: number;
   notas: string;
-  prioridade: 'Urgente 0 dias' | 'Urgente 1 dia' | 'Urgente 2 dias' | 'Não urgente 1' | 'Não urgente 2';
+  prioridade: PrioridadeValor;
+  complexidade: ComplexidadeValor;
   estado: 'Ativo' | 'Inativo';
 }

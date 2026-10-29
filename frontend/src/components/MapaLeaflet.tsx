@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Utente } from '../types/utente'
+import { getNivelPrioridade } from '@/config/niveis';
 
 // O mapa vive numa grelha flexível (altura calculada em runtime); sem isto,
 // o Leaflet mede o contentor antes do layout estabilizar e fica com o
@@ -28,14 +29,7 @@ interface Props {
 }
 
 const criarIconePersonalizado = (prioridade: string) => {
-  let cor = '#6c757d';
-  switch (prioridade) {
-    case 'Urgente 0 dias': cor = '#dc3545'; break;
-    case 'Urgente 1 dia': cor = '#fd7e14'; break;
-    case 'Urgente 2 dias': cor = '#ffc107'; break;
-    case 'Não urgente 1': cor = '#ffda6a'; break;
-    case 'Não urgente 2': cor = '#20c997'; break;
-  }
+  let cor = getNivelPrioridade(prioridade)?.corDot;
 
   const svgIcon = `
     <div style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">

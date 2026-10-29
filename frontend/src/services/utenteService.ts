@@ -16,6 +16,7 @@ const utentes: Utente[] = [
     lng: -7.863,
     notas: 'Utente autónoma. Vive com o filho.',
     prioridade: 'Urgente 0 dias',
+    complexidade: 'Altamente complexo',
     estado: 'Ativo',
   },
   {
@@ -33,6 +34,7 @@ const utentes: Utente[] = [
     lng: -7.867,
     notas: 'Precisa de ajuda para subir escadas.',
     prioridade: 'Urgente 1 dia',
+    complexidade: 'Complexo',
     estado: 'Ativo',
   },
   {
@@ -50,6 +52,7 @@ const utentes: Utente[] = [
     lng: -7.859,
     notas: 'Segue acompanhamento ambulatorial.',
     prioridade: 'Urgente 2 dias',
+    complexidade: 'Não complexo',
     estado: 'Ativo',
   },
   {
@@ -67,6 +70,7 @@ const utentes: Utente[] = [
     lng: -7.861,
     notas: 'Visitas apenas da parte da tarde.',
     prioridade: 'Não urgente 1',
+    complexidade: 'Complexo',
     estado: 'Ativo',
   },
   {
@@ -84,6 +88,7 @@ const utentes: Utente[] = [
     lng: -7.865,
     notas: 'Processo encerrado; sem visitas agendadas.',
     prioridade: 'Não urgente 2',
+    complexidade: 'Não complexo',
     estado: 'Inativo',
   },
 ];

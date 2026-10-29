@@ -1,17 +1,11 @@
 import React from 'react';
+import { NIVEIS_PRIORIDADE } from '@/config/niveis';
 
 interface Props {
   filtroAtivo: string | null;
   onAlterarFiltro: (prioridade: string | null) => void;
 }
 
-const NIVEIS = [
-  { valor: 'Urgente 0 dias', icone: 'bi-exclamation-triangle-fill', cor: 'var(--prioridade-1-dot)', texto: '#fff' },
-  { valor: 'Urgente 1 dia', icone: 'bi-bell-fill', cor: 'var(--prioridade-2-dot)', texto: '#fff' },
-  { valor: 'Urgente 2 dias', icone: 'bi-exclamation-circle-fill', cor: 'var(--prioridade-3-dot)', texto: '#4a3b00' },
-  { valor: 'Não urgente 1', icone: 'bi-clock-fill', cor: 'var(--prioridade-4-dot)', texto: '#4a3b00' },
-  { valor: 'Não urgente 2', icone: 'bi-check-circle-fill', cor: 'var(--prioridade-5-dot)', texto: '#fff' },
-];
 
 const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) => {
 
@@ -24,7 +18,7 @@ const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) =>
       <h6 className="fw-bold text-dark text-center mb-3 flex-shrink-0">Prioridade / Urgência</h6>
 
       <div className="d-flex flex-column gap-2" style={{ overflowY: 'auto', minHeight: 0 }}>
-        {NIVEIS.map((nivel) => {
+        {NIVEIS_PRIORIDADE.map((nivel) => {
           const ativo = filtroAtivo === null || filtroAtivo === nivel.valor;
           return (
             <button
@@ -32,8 +26,8 @@ const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) =>
               onClick={() => handleClick(nivel.valor)}
               className="btn border-0 d-flex align-items-center gap-2 text-start py-2 px-3"
               style={{
-                backgroundColor: nivel.cor,
-                color: nivel.texto,
+                backgroundColor: nivel.corDot,
+                color: nivel.corTexto,
                 borderRadius: '999px',
                 opacity: ativo ? 1 : 0.45,
                 fontWeight: 600,
