@@ -19,14 +19,14 @@ As alterações descrevem **requisitos propostos ou clarificados**, não regras 
 
 - **Correção de terminologia (31/10/2026):** o campo **Cuidador Principal** mantém-se para identificar o familiar ou outra pessoa que presta cuidados ao utente no domicílio. No Dashboard, o campo **Médico Assistente** é substituído por **Equipa Responsável**, que designa a equipa de profissionais responsável pelo acompanhamento do utente. São pessoas/funções distintas e não devem partilhar o mesmo campo de dados.
 - **Requisitos funcionais existentes revistos (26):** RF02, RF03, RF07, RF08, RF10, RF11, RF12, RF14, RF17, RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF29, RF31, RF32, RF33, RF34, RF35, RF37 e RF39.
-- **Requisitos funcionais acrescentados (7):** RF43 a RF49, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas e restrições de acesso por equipa.
+- **Requisitos funcionais acrescentados (8):** RF43 a RF50, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas, restrições de acesso por equipa e construção da volta a partir de um dia vazio do calendário.
 - **Requisitos não funcionais revistos (9):** RNF02, RNF04, RNF05, RNF06, RNF12, RNF15, RNF22, RNF26 e RNF27. Não foram introduzidos novos RNF.
 - **Prioridades propostas:** RF08, RF12 e RF24 passam de *Should* para *Must*; RNF04, RNF06 e RNF22 passam de *Should* para *Must*. Esta alteração depende da concordância da equipa e da tutora, tendo em conta o prazo disponível.
-- **Totais da proposta v0.3:** **49 requisitos funcionais (28 Must, 15 Should, 6 Could)** e **27 requisitos não funcionais (16 Must, 10 Should, 1 Could)**. Na v0.2 existiam 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF (13 Must, 13 Should, 1 Could).
+- **Totais da proposta v0.3:** **50 requisitos funcionais (29 Must, 15 Should, 6 Could)** e **27 requisitos não funcionais (16 Must, 10 Should, 1 Could)**. Na v0.2 existiam 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF (13 Must, 13 Should, 1 Could).
 
 ### Consolidação técnica e decisões propostas para a versão 0.3
 
-Esta revisão mantém a numeração **RF01–RF42** da versão partilhada e acrescenta **RF43–RF49**, sem reutilizar identificadores. Mantém igualmente os 27 RNF em vigor. Os critérios de aceitação foram aprofundados para possibilitar testes objetivos. **O documento não constitui validação clínica ou operacional da ULSBA**; as decisões de âmbito e a priorização abaixo permanecem propostas.
+Esta revisão mantém a numeração **RF01–RF42** da versão partilhada e acrescenta **RF43–RF50**, sem reutilizar identificadores. Mantém igualmente os 27 RNF em vigor. Os critérios de aceitação foram aprofundados para possibilitar testes objetivos. **O documento não constitui validação clínica ou operacional da ULSBA**; as decisões de âmbito e a priorização abaixo permanecem propostas.
 
 - **Urgência, complexidade e PPS são conceitos distintos:** a urgência determina a prioridade clínica; a complexidade pode apoiar a estimativa de duração; o PPS não determina automaticamente a complexidade sem regra clínica validada (RF12 e RF14).
 - **Planeamento:** uma volta confirmada pode ter uma ou mais visitas; uma volta em rascunho pode ainda não ter visitas. Uma paragem partilhada não implica que um profissional consiga executar atos clínicos simultâneos.
@@ -224,6 +224,7 @@ Estes requisitos complementam os RF01–RF42, sem os renumerar. A existência de
 | RF47 (novo) | Após registar atraso, **propor** novas previsões para visitas seguintes da volta e mostrar conflitos de horários, recursos ou janelas; confirmar alterações antes de as gravar, mantendo histórico e preservando horas reais já registadas. | Atualizações automáticas silenciosas poderiam destruir evidência temporal e criar conflitos. | D, E | Should |
 | RF48 (novo) | Registar ficha de viatura (identificação, tipo de motorização/energia, capacidade de lugares, autonomia quando aplicável e respetiva unidade, manutenção/revisões e intervalos de indisponibilidade); calcular disponibilidade para um período a partir de reservas e bloqueios. | Uma viatura «disponível agora» pode estar ocupada no horário de uma visita futura. | D, E | Should |
 | RF49 (novo) | Aplicar o âmbito funcional de cada utilizador: profissionais consultam por omissão as suas equipas, voltas e utentes associados, e só editam o permitido; coordenadores autorizados têm vista geral. A ausência do filtro «Equipas» na agenda por utente é opção de interface, **não substitui** esta verificação de autorização. | Especifica a regra funcional que RNF02/RNF22 obrigam a proteger na API. | D, E | Must |
+| RF50 (novo) | Ao selecionar um dia sem voltas no calendário, apresentar um painel de construção da volta com os utentes a visitar (prioridade, complexidade, equipa responsável, última visita, localização), as equipas e as viaturas disponíveis nesse dia e um mapa. O utilizador escolhe equipa, viatura e utentes, ordena as paragens, define as horas previstas de partida e de chegada e guarda a volta. Autonomia insuficiente ou falta de lugares geram aviso e permitem gravar; sobreposições de equipa, profissional, viatura ou utente seguem o RF20 e o RF21. | A docente pediu, na reunião de 28/10/2026, que ao clicar na caixa de um dia vazio se veja tudo o que é preciso para construir a rota. Junta num só ecrã informação hoje dispersa. A ordem das paragens é manual; a sugestão automática pertence ao RF27/RF28. Autonomia e lugares dependem dos dados do RF48. | D | Must |
 
 ### 5.11 Critérios de aceitação dos requisitos Must
 
@@ -259,6 +260,7 @@ Os valores numéricos são metas de trabalho a validar. Os critérios abaixo cob
 | RF45 | Notas clínicas e ocorrências operacionais ficam separadas; autor/instante são atribuídos pela API, alteração deixa trilho e não é possível falsificar autoria nem consultar registos de outra equipa sem permissão. |
 | RF46 | A API rejeita fim anterior/igual ao início para visita concluída; o cálculo atravessa meia-noite e mudança de hora usando instantes. Duração breve acima de zero mostra aviso configurável e pede confirmação, sem rejeitar automaticamente. |
 | RF49 | Uma conta de profissional não consulta/edita dados não atribuídos por URL direta nem pedido API. A vista Utente não mostra filtro Equipa, mantendo as mesmas restrições de autorização. |
+| RF50 | A partir de um dia sem voltas é possível criar uma volta com equipa, viatura e utentes sem sair do painel, e ela aparece no calendário nesse dia. O painel só lista equipas e viaturas disponíveis nesse dia. Autonomia insuficiente ou lugares a menos mostram aviso e não impedem a gravação; uma equipa ou viatura já ocupada no mesmo intervalo é recusada pela API. |
 
 ---
 
@@ -362,6 +364,7 @@ Questões que devem ser fechadas na próxima reunião de acompanhamento ou diret
 17. **Viaturas e manutenção.** Confirmar categorias de combustível, unidade da autonomia (km, percentagem/energia), datas e periodicidades de revisão, responsável pelas indisponibilidades e se autonomia condiciona ou apenas alerta o planeamento (RF20, RF21 e RF48).
 18. **Vistas e terminologia da agenda.** Confirmar se «Unidade» corresponde ao calendário geral; se a equipa responsável pelo utente é fixa e se existem exceções que justifiquem filtro por equipa na vista Utente; confirmar estados e horários que devem aparecer no cartão mensal (RF19, RF24, RF43 e RF44).
 19. **Ocorrências e histórico.** Validar tipos de ocorrências, possibilidade de editar registos já guardados, correções por adenda e perfis com acesso ao histórico; confirmar política de auditoria (RF45, RF46, RNF04 e RNF23).
+20. **Construção da volta a partir do dia vazio.** Confirmar se o painel é lateral, modal ou ecrã completo; se lista só utentes com visita em atraso ou todos os ativos; se um utente pode estar em duas voltas no mesmo dia; e se a autonomia da viatura apenas alerta ou condiciona a gravação (RF50, RF20, RF21 e RF48).
 
 ## 9. Rastreabilidade
 
@@ -372,7 +375,7 @@ Cada objetivo da proposta tem de ter pelo menos um requisito que o realize.
 | O1 Aceder à informação relevante dos utentes | RF01, RF02, RF03, RF05, RF06, RF07, RF08, RF31 |
 | O2 Georreferenciar e visualizar a distribuição geográfica | RF04, RF09, RF15, RF16, RF17, RF18 |
 | O3 Definir e atualizar prioridades de atendimento | RF10, RF11, RF12, RF13, RF14 |
-| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF28, RF43, RF44, RF47, RF48 |
+| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF28, RF43, RF44, RF47, RF48, RF50 |
 | O5 Registar as visitas domiciliárias | RF29, RF30, RF31, RF32, RF45, RF46 |
 | O6 Sistematizar e disponibilizar informação de acompanhamento | RF26, RF33, RF34, RF35 |
 | Suporte transversal (acessos, dados de teste, comunicação, importação) | RF36, RF37, RF38, RF39, RF40, RF41, RF42, RF49 |
@@ -384,9 +387,9 @@ Os requisitos não funcionais não realizam um objetivo, protegem a forma como o
 | RNF01, RNF22, RNF23, RNF24 (dados e privacidade) | RF02, RF03, RF26, RF40, RF45, RF49 |
 | RNF02, RNF03, RNF25 (acesso e segurança) | RF03, RF37, RF38, RF45, RF49 |
 | RNF04 (auditoria) | RF03, RF10, RF29, RF45, RF46, RF47 |
-| RNF05, RNF06, RNF07, RNF08 (usabilidade) | RF01, RF15, RF19, RF29, RF33, RF44, RF46 |
+| RNF05, RNF06, RNF07, RNF08 (usabilidade) | RF01, RF15, RF19, RF29, RF33, RF44, RF46, RF50 |
 | RNF09, RNF10, RNF11 (desempenho e escala) | RF15, RF16, RF20, RF43, RF48 |
-| RNF12, RNF13, RNF26, RNF27 (integridade) | RF04, RF19, RF21, RF29, RF43, RF46, RF47 |
+| RNF12, RNF13, RNF26, RNF27 (integridade) | RF04, RF19, RF21, RF29, RF43, RF46, RF47, RF50 |
 | RNF14 (disponibilidade, só como recomendação para produção) | Todos |
 | RNF15, RNF17, RNF18, RNF19, RNF28 (qualidade da construção) | Todos |
 | RNF20, RNF21 (interoperabilidade) | RF26, RF27, RF34, RF43 |
@@ -400,6 +403,7 @@ Os requisitos não funcionais não realizam um objetivo, protegem a forma como o
 | Equipa responsável | Campo na ficha; composição por período; atribuição temporal | Proposta técnica; exceções **por validar** |
 | Agenda por utente | Horário da visita; sem filtro de equipas | Alinhado com os exemplos do frontend/reunião |
 | Voltas e paragens | Volta pode conter uma visita; paragem pode agrupar utentes | Correção técnica necessária |
+| Construção da volta | Painel aberto a partir do dia vazio do calendário; ordem das paragens manual | Pedido da docente; formato do painel **por validar** |
 | Conflitos | Equipa, profissional, viatura e utente; não confundir mesmo local com simultaneidade clínica | Regra de integridade proposta |
 | Atrasos | Proposta de replaneamento com confirmação e histórico | Sugestão da docente; algoritmo **por validar** |
 | PDF/Excel | Opcional, não integrar no caminho crítico | Backlog |
@@ -455,6 +459,7 @@ Este anexo separa as **sugestões da docente**, os requisitos documentados e a s
 | Viaturas | Listagem, características, combustível/autonomia, lugares, disponibilidade, revisões e reparações. | RF20, RF48 | Confirmar campos e calendário de indisponibilidade. |
 | Agenda | Planeamento manual; algoritmo como proposta, aceite/ajustado por utilizador quando disponível. | RF19, RF26, RF27 | Integração do algoritmo continua pendente de definição de âmbito. |
 | Agenda | Calendário mensal com perspetivas Unidade, Utente e Profissional; início/fim dos eventos; selecionar volta para detalhe. | RF19, RF43, RF44 | Confirmar significado dos horários e exceções à equipa responsável fixa. |
+| Agenda | Clicar na caixa de um dia vazio mostra utentes a visitar, equipas, viaturas e mapa para construir a volta, com horas de partida e chegada. | RF50, RF20, RF21, RF48 | Confirmar formato do painel e se os avisos de autonomia bloqueiam ou apenas alertam. |
 | Volta | Cabeçalho, visitas ordenadas, mapa, ocorrências gerais, histórico e horários previstos/reais. | RF43–RF45 | Esclarecer fonte das distâncias e visibilidade clínica. |
 | Visitas | Criação pendente/planeada, edição dos instantes reais, duração, alerta de valores suspeitos, ocorrências com autor e atrasos. | RF23, RF29, RF45–RF47, RNF12 | Confirmar quem pode corrigir horários e regras de confirmação. |
 
