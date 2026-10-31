@@ -4,24 +4,34 @@
 
 | | |
 |---|---|
-| Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (IPBeja, ESTG) |
+| Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (UPBeja, ESTIG) |
 | Tutora | Elsa Rodrigues |
-| Versão | 0.2, para validação pela tutora |
-| Data | 11 de outubro de 2026 |
+| Versão | 0.3, versão para entrega, após a reunião de 28/10/2026 (requisitos pendentes de validação com a ULSBA) |
+| Data | 31 de outubro de 2026 |
 
 ---
 
-## Alterações face à versão 0.1
+## Alterações face à versão 0.2
 
-Esta versão mantém a organização temática da versão 0.1, mas reorganiza a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos não funcionais mantêm a numeração da versão 0.1 e os novos (RNF22 a RNF28) continuam a sequência. Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
+A **versão 0.3** atualiza a **v0.2, de 11/10/2026**. Incorpora as observações registadas na reunião com a docente Maria Teresa de Abreu Luís Godinho, em **28/10/2026**, bem como os esclarecimentos resultantes da revisão técnica e da evolução do frontend.
 
-- **Hipóteses sobre a ULSBA.** Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a sua operação constam do Anexo A e servem de base aos requisitos com origem U, que têm de ser validados com a ULSBA.
-- **Requisitos funcionais novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42. Correspondem à gestão de locais, aos estados e à lista de utentes, à geocodificação, à classificação IPCPAL, às visitas pendentes, aos profissionais, à sugestão de ordem das paragens, à exportação em PDF, à importação de dados e ao aviso de ambiente de teste.
-- **Requisitos funcionais alterados:** RF02, RF03, RF04, RF05, RF10, RF11, RF12, RF13, RF15, RF16, RF17, RF19, RF20, RF21, RF22, RF25, RF26, RF29, RF30, RF32, RF33, RF34, RF37, RF38, RF39 e RF40.
-- **Prioridades alteradas:** RF05 de Should para Must; RF38 de Must para Should; RF04 passa a cobrir só a marcação manual do ponto (a geocodificação automática é o novo RF09, Should).
-- **Requisitos não funcionais.** Passam a ter prioridade e método de verificação. Há sete novos (RNF22 a RNF28). O RNF13 e o RNF14 foram reformulados, porque falam de produção e a produção está fora do âmbito. O RNF01 e o RNF04 foram precisados. O RNF16 passou para a secção 7.
-- **Novas secções:** 5.10 (critérios de aceitação dos requisitos Must), pontos em aberto 9 a 15 e Anexo A (hipóteses de trabalho sobre a operação da ULSBA).
-- **Totais:** 42 requisitos funcionais (20 Must, 16 Should, 6 Could) e 27 requisitos não funcionais em vigor.
+As alterações descrevem **requisitos propostos ou clarificados**, não regras clínicas ou operacionais confirmadas pela ULSBA. A existência de uma interface no protótipo não demonstra que a funcionalidade esteja implementada na API, na base de dados ou em termos de segurança.
+
+- **Correção de terminologia (31/10/2026):** o **Cuidador Principal** (familiar ou outra pessoa que presta cuidados no domicílio) mantém-se. No Dashboard, o **Médico Assistente** é substituído por **Equipa Responsável** (profissionais responsáveis pelo acompanhamento). São entidades distintas e não partilham o mesmo campo.
+- **Requisitos funcionais existentes revistos (26):** RF02, RF03, RF07, RF08, RF10, RF11, RF12, RF14, RF17, RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF29, RF31, RF32, RF33, RF34, RF35, RF37 e RF39.
+- **Requisitos funcionais acrescentados (10):** RF43 a RF52, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas, restrições de acesso por equipa, construção da volta a partir de um dia vazio do calendário, impressão do relatório da volta e ecrã de equipas.
+- **Requisitos não funcionais revistos (9):** RNF02, RNF04, RNF05, RNF06, RNF12, RNF15, RNF22, RNF26 e RNF27. Não foram introduzidos novos RNF.
+- **Prioridades propostas:** RF08, RF12 e RF24 passam de *Should* para *Must*; RF06, RF23 e RF31 passam de *Must* para *Should*, tal como o novo RF46, para conter a carga; RNF04, RNF06 e RNF22 passam de *Should* para *Must*. Estas alterações dependem da concordância da equipa e da tutora, tendo em conta o prazo disponível.
+- **Totais da proposta v0.3:** **52 requisitos funcionais (25 Must, 21 Should, 6 Could)** e **27 requisitos não funcionais (16 Must, 10 Should, 1 Could)**. Na v0.2 existiam 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF (13 Must, 13 Should, 1 Could).
+
+### Consolidação técnica e decisões propostas para a versão 0.3
+
+Esta revisão mantém RF01–RF42 e acrescenta **RF43–RF52**, sem reutilizar identificadores, e mantém os 27 RNF. Os critérios de aceitação foram aprofundados para permitir testes objetivos. **O documento não constitui validação clínica ou operacional da ULSBA**; as decisões de âmbito e a priorização permanecem propostas.
+
+- **Urgência, complexidade e PPS são conceitos distintos:** a urgência determina a prioridade clínica; a complexidade pode apoiar a estimativa de duração; o PPS não determina automaticamente a complexidade sem regra clínica validada (RF12 e RF14).
+- **Algoritmo:** a exportação de dados para otimização (RF26) é obrigatória. A integração (RF27, *Could*) depende do âmbito e da docente de Matemática; o planeamento manual funciona autonomamente.
+- **Funcionalidades não bloqueantes:** RF09, RF14, RF28, RF35, RF36 e RF41 são candidatos a desenvolvimento posterior. RF38 pode seguir-se à autenticação base e RF34 pode começar por relatórios simples.
+- **Planeamento, viaturas, calendário e segurança:** tratados nos RF19 a RF24, RF37, RF43 a RF52, RNF02 e RNF22; ver também a secção 9.1.
 
 ---
 
@@ -43,8 +53,8 @@ Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a
 - Gestão dos locais onde os utentes estão e de onde as equipas partem (domicílios, lares, unidades e a base de Beja).
 - Georreferenciação e visualização da distribuição dos utentes.
 - Definição e atualização das prioridades de atendimento.
-- Planeamento e gestão da agenda de visitas e da utilização das viaturas.
-- Registo das visitas domiciliárias.
+- Planeamento manual de visitas e voltas, agenda (Unidade, Utente e Profissional), composição de equipas e disponibilidade temporal das viaturas.
+- Registo das visitas domiciliárias, horários previstos e reais, ocorrências e respetiva autoria.
 - Informação agregada para acompanhamento da atividade.
 - Extração dos dados necessários ao algoritmo de otimização de rotas.
 
@@ -58,19 +68,19 @@ Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a
 
 ## 3. Utilizadores
 
-A proposta não define perfis de utilizador, mas o mockup mostra uma sessão da enfermeira coordenadora. Partimos de três perfis, a confirmar com a ULSBA.
+A proposta não define perfis de utilizador, mas o mockup mostra uma sessão da enfermeira coordenadora. Partimos de três perfis, a confirmar com a ULSBA. A operação com dados clínicos de utentes nesta entrega usa apenas **dados fictícios**.
 
 | Perfil | O que faz na plataforma |
 |---|---|
-| Coordenador | Gere prioridades, monta a agenda, atribui viaturas, consulta relatórios. |
-| Profissional de saúde | Consulta fichas, vê o plano do dia, regista visitas. |
+| Coordenador | Gere prioridades, utentes (nos limites da autorização), voltas, agenda, equipas e viaturas; consulta relatórios. |
+| Profissional de saúde | Consulta os utentes e as voltas a que tem acesso, regista horários reais e ocorrências e edita os campos para os quais tem autorização. |
 | Administrador | Gere utilizadores, parâmetros e dados de referência. Não precisa de ver dados clínicos (RNF22). |
 
-O perfil de acesso (o que se pode fazer na plataforma) é diferente da função clínica da pessoa (médico, enfermeiro). A mesma enfermeira pode ter o perfil de coordenador. Os dois conceitos devem ficar separados.
+O **Cuidador Principal** é o familiar ou outra pessoa que presta habitualmente cuidados ao utente no domicílio; não corresponde a uma equipa clínica. A **Equipa Responsável** é o conjunto de profissionais de saúde responsável pelo acompanhamento do utente. O perfil de acesso (o que se pode fazer na plataforma) é diferente da função clínica da pessoa (médico, enfermeiro). A mesma enfermeira pode ter o perfil de coordenador. Os dois conceitos devem ficar separados. Uma **equipa responsável pelo utente** não deve ser confundida com a **equipa executante de uma visita**. A reunião sugeriu ausência de rotação habitual e a ocultação do filtro de equipas na vista Utente; isso não basta para proibir substituições excepcionais na base de dados sem validação com a ULSBA.
 
 ## 4. Convenções
 
-**Prioridade (MoSCoW).** *Must* é indispensável para a entrega de fevereiro. *Should* entra se o prazo o permitir. *Could* é desejável, mas dispensável. Nada foi classificado como *Won't*; o que fica de fora está na secção 2. A prioridade aplica-se a requisitos funcionais e não funcionais.
+**Prioridade (MoSCoW).** *Must* é indispensável para a entrega de fevereiro, condicionado a aprovação formal do âmbito e da capacidade da equipa. *Should* entra se o prazo o permitir. *Could* é desejável, mas dispensável. Nada foi classificado como *Won't*; o que fica de fora está na secção 2. A prioridade aplica-se a requisitos funcionais e não funcionais.
 
 **Origem.** Indica de onde vem o requisito, para ser possível defendê-lo.
 
@@ -80,6 +90,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | M | Mockup |
 | U | Hipótese de trabalho sobre a operação da ULSBA (Anexo A), ainda por validar com a ULSBA |
 | E | Decisão da equipa, deduzida do contexto, a validar |
+| D | Observação/sugestão registada na reunião com a docente em 28/10/2026, pendente de validação operacional com a ULSBA |
 
 **Objetivos da proposta.** A proposta não os numera. Neste documento seguem a ordem em que aparecem e usam-se os códigos O1 a O6.
 
@@ -92,7 +103,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | O5 | Registar as visitas domiciliárias |
 | O6 | Sistematizar e disponibilizar informação de apoio ao acompanhamento da atividade |
 
-**Verificação.** Cada requisito não funcional indica como se verifica (teste, medição ou inspeção). Os critérios de aceitação dos requisitos funcionais *Must* estão na secção 5.10.
+**Verificação.** Cada requisito não funcional indica como se verifica (teste, medição ou inspeção). Os critérios de aceitação dos requisitos funcionais *Must* estão na secção 5.11.
 
 ---
 
@@ -103,70 +114,70 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF01 | Pesquisar um utente por número ou por nome, com sugestões à medida que se escreve. | O mockup tem os dois campos de pesquisa. Os nomes repetem-se muito (a lista de exemplo tem quatro "Maria Teresa"), por isso o número serve para desambiguar. | M | Must |
-| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, cuidador principal, local (tipo, morada, código postal, localidade e concelho) e coordenadas, médico assistente, situação clínica, datas de referenciação, de triagem e de admissão, data da última visita, notas e estado. | É o primeiro objetivo da proposta (O1) e o painel central do mockup. Os campos de datas, género e concelho são uma hipótese de trabalho (Anexo A, nota 4), a validar com a ULSBA. | P, M, U | Must |
-| RF03 (alt.) | Criar, editar e inativar utentes, sem apagamento físico durante a atividade. Os prazos de conservação e eliminação ficam por definir (RNF23). | A ficha tem um estado ("Ativo"). Um utente que sai do acompanhamento deixa de entrar no planeamento, mas o histórico de visitas tem de se manter. | M, E | Must |
+| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, **Cuidador Principal** (familiar ou outra pessoa que habitualmente presta cuidados no domicílio), local (tipo, morada, código postal, localidade, concelho e coordenadas), **Equipa Responsável** (profissionais de saúde responsáveis pelo acompanhamento), situação clínica, datas de referenciação, triagem e admissão, última visita, notas, prioridade, complexidade e estado. No Dashboard, **manter «Cuidador Principal» e substituir o campo «Médico Assistente» por «Equipa Responsável»**. Os dois campos representam entidades distintas. | O1 e painel do mockup; esclarecimento da reunião sobre o cuidador informal e a equipa clínica. O cuidador não é substituído por informação da equipa. Outros campos clínicos carecem de validação. | P, M, U, D | Must |
+| RF03 (alt.) | Criar, editar e inativar utentes, sem apagamento físico durante a atividade; disponibilizar formulário de edição com campos editáveis apenas a profissionais autorizados. Manter histórico e respeitar as regras de conservação por definir (RNF23). | A docente salientou que o botão Editar deve funcionar e que não basta ocultar campos a utilizadores sem permissão: a API deve rejeitar alterações não autorizadas. | M, E, D | Must |
 | RF04 (alt.) | Definir ou corrigir as coordenadas de um utente ou de um local marcando o ponto no mapa, com validação de que o ponto está no território. | A população é dispersa e muitas moradas rurais não são resolvidas bem por geocodificação automática. Sem coordenadas certas, mapa e rotas não servem. | P | Must |
 | RF05 (alt.) | Registar o local onde o utente se encontra (domicílio, lar, unidade de cuidados continuados ou unidade de cuidados paliativos), com nome da instituição, morada, localidade, contacto telefónico e concelho. | Admite-se que haja utentes em lares e unidades (Serpa e Montemor, por exemplo), com implicações no acesso, na duração da visita e nas rotas (Anexo A, nota 4). | U | Must |
-| RF06 (novo) | Gerir os locais como entidades próprias (domicílios, lares, unidades e a base de partida em Beja), partilháveis por vários utentes. | Vários utentes no mesmo lar ou unidade são uma só paragem para a equipa. Sem o local como entidade, a morada e as coordenadas repetem-se e podem ficar diferentes. | U, E | Must |
-| RF07 (novo) | Registar as datas de referenciação e de admissão e acompanhar o estado do utente (referenciado, ativo, inativo). | Admite-se que a ULSBA registe estas datas (Anexo A, nota 4). Os estados e as readmissões estão por confirmar (ponto 8.11). | U, E | Should |
-| RF08 (novo) | Listar utentes com filtros (prioridade, concelho, tipo de local, estado, sem visita há mais de um número de dias) e ordenação, exportável em CSV. | O mockup tem a secção "Utentes" e o botão "Ver Lista de Utentes". O RF16 filtra só o mapa. | M, E | Should |
+| RF06 (novo) | Gerir os locais como entidades próprias (domicílios, lares, unidades e a base de partida em Beja), partilháveis por vários utentes. | Vários utentes no mesmo lar ou unidade são uma só paragem para a equipa. Sem o local como entidade, a morada e as coordenadas repetem-se e podem ficar diferentes. | U, E | Should |
+| RF07 (novo) | Acompanhar o ciclo de vida do utente (referenciado, ativo, inativo e eventuais readmissões), preservando datas de transição, motivo e histórico. As datas de referenciação/admissão são apresentadas na ficha (RF02), não introduzidas como campos redundantes. | Distingue dados que se consultam na ficha (RF02) de transições de estado verificáveis. Estados definitivos e readmissões carecem de validação. | U, E | Should |
+| RF08 (alt.) | Listar utentes com colunas explícitas de **complexidade** e de **equipa responsável**, ordenação e filtros combináveis por prioridade, estado, complexidade, equipa responsável e **última visita entre duas datas**; concelho e tipo de local continuam suportados. Utilizadores autorizados podem **alterar a prioridade diretamente na lista**, o que cria uma nova avaliação de triagem (RF10). A exportação CSV, se implementada, pertence ao RF34 (Should). | Colunas, filtros e alteração da prioridade na lista foram solicitados pela docente e são necessários à utilização quotidiana da listagem. | M, E, D | Must |
 | RF09 (novo) | Sugerir coordenadas a partir da morada (geocodificação) e guardar o resultado, para o utilizador confirmar ou corrigir. | Poupa trabalho ao criar fichas. Depende de um serviço externo com política de utilização (secção 7), por isso não é indispensável. | E | Should |
 
 ### 5.2 Prioridades de atendimento
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF10 (alt.) | Atribuir e atualizar a triagem de cada utente através de avaliações, guardando data, autor e motivo de cada uma. A avaliação mais recente é a prioridade atual e as anteriores ficam como histórico. | Objetivo O3. O histórico permite perceber porque é que um utente passou a urgente e quando. O mockup prevê a atualização a partir do painel de prioridade, com reflexo imediato no mapa. A frequência das reavaliações está por confirmar (ponto 8.11). | P, M | Must |
-| RF11 (alt.) | Manter os níveis de triagem numa tabela configurável (código, designação, cor e ordem), sem alterar código. Os níveis iniciais são A, B, C e Não urgente. | O mockup usa cinco níveis em dias (urgente 0, 1 e 2 dias; não urgente 1 e 2), mas a hipótese de trabalho é uma triagem A, B, C e não urgente (Anexo A, nota 2). A proposta diz que os critérios têm de ser validados com a equipa, por isso o modelo tem de aguentar mudanças. | P, M, U | Must |
-| RF12 (alt.) | Registar, em cada avaliação, o PPS (percentagem) e a classificação IPCPAL (altamente complexo, complexo, não complexo). | Admite-se que a priorização assente no PPS e na classificação IPCPAL (Anexo A, nota 3). | U | Should |
-| RF13 (alt.) | Assinalar os utentes sem visita há mais do que um limite de dias configurável, por nível de prioridade. | O mockup tem um sino de notificações e uma contagem de urgentes. Admite-se que não há dias definidos para as visitas (Anexo A, nota 1), por isso o alerta não assenta num prazo da prioridade mas num limite configurável de dias sem visita. | M, E | Should |
-| RF14 (novo) | Derivar a classificação IPCPAL a partir do PPS, só depois de a regra ser confirmada pela equipa clínica. | Não se sabe se o IPCPAL resulta do PPS ou se são avaliações separadas (ponto 8.1). Até lá, registam-se os dois valores (RF12). | U, E | Could |
+| RF10 (alt.) | Criar avaliações de triagem imutáveis (com retificação auditada), com instante, autor autenticado, motivo e nível de urgência; mostrar como atual a avaliação válida mais recente. Uma reavaliação pode aumentar ou reduzir a urgência. | Reavaliações são eventos históricos; uma alteração clínica não pode sobrescrever silenciosamente os dados anteriores. | P, M, D | Must |
+| RF11 (alt.) | Gerir o catálogo configurável de níveis de **urgência** (código, designação, cor, ordem e eventuais prazos/limites) independentemente do catálogo IPCPAL/complexidade. A correspondência entre rótulos em dias do mockup e a hipótese A/B/C/Não urgente não é presumida. | Evita misturar duas escalas clínicas incompatíveis sem validação; o mapa e a ordenação usam o catálogo de urgência aprovado. | P, M, U, D | Must |
+| RF12 (alt.) | Registar **complexidade/IPCPAL** (altamente complexo, complexo, não complexo), com data e autor, separada da triagem de urgência; apresentar na ficha e na lista e utilizá-la para estimar duração através de regra configurável (RF39). O **PPS**, quando clinicamente aplicável, é registado como valor independente e não obriga ao cálculo automático de IPCPAL. | A docente tornou a complexidade central no planeamento e na duração, embora a regra clínica continue por validar. | U, D | Must |
+| RF13 (alt.) | Assinalar os utentes sem visita há mais do que um limite de dias configurável, por nível de prioridade. | O mockup tem um sino de notificações e uma contagem de urgentes. Admite-se que não há dias definidos para as visitas (Anexo A, nota 1), por isso o alerta usa um limite configurável de dias sem visita. | M, E | Should |
+| RF14 (novo) | [BACKLOG — sujeito a validação clínica] Permitir o cálculo automático da classificação de complexidade do utente (IPCPAL — Não complexo, Complexo ou Altamente complexo) com base no valor do PPS (Palliative Performance Scale), apenas se a ULSBA confirmar que existe uma regra clínica válida para estabelecer essa relação. Caso contrário, o PPS e a complexidade devem continuar a ser avaliados e registados separadamente pelos profissionais de saúde, conforme previsto no RF12. | O PPS avalia o estado funcional; o IPCPAL avalia a complexidade das necessidades. Um valor de PPS não implica um nível de complexidade, pelo que o cálculo automático exige validação clínica. | U, E | Could |
 
 ### 5.3 Mapa
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF15 (alt.) | Mostrar os utentes num mapa (Leaflet e OpenStreetMap), com marcadores coloridos pelo nível de triagem e legenda lida dos parâmetros do sistema. Cada nível tem também texto ou ícone (RNF08). | Objetivo O2, desenhado no mockup. A legenda não pode ficar escrita no código, porque os níveis podem mudar. | P, M | Must |
-| RF16 (alt.) | Filtrar o mapa por prioridade, concelho, tipo de local e estado. | O mockup tem o botão "Filtrar Utentes". Num território com vários concelhos, ver todos os pontos de uma vez deixa de ser útil. Os filtros por concelho, tipo de local e estado são uma decisão da equipa. | M, E | Must |
-| RF17 (alt.) | Mostrar indicadores do conjunto visível: utentes no mapa, urgentes, não urgentes e distância total aproximada da rota planeada selecionada (uma equipa num dia). | Barra inferior do mockup. Que níveis contam como "urgentes" fica por confirmar (ponto 8.1). | M | Should |
+| RF16 (alt.) | Filtrar o mapa por prioridade, concelho, tipo de local e estado. | O mockup tem o botão «Filtrar Utentes». Com vários concelhos, ver todos os pontos de uma vez deixa de ser útil. Os filtros por concelho, tipo de local e estado são decisão da equipa. | M, E | Must |
+| RF17 (alt.) | Apresentar indicadores calculados a partir do conjunto efetivamente visível e da volta selecionada: utentes, urgentes/não urgentes e distância prevista **apenas quando calculada**; mostrar «por calcular» quando não existe estimativa e indicar a origem da distância. | Evita apresentar distâncias fictícias como se fossem dados operacionais e alinha contadores com filtros e mapa. | M, E | Should |
 | RF18 | Abrir a ficha do utente ao selecioná-lo no mapa. | Evita repetir a pesquisa quando já se está a trabalhar sobre o mapa. | E | Should |
 
 ### 5.4 Agenda e viaturas
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF19 (alt.) | Criar, reagendar e cancelar visitas, com vista diária e semanal. | Objetivo O4 e secção "Agenda" do menu. Como não há dias fixos de visita, a agenda tem de aceitar alterações constantes. | P, M, U | Must |
-| RF20 (alt.) | Gerir as viaturas e as equipas e associar cada equipa a uma viatura. A associação é fixa por omissão e pode ser alterada. | A proposta fala de "agenda de visitas e viaturas". Admite-se que a operação use duas viaturas, cada uma com a sua equipa (Anexo A, nota 6). Se a associação variar de dia para dia, o modelo muda (ponto 8.2). | P, U | Must |
-| RF21 (alt.) | Atribuir visitas a uma equipa e viatura. Impedir o que é impossível: a mesma equipa em dois locais diferentes ao mesmo tempo, ou o mesmo utente em duas visitas simultâneas. Avisar quando o plano sai do habitual (horário das 9h30 às 16h, regresso a Beja às 16h), permitindo ao coordenador confirmar a exceção com um motivo. Várias visitas no mesmo local e à mesma hora (lar ou unidade) são permitidas e contam como uma só paragem. | São regras de planeamento admitidas como hipótese (Anexo A), a validar com a ULSBA. As 9h30 e as 16h são o horário "habitual" (Anexo A, nota 5), por isso são avisos e não bloqueios: uma urgência pode exigir uma exceção. | U, E | Must |
-| RF22 (alt.) | Propor, para um dia, a lista de utentes a visitar ordenada por triagem, depois por dias desde a última visita e depois por proximidade, que o coordenador pode ajustar. | Corresponde ao botão "Ver Lista de Utentes". É uma ajuda de planeamento que não depende do algoritmo. O peso de cada critério fica por confirmar (ponto 8.1). | M, E | Should |
-| RF23 (novo) | Registar a necessidade de uma visita (estado pendente), sem equipa nem hora, e atribuir a equipa e o horário mais tarde, quando a visita passa a planeada. Listar as visitas pendentes por prioridade. | Como se admite que não há dias fixos, o fluxo provável é primeiro surgir a necessidade e só depois haver planeamento. Sem este conceito, o alerta (RF13) e a lista sugerida (RF22) não têm base. | M, U, E | Must |
-| RF24 (novo) | Gerir os profissionais (nome, função, contacto, ativo), a composição habitual de cada equipa e registar quem foi a cada visita. | A composição das equipas pode mudar de dia para dia (ponto 8.2). Sem isto, o registo da visita não diz quem a fez. | P, U, E | Should |
+| RF19 (alt.) | Criar, reagendar e cancelar visitas manualmente; apresentar calendários mensal, semanal e diário nas perspetivas Unidade, Utente e Profissional. Em Unidade/Profissional, identificar volta e horas previstas de partida/regresso; na vista Utente, mostrar início/fim da **visita**. Não apresentar filtro de equipas na vista Utente, mantendo autorização na API. | Corresponde às imagens da reunião e às correções posteriores de horário e filtro; a ausência do filtro não implica uma regra rígida de equipa imutável. | P, M, U, D | Must |
+| RF20 (alt.) | Gerir equipas e viaturas como entidades próprias, com associação habitual opcional e atribuição temporal por volta, consultando reservas e indisponibilidades; rejeitar a utilização da mesma viatura em intervalos incompatíveis. | Uma viatura não pode ser considerada livre só porque o seu estado atual é «disponível»; manutenções e agenda interferem na disponibilidade. | P, U, D | Must |
+| RF21 (alt.) | Planear visitas/voltas após verificar horário, equipa, **profissionais efetivamente escalados**, viatura e utente. Rejeitar incompatibilidades temporais; permitir agrupar visitas de vários utentes na mesma **paragem/local**, sem presumir que uma única pessoa consegue executar duas visitas clínicas simultâneas. Exceções ao horário habitual exigem motivo e confirmação autorizada. | Distingue partilha de local de simultaneidade de atos clínicos; limita os conflitos de recursos e mantém horários da ULSBA como hipótese. | U, E, D | Must |
+| RF22 (alt.) | Produzir uma lista sugerida de necessidades de visita, ordenada primeiro pela prioridade/urgência clínica; desempates (dias sem visita, proximidade, etc.) configuráveis. Usar a **complexidade apenas na estimativa do esforço/duração**, sem a confundir com urgência, e permitir ajuste manual por coordenador. | A ordem clínica por urgência é distinta da duração estimada e da otimização de distâncias; pesos exigem validação. | M, E, D | Should |
+| RF23 (novo) | Registar uma visita **pendente** sem equipa, viatura, hora e eventualmente sem data de execução; apenas quando agendada exigir os elementos temporais e recursos definidos no RF21. Listar pendentes por prioridade e permitir passagem para planeada com histórico. | Evita criar horários fictícios na origem de uma necessidade de visita; define a transição entre os estados. | M, U, E | Should |
+| RF24 (alt.) | Gerir profissionais, função e estado, composição/escala das equipas ao longo do tempo, participantes efetivos nas visitas e designação legível das equipas (A, B, C, etc.). Manter distinção entre **equipa responsável pelo utente** e **equipa que executa a volta**, incluindo histórico de atribuições quando mudam. | Sem composição e participantes reais não existem calendário por profissional, controlo de conflitos e autoria confiável. | P, U, E, D | Must |
 
 ### 5.5 Rotas
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF25 (alt.) | Mostrar no mapa a rota planeada de cada viatura, com a ordem das paragens e a distância estimada em linha reta. | Permite ao coordenador ver o dia de cada equipa antes de o confirmar. A fonte das distâncias está por confirmar (ponto 8.5). | M, E | Should |
-| RF26 (alt.) | Exportar, para um dia e em formato estruturado (JSON ou CSV, com versão do formato), os dados de que o algoritmo precisa: paragens com coordenadas e os utentes de cada uma, prioridades, duração prevista das visitas, equipas e viaturas, ponto de partida, janela horária e matriz de distâncias. A exportação não inclui dados identificativos: os utentes vão com identificadores pseudonimizados. | A proposta diz que, nesta fase, se contempla "apenas a possibilidade de extração dos dados" para o algoritmo. É o mínimo obrigatório da componente de rotas. O formato exato deve ser acordado com a docente de Matemática (ponto 8.4). | P, E | Must |
-| RF27 | Integrar o algoritmo de otimização e importar o resultado como proposta de plano editável. | O botão "Gerar Rota Ótima" está no mockup, mas a proposta situa o algoritmo numa fase futura, ainda que mais adiante atribua à equipa a sua integração. Fica como *Could* até se esclarecer o ponto 8.4. Até lá, o botão fica visível mas inativo. | P, M | Could |
+| RF25 (alt.) | Apresentar a sequência das paragens da volta num mapa, diferenciando os pontos reais de uma linha ilustrativa. Mostrar percurso viário/duração ou distâncias apenas se existirem dados de encaminhamento, com fonte e método identificados. | Não é correto apresentar linhas retas como percurso efetivo sem indicar que são apenas uma representação. | M, E, D | Should |
+| RF26 (alt.) | Exportar dados estruturados e versionados para o algoritmo: identificadores técnicos, paragens geográficas com referência aos utentes associados, prioridades, estimativas de duração, recursos, janelas temporais, base e matriz de distâncias quando disponível. Minimizar os campos e evitar identificadores diretos; coordenadas continuam dados potencialmente reidentificáveis. | É o mínimo explícito da proposta. Pseudonimização não significa anonimização das localizações. O contrato será validado com a docente de Matemática. | P, E | Must |
+| RF27 (alt.) | [DEPENDENTE DE DECISÃO DE ÂMBITO] Integrar o resultado do algoritmo de otimização **quando disponibilizado pela docente de Matemática** como proposta de volta/agenda, sem aplicação automática silenciosa; permitir ao coordenador aceitar, ajustar ou rejeitar. | A proposta coloca a extração de dados nesta fase e a integração do algoritmo numa fase futura, embora preveja a responsabilidade de integração pela equipa. | P, M, D | Could |
 | RF28 (novo) | Sugerir uma ordem simples das paragens (vizinho mais próximo), como referência para comparar com o algoritmo. | O RF32 quer comparar planeamento manual e otimizado. Sem uma referência simples, não há com que comparar enquanto o algoritmo não existir. | E | Could |
 
 ### 5.6 Registo de visitas
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF29 (alt.) | Registar uma visita: data, hora de início e de fim reais, equipa, viatura, profissionais presentes, resultado (realizada ou cancelada, com motivo) e notas. | Objetivo O5. Uma visita realizada tem de ter início e fim reais. | P | Must |
+| RF29 (alt.) | Registar a execução da visita com estado, equipa, participantes efetivos, instantes reais de início/fim e notas/ocorrências com autor atribuído pelo servidor. Calcular duração pelos instantes; cancelamentos exigem motivo. Horários reais não são obrigatórios antes da conclusão. | Distingue visitas pendentes, planeadas, em curso, concluídas e canceladas, respeitando os estados e a auditoria. | P, D | Must |
 | RF30 (alt.) | Mostrar a "última visita" na ficha do utente, calculada a partir do histórico, e indicar quando o utente ainda não tem visitas. | O campo existe na ficha do mockup e não deve depender de preenchimento duplicado. Um utente recém-admitido ainda não tem visitas e a interface não pode falhar por isso. | M | Must |
-| RF31 | Consultar o histórico de visitas por utente, equipa e viatura. | Sem histórico não há acompanhamento da atividade (O6). | P | Must |
-| RF32 (alt.) | Calcular os quilómetros estimados por equipa e por dia. Registar os quilómetros reais (odómetro ou GPS) só se existir fonte. | A proposta quer melhorar a eficiência de um serviço com poucos recursos. Os quilómetros são o indicador mais direto para comparar planeamento manual e otimizado. Hoje só há estimativa por cálculo (ponto 8.5). | E | Should |
+| RF31 (alt.) | Consultar histórico de visitas por utente, equipa, viatura e profissional, em ordem temporal, incluindo alterações de agendamento e ocorrências visíveis conforme permissões. | Permite auditar o planeamento e as visitas executadas sem expor dados fora do âmbito autorizado. | P, D | Should |
+| RF32 (alt.) | Apresentar distância estimada da volta com método identificado e distância real apenas se houver leitura de odómetro ou GPS; quando desconhecida, indicar «não disponível» e não inferir um valor real. | Evita comparar estimativa geográfica com uma medição inexistente. | E | Should |
 
 ### 5.7 Informação de acompanhamento
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF33 (alt.) | Painel inicial com indicadores: utentes ativos por prioridade, visitas planeadas, realizadas e pendentes, utentes sem visita há mais do que o limite (RF13) e quilómetros estimados. | Objetivo O6. O painel é a página de entrada do mockup. | P, M | Should |
-| RF34 (alt.) | Relatórios filtráveis por período, equipa e concelho, exportáveis em CSV. | A secção "Relatórios" está no menu do mockup e a proposta pede informação "sistematizada e disponibilizada". | P, M | Should |
-| RF35 (novo) | Exportar em PDF os relatórios e o plano do dia, para impressão. | Útil para quem trabalha em deslocação, mas dá mais trabalho do que o CSV. | E | Could |
+| RF33 (alt.) | Apresentar no Dashboard a pesquisa e ficha do utente, **Cuidador Principal e Equipa Responsável em campos distintos** (a Equipa Responsável ocupa o lugar anteriormente apresentado como «Médico Assistente»), prioridade e complexidade em campos distintos, mapa, filtros de urgência e indicadores agregados (utentes ativos, visitas planeadas/realizadas/pendentes, ausência de visita e quilómetros estimados). | Preserva o aspeto do Dashboard original e respeita a distinção entre o cuidador do domicílio e os profissionais de saúde responsáveis pelo utente. | P, M, D | Should |
+| RF34 (alt.) | Apresentar relatórios filtráveis por período, equipa e concelho; disponibilizar exportações CSV de relatórios e listagens de utentes quando autorizadas. | A exportação fica na prioridade Should para não tornar obrigatório um formato de ficheiro dentro do RF08, relativo à listagem e filtros. | P, M, E | Should |
+| RF35 (alt.) | [BACKLOG] Exportar relatórios, plano do dia e, caso autorizado, ficha individual em PDF; suportar Excel/XLSX apenas após definir os campos e a necessidade real. Em exportações com dados clínicos, aplicar controlo de acesso e minimização. | A docente referiu PDF/Excel da ficha como possível funcionalidade não essencial; não confundir com a exportação CSV da listagem nem a exportação técnica do RF26. | E, D | Could |
 
 ### 5.8 Comunicação
 
@@ -178,55 +189,81 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF37 (alt.) | Autenticação com perfis (coordenador, profissional de saúde, administrador) e sessão com expiração. | Mesmo em sandbox, o desenho deve refletir o uso real: nem todos podem alterar prioridades ou ver tudo. | M, E | Must |
+| RF37 (alt.) | Autenticar utilizadores com sessão expirada e aplicar autorizações por perfil, âmbito/equipa, utente e operação; verificar as permissões no servidor em consultas, edição de fichas, escalas, voltas, visitas e ocorrências clínicas. | A permissão não pode ser garantida por mostrar/esconder botões ou pelo seletor de perfil demonstrativo do React. | M, E, D | Must |
 | RF38 (alt.) | Interface para gerir utilizadores e as suas permissões. Entretanto, os utilizadores de teste poderão ser providenciados pelo sistema centralmente. | Consequência de RF37. Numa equipa de quatro pessoas e quatro meses, a interface de gestão pode ficar para depois da autenticação base. | E | Should |
-| RF39 (alt.) | Parametrizar horário de visitas, ponto de partida, duração média por tipo de visita, limite de dias sem visita. Os níveis de triagem são geridos no RF11. | Menu "Configurações". Evita escrever regras da ULSBA no código, que ainda podem mudar. | M, E | Should |
-| RF40 (alt.) | Carregar um conjunto de dados fictícios, com distribuição geográfica realista no Baixo Alentejo, de forma reproduzível: a mesma execução dá sempre os mesmos dados. | A proposta exige sandbox com dados fictícios. Sem dados verosímeis, não se testam o mapa, as distâncias nem a priorização. O mockup usa uma zona da área de Lisboa (Oeiras, Carnaxide), pelo que o conjunto de dados tem de ser construído de raiz para o Baixo Alentejo. | P | Must |
+| RF39 (alt.) | Permitir configurar parâmetros de planeamento (horários habituais, origem/base, limiares sem visita, duração padrão por tipo de visita e/ou complexidade, alerta de duração suspeita), com registo de quem alterou e desde quando se aplica. | Os exemplos de 4 minutos ou 9h30–16h não são regras clínicas universais; devem ser parâmetros ou hipóteses. | M, E, D | Should |
+| RF40 (alt.) | Carregar um conjunto de dados fictícios, com distribuição geográfica realista no Baixo Alentejo, de forma reproduzível: a mesma execução dá sempre os mesmos dados. | A proposta exige sandbox com dados fictícios, sem os quais não se testam mapa, distâncias nem priorização. O mockup usa a zona de Lisboa, pelo que o conjunto de dados é construído de raiz para o Baixo Alentejo. | P | Must |
 | RF41 (novo) | Importar utentes e visitas a partir de um ficheiro CSV com estrutura previamente definida e validada, apresentando um relatório das linhas rejeitadas. | A importação poderá facilitar o carregamento inicial ou a atualização dos dados. A estrutura e as regras de validação do CSV terão de ser definidas e confirmadas com a equipa da ULSBA (ponto 8.9). | U, E | Could |
 | RF42 (novo) | Indicar de forma visível, em todas as páginas, que o ambiente é de teste com dados fictícios. | Evita confundir a sandbox com dados reais, sobretudo em demonstrações. | E | Should |
 
-### 5.10 Critérios de aceitação dos requisitos Must
+### 5.10 Voltas, ocorrências e controlo operacional — requisitos introduzidos na reunião de 28/10/2026
 
-Os valores numéricos são metas de trabalho. Servem para as fases de teste (fase 3) dizerem se um requisito passou ou não.
+Estes requisitos complementam os RF01–RF42, sem os renumerar. A existência de uma interface de protótipo não garante implementação funcional da respetiva regra na API/BD.
+
+| ID | Requisito | Justificação | Origem | Prior. |
+|---|---|---|---|---|
+| RF43 (novo) | Gerir a **volta** como agenda identificada de uma equipa numa data, com estado, viatura, partida/regresso previstos e reais, sequência ordenada de paragens e visitas. Uma volta em rascunho pode estar vazia; uma volta confirmada pode conter **uma ou mais visitas**. | Exigir duas ou mais visitas excluiria voltas legítimas com apenas um utente. | D, E | Must |
+| RF44 (novo) | No calendário, abrir o detalhe da volta **num único ecrã, sem submenus nem separadores**, mantendo o ecrã de referência da reunião: cabeçalho com equipa, viatura e horários; lista de visitas ordenadas, com informação e horários da visita selecionada e as ocorrências de cada visita; mapa da volta (diferenciando percurso real/ilustrativo) com a distância; e, no fundo, a caixa de ocorrências gerais da volta. Todos estes blocos ficam visíveis na mesma página. Suportar ausência de horários reais ou distância medida. | Descreve o percurso Calendário → Volta → Visita → Utente sem assumir dados não recolhidos. A docente pediu a retirada dos submenus, mantendo o conteúdo do ecrã atual. | D, E | Must |
+| RF45 (novo) | Registar ocorrências **operacionais da volta** e notas/ocorrências **da visita**, classificadas por visibilidade (operacional ou clínica), com autor e instante atribuídos pelo backend; permitir consulta e retificação auditada conforme permissão, sem edição silenciosa do histórico. | A reunião solicita rastreabilidade e uma separação de registos clínicos dos avisos operacionais. | D, E | Must |
+| RF46 (novo) | Para instantes previstos e reais, recusar intervalos de duração negativa e, nas visitas concluídas, fim anterior/igual ao início. Calcular duração pelos instantes completos com fuso; durações positivas abaixo de limiar configurável (ex.: 4 min) desencadeiam aviso e confirmação, não bloqueio automático. | Distingue inconsistência objetiva de duração improvável; preserva correção de horas e fusos. | D, E | Should |
+| RF47 (novo) | Após registar atraso, **propor** novas previsões para visitas seguintes da volta e mostrar conflitos de horários, recursos ou janelas; confirmar alterações antes de as gravar, mantendo histórico e preservando horas reais já registadas. | Atualizações automáticas silenciosas poderiam destruir evidência temporal e criar conflitos. | D, E | Should |
+| RF48 (novo) | Registar ficha de viatura (identificação, tipo de motorização/energia, capacidade de lugares, capacidade do depósito, estado, autonomia quando aplicável e respetiva unidade, manutenção/revisões e intervalos de indisponibilidade), com a ação «Agendar» para marcar no calendário revisões, reparações ou outras indisponibilidades; calcular disponibilidade para um período a partir de reservas e bloqueios. | Uma viatura «disponível agora» pode estar ocupada no horário de uma visita futura. | D, E | Should |
+| RF49 (novo) | Aplicar o âmbito funcional de cada utilizador: profissionais consultam por omissão as suas equipas, voltas e utentes associados, e só editam o permitido; coordenadores autorizados têm vista geral. A ausência do filtro «Equipas» na agenda por utente é opção de interface, **não substitui** esta verificação de autorização. | Especifica a regra funcional que RNF02/RNF22 obrigam a proteger na API. | D, E | Must |
+| RF50 (novo) | Ao selecionar um dia sem voltas no calendário, apresentar um painel de construção da volta com os utentes a visitar (prioridade, complexidade, equipa responsável, última visita, localização), as equipas e as viaturas disponíveis nesse dia e um mapa. O utilizador escolhe equipa, viatura e utentes, ordena as paragens, define as horas previstas de partida e de chegada e guarda a volta. Autonomia insuficiente ou falta de lugares geram aviso e permitem gravar; sobreposições de equipa, profissional, viatura ou utente seguem o RF20 e o RF21. | Pedido da docente (28/10/2026): ao clicar num dia vazio, ver tudo o que é preciso para construir a rota. A ordem das paragens é manual (sugestão automática: RF27/RF28). Autonomia e lugares dependem do RF48. | D | Must |
+| RF51 (novo) | No detalhe da volta, disponibilizar a ação «Imprimir relatório», que gera uma vista de impressão (ou PDF) com cabeçalho, visitas e horários previstos/reais, ocorrências e distância, sem os controlos da interface. Respeita as permissões do RF37 e do RF49. | A docente pediu que os relatórios se imprimissem a partir do ecrã de detalhe da volta. Pode ser feito com a impressão do navegador, sem pesar no prazo. A exportação em PDF da ficha continua no RF35. | D | Should |
+| RF52 (novo) | Disponibilizar um ecrã **Equipas** com a listagem das equipas (códigos A, B, C…), os profissionais que as compõem, a viatura habitualmente associada e as voltas de cada equipa. Um profissional vê as voltas da sua equipa; a vista geral depende de autorização (RF49). A composição segue o RF24. | A docente pediu um separador específico para as equipas. O RF24 e o RF49 definem as regras; este requisito acrescenta o ecrã. | D | Should |
+
+### 5.11 Critérios de aceitação dos requisitos Must
+
+Os valores numéricos são metas de trabalho a validar. Os critérios abaixo cobrem os requisitos Must desta revisão; mantêm-se também para o RF06, o RF23, o RF31 e o RF46, que passaram a Should para conter a carga. A aprovação dos níveis de triagem, regras clínicas e tempos continua pendente da ULSBA.
 
 | ID | Critério de aceitação |
 |---|---|
 | RF01 | Ao escrever 3 ou mais caracteres do nome ou do número, aparecem até 5 sugestões em menos de 1 segundo. Selecionar uma sugestão abre a ficha. |
-| RF02 | A ficha mostra todos os campos listados. Um campo sem valor aparece como "sem informação" e nunca provoca erro. |
-| RF03 | Inativar um utente retira-o do planeamento e do mapa por omissão, e o histórico de visitas continua consultável. A interface não tem operação de apagamento físico. |
+| RF02 | A ficha apresenta identificação, local, **Cuidador Principal**, **Equipa Responsável**, prioridade e complexidade em campos distintos, entre os restantes campos previstos. Um campo sem valor mostra «sem informação». No Dashboard, a etiqueta «Cuidador Principal» mantém-se, e a etiqueta «Médico Assistente» é substituída por «Equipa Responsável». Alterar a equipa responsável não altera nem elimina o cuidador registado. |
+| RF03 | O botão Editar permite atualizar os campos autorizados e mostra o resultado após guardar; um profissional sem permissão não consegue alterar os dados nem através de pedido direto à API. Inativar preserva o histórico e retira o utente do planeamento por omissão. |
 | RF04 | Marcar um ponto no mapa grava as coordenadas. Um ponto fora de Portugal continental, ou com latitude e longitude trocadas, é recusado com uma mensagem. |
 | RF05 | Cada utente tem exatamente um local associado. Os locais do tipo lar ou unidade exigem nome. |
 | RF06 | Um local pode ser partilhado por vários utentes. Alterar a morada ou as coordenadas do local reflete-se em todos os utentes desse local. |
-| RF10 | Cada avaliação de triagem guarda data, autor e motivo. A ficha mostra a mais recente como atual e permite consultar as anteriores. |
-| RF11 | Acrescentar ou alterar um nível de triagem não exige alterar código. O mapa e a legenda refletem os parâmetros. |
+| RF08 | A listagem apresenta as colunas de complexidade e de equipa responsável e combina filtros por prioridade, estado, complexidade, equipa responsável e intervalo de datas da última visita. Cada combinação atualiza o resultado; os critérios também são aplicados pela API, independentemente do frontend. Alterar a prioridade na lista regista uma nova avaliação com autor e data; sem permissão, a API recusa. |
+| RF10 | Duas reavaliações de triagem em datas diferentes preservam data, autor e motivo; a mais recente é apresentada como prioridade atual, mesmo que seja menos urgente, sem eliminar as anteriores. |
+| RF11 | Alterar um nível de triagem através dos parâmetros não obriga a alterar código e atualiza legenda/listagens; a complexidade IPCPAL mantém-se independente. |
+| RF12 | A ficha e a lista apresentam complexidade separada da prioridade; é possível registar PPS e complexidade com autor e data, consultar o histórico e alterar estimativas de duração por complexidade sem alterar a ordem clínica de urgência. |
 | RF15 | Cada marcador tem a cor do nível e a legenda tem texto. Com 500 utentes, o mapa carrega em menos de 3 segundos (RNF09). |
 | RF16 | Cada filtro reduz em conjunto os marcadores e os contadores. Combinar filtros dá a interseção. |
-| RF19 | Reagendar e cancelar mantêm o registo da visita (estado cancelada). A vista diária e a semanal mostram o mesmo conjunto de visitas. |
-| RF20 | O sistema permite gerir frota e equipas. Não é possível associar a mesma viatura a duas equipas simultaneamente. |
-| RF21 | Planear a mesma equipa em dois locais diferentes à mesma hora, ou o mesmo utente em duas visitas simultâneas, é recusado. Planear fora das 9h30 às 16h, ou com regresso depois das 16h, mostra um aviso e só grava depois de confirmado com motivo. Três utentes no mesmo lar à mesma hora são aceites. |
-| RF23 | É possível criar uma visita sem equipa nem hora. Aparece na lista de pendentes, ordenada por prioridade, e passa a planeada quando recebe equipa e hora. |
-| RF26 | A exportação de um dia gera um ficheiro válido segundo o formato acordado, sem nome, morada nem número de utente, e inclui as distâncias entre as paragens. |
-| RF29 | Uma visita realizada só grava com início e fim reais e com equipa. Uma visita cancelada exige motivo de cancelamento suportado pelo modelo. |
+| RF19 | Calendários mensal/semanal/diário e vistas Unidade/Utente/Profissional consistentes. Volta mostra saída e chegada; vista Utente mostra início/fim da visita sem filtro Equipa e sem restringir indevidamente resultados. Reagendamento/cancelamento mantêm histórico. |
+| RF20 | Uma viatura indisponível por reserva ou manutenção no intervalo da volta não pode ser atribuída; a disponibilidade é verificada na API e no ecrã de planeamento. |
+| RF21 | O servidor recusa conflitos de equipa, profissional, viatura e utente em períodos incompatíveis. Duas visitas no mesmo lar podem integrar uma paragem; sobreposição clínica só é permitida com profissionais/recursos adequados. Exceções de horário exigem confirmação e motivo. |
+| RF23 | Cria-se visita sem data/hora, equipa e viatura, com estado pendente; a atribuição posterior muda para planeada, sem perder o histórico. |
+| RF24 | Uma equipa com código próprio tem profissionais escalados num período, viatura atribuída por volta e participantes efetivos em cada visita. A agenda por profissional mostra apenas as visitas em que participa; é possível distinguir equipa responsável da executante. |
+| RF26 | A exportação estruturada valida o contrato acordado com a docente de Matemática, minimiza identificadores pessoais e identifica coordenadas como dados reidentificáveis; quando a matriz de distâncias não está disponível, o erro/ausência é comunicado explicitamente, sem inventar valores. |
+| RF29 | Uma visita pendente/planeada não exige horários reais. Ao concluir, tem equipa, participantes, início e fim reais válidos, duração calculada e autoria confiável; cancelamento exige motivo. |
 | RF30 | Um utente sem visitas realizadas mostra "sem visitas" e não provoca erro. Depois de registar uma visita, a última visita atualiza-se sem ser preciso preencher o campo à mão. |
-| RF31 | O histórico filtra por utente, equipa e viatura e está ordenado da visita mais recente para a mais antiga. |
-| RF37 | Sem sessão iniciada, não se acede a nenhuma página com dados. A sessão expira. As palavras-passe só podem existir na forma encriptada. |
+| RF31 | O histórico filtra por utente, equipa, viatura e profissional, apresenta os registos do mais recente ao mais antigo e pode ser aberto a partir da ficha ou da volta, mediante autorização. |
+| RF37 | Sessão inválida e requisições de utilizador sem permissão são rejeitadas pelo backend, inclusive pedidos HTTP diretos. Acesso e edição obedecem à matriz por perfil, equipa, utente e tipo clínico. |
 | RF40 | Executar o carregamento de dados de demonstração recria sempre o mesmo conjunto base realista, com utentes distribuídos pelos concelhos do Baixo Alentejo. |
+| RF43 | Uma volta rascunho pode ter 0 visitas; uma confirmada aceita 1 ou mais, sem perder associação de paragens, equipa, viatura e horários ao editar. |
+| RF44 | Abrir volta e selecionar visita devolve os dados da volta correta, inclusive estado vazio/dados ainda não recolhidos; mapas ilustrativos são identificados e a distância real só aparece quando medida. O ecrã não tem separadores nem submenus: visitas, ocorrências das visitas, mapa e ocorrências gerais estão visíveis na mesma página. |
+| RF45 | Notas clínicas e ocorrências operacionais ficam separadas; autor/instante são atribuídos pela API, alteração deixa trilho e não é possível falsificar autoria nem consultar registos de outra equipa sem permissão. |
+| RF46 | A API rejeita fim anterior/igual ao início para visita concluída; o cálculo atravessa meia-noite e mudança de hora usando instantes. Duração breve acima de zero mostra aviso configurável e pede confirmação, sem rejeitar automaticamente. |
+| RF49 | Uma conta de profissional não consulta/edita dados não atribuídos por URL direta nem pedido API. A vista Utente não mostra filtro Equipa, mantendo as mesmas restrições de autorização. |
+| RF50 | A partir de um dia sem voltas é possível criar uma volta com equipa, viatura e utentes sem sair do painel, e ela aparece no calendário nesse dia. O painel só lista equipas e viaturas disponíveis nesse dia. Autonomia insuficiente ou lugares a menos mostram aviso e não impedem a gravação; uma equipa ou viatura já ocupada no mesmo intervalo é recusada pela API. |
 
 ---
 
 ## 6. Requisitos não funcionais
 
-Os valores numéricos são metas de trabalho, não compromissos contratuais. Não há na proposta números de utentes ou de utilizadores; partimos de uma ordem de grandeza (centenas de utentes, poucos utilizadores em simultâneo) que deve ser confirmada.
+Os valores numéricos são metas de trabalho, não compromissos contratuais. As funcionalidades sugeridas em reunião podem ter implementação apenas visual no frontend até estarem ligadas à API e às migrações. Não há na proposta números de utentes ou de utilizadores; partimos de uma ordem de grandeza (centenas de utentes, poucos utilizadores em simultâneo) que deve ser confirmada.
 
 ### 6.1 Segurança e proteção de dados
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
 | RNF01 (alt.) | Só dados fictícios no desenvolvimento e nos testes. A estrutura de dados deverá guardar apenas o necessário para o planeamento e o acompanhamento. | Os dados de saúde são categoria especial no RGPD (art. 9.º). A proposta usa a sandbox precisamente para proteger dados pessoais e clínicos. Limitar os campos já agora evita problemas se o sistema vier a passar a produção. | P | Must | Inspeção do modelo de dados e do script de dados de demonstração. |
-| RNF02 | Autenticação obrigatória, palavras-passe tratadas com mecanismos criptográficos (Argon2 ou bcrypt), sessões ou tokens com expiração e acesso limitado por perfil. | A sandbox deve comportar-se como o sistema real, para que a passagem a produção não obrigue a refazer o controlo de acessos. | E | Must | Teste de acesso por perfil e inspeção da gestão de sessões e do armazenamento das palavras-passe. |
+| RNF02 (alt.) | Autenticação obrigatória, palavras-passe com hash criptográfico adequado (ex.: Argon2id ou bcrypt), sessão/token com expiração e autorização na API por perfil, operação e equipa/utente atribuído. | A ocultação de botões no frontend não protege informação clínica. Um pedido direto ao backend deve ser igualmente recusado quando não autorizado. | E, D | Must | Testes autenticados e não autenticados aos endpoints, incluindo acesso transversal entre equipas e expiração de sessão. |
 | RNF03 | Comunicação cifrada (HTTPS) sempre que a plataforma seja acedida fora da máquina de desenvolvimento. Segredos e credenciais fora do repositório Git. | O repositório é partilhado no GitHub. Uma credencial enviada por engano para o repositório fica no histórico mesmo depois de apagada. | E | Must | Inspeção do `.gitignore` e do histórico do repositório. |
-| RNF04 (alt.) | Registo de auditoria das alterações a fichas, avaliações e visitas (quem, quando, o quê). O registo das consultas é desejável, mas dispensável. | Em dados clínicos é preciso poder saber quem alterou um registo. Registar também todas as consultas dá muito trabalho e muito volume. | E | Should | Inspeção das tabelas de auditoria (ou triggers) e teste de alteração de uma ficha. |
-| RNF22 (novo) | Cada perfil vê só o que precisa. O administrador não acede a dados clínicos. | Princípio do menor privilégio. Depende da definição dos perfis (ponto 8.14). | E | Should | Teste de acesso com cada perfil. |
+| RNF04 (alt.) | Persistir trilho de auditoria das operações críticas (triagens, autorizações, alterações à ficha, horários, ocorrências e volta), com autor autenticado, instante, entidade e operação; impedir alteração arbitrária da autoria pelo cliente. | O histórico e a autoria foram explicitamente solicitados na reunião e não podem ser opcionais quando há notas clínicas. | E, D | Must | Criar/editar uma ocorrência e um horário, verificar o histórico persistido e tentar forjar o autor no pedido HTTP. |
+| RNF22 (alt.) | Aplicar mínimo privilégio por perfil, equipa, utente e sensibilidade do campo em todas as operações de API; administrador sem acesso clínico, coordenador com acesso transversal só se autorizado e profissional limitado ao âmbito atribuído. | É necessário para satisfazer RF03, RF37, RF45 e RF49. | E, D | Must | Matriz de permissões e testes de autorização cruzada por equipa e tipo de registo. |
 | RNF23 (novo) | Definir prazos de conservação e um mecanismo de eliminação ou anonimização dos dados dos utentes inativos. | O RF03 diz "sem apagamento físico", mas o RGPD prevê limites de conservação e o direito ao apagamento. Em produção, os dois têm de ser conciliados. | E | Should | Inspeção do procedimento documentado. |
 | RNF24 (novo) | As exportações para o algoritmo de rotas não devem conter dados identificativos diretos. | Protege os dados fora do sistema. Liga-se ao RF26. | E | Must | Inspeção do ficheiro exportado. |
 | RNF25 (novo) | Proteção contra os riscos mais comuns de aplicações web: consultas parametrizadas (sem montar SQL a partir de texto do utilizador), validação das entradas e limite de tentativas de início de sessão. | O RNF02 trata das palavras-passe e da sessão, mas não destes riscos. | E | Should | Revisão do código contra a lista OWASP Top 10, com consultas parametrizadas ou ORM. |
@@ -235,8 +272,8 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF05 | As tarefas frequentes (encontrar um utente, ver a ficha, registar uma visita) devem ser feitas em poucos passos. Meta de trabalho: registar uma visita em menos de dois minutos. | Os utilizadores são profissionais de saúde com pouco tempo. A fase 3 inclui testes de usabilidade, que precisam de um critério para dizer se passaram ou não. | P, E | Should | Teste de usabilidade com cronómetro. |
-| RNF06 | Interface utilizável em computador, tablet e telemóvel. | As equipas trabalham em deslocação. Basta uma aplicação web responsiva; uma aplicação nativa fica fora do âmbito. | E | Should | Teste em três larguras de ecrã (computador, tablet e telemóvel) sem perda de funções. |
+| RNF05 (alt.) | Permitir tarefas frequentes com poucos passos, incluindo procurar utente, consultar uma volta, introduzir horários reais e registar uma ocorrência. Meta de trabalho: concluir o registo de uma visita em menos de dois minutos. | O fluxo da docente procura simplificar o trabalho dos profissionais durante as visitas. | P, E, D | Should | Teste de usabilidade temporizado nos percursos Utente → Visita e Agenda → Volta → Registo. |
+| RNF06 (alt.) | Garantir utilização responsiva das operações essenciais em desktop, tablet e telemóvel: pesquisa/ficha, agenda/voltas, mapa, visitas e registo de horários/ocorrências, sem elementos sobrepostos, campos inacessíveis ou perda de ações. | A docente enfatizou a utilização móvel; foram observadas sobreposições reais entre ficha/mapa e barra inferior do Dashboard. | E, D | Must | Testar larguras de referência 360, 768 e 1440 px com calendário e Dashboard; verificar scroll, navegação e ausência de sobreposições. |
 | RNF07 | Interface em português europeu, datas no formato dd/mm/aaaa e fuso horário de Lisboa. | Utilizadores e contexto institucional portugueses. | E | Must | Inspeção da interface e tratamento regionalizado. |
 | RNF08 | A prioridade nunca depende só da cor: cada nível tem também ícone ou texto, e os contrastes cumprem WCAG 2.1 AA. | No mockup, os marcadores do mapa distinguem os cinco níveis apenas pela cor. Uma pessoa com daltonismo não distinguiria, por exemplo, laranja de vermelho no mapa. | E | Should | Verificação de contraste e de visualização sem cor. |
 
@@ -252,17 +289,17 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF12 | Validação dos dados no cliente e no servidor, com restrições de integridade na base de dados (chaves estrangeiras, unicidade e verificações) e operações compostas feitas em transação. | Uma visita registada pela metade (sem atualizar a última visita, por exemplo) deixa o planeamento errado sem ninguém dar por isso. | E | Must | Inspeção das chaves estrangeiras e restrições, e teste de falha a meio de uma operação composta. |
+| RNF12 (alt.) | Validar dados no cliente e no servidor, aplicar restrições na base de dados (FK, unicidade, CHECK, transações) e validar coerência temporal: fim após início, intervalos de recursos sem conflitos e duração não negativa; durações suspeitas geram aviso e confirmação. | Formulários React não substituem verificações na API/BD. O limiar de «quatro minutos» é exemplo para alerta, não regra clínica universal. | E, D | Must | Testar horários inválidos por API, duração suspeita, conflitos de recursos e falha a meio de uma operação composta. |
 | RNF13 (alt.) | A base de dados deverá ser recriável de forma limpa a partir de *scripts* automáticos (ex: ferramentas de migração) e dados genéricos de ensaio. Cópias de segurança regulares são apenas recomendação para produção. | Em sandbox, o que importa é a fiabilidade da infraestrutura partilhada de desenvolvimento. | E | Should | Recriar a base de dados do zero em menos de 10 minutos. |
 | RNF14 (alt.) | Disponibilidade durante o horário de atividade da equipa (aproximadamente 8h–18h em dias úteis) como recomendação para produção. Em sandbox não há requisito de disponibilidade. | Não há requisito formal na proposta, e um nível de serviço de 24 horas seria desproporcionado para este contexto. | E | Could | Não aplicável em sandbox. |
-| RNF26 (novo) | Os instantes (datas e horas) devem ser guardados com fuso horário. | O RNF07 só trata da apresentação. Uma visita planeada à volta da mudança de hora de outubro pode ficar uma hora errada. | E | Must | Inspeção do modelo de dados (por exemplo, o tipo `timestamptz`). |
-| RNF27 (novo) | Usar um único sistema de coordenadas (WGS84, SRID 4326) e validar que os pontos estão dentro do território. | Trocar latitude e longitude é um erro comum, porque o Leaflet e o PostGIS usam ordens diferentes. | E | Must | Teste com pontos inválidos, que a base de dados deve recusar. |
+| RNF26 (novo) | Guardar **instantes** (início/fim de visita, partida/regresso, autoria) como `timestamptz` ou equivalente que preserve o instante; guardar datas sem componente horária (nascimento, referência, revisão, se aplicável) como `date`. Converter para `Europe/Lisbon` na interface. | Evita erros na mudança de hora sem transformar datas civis em instantes UTC arbitrários. | E | Must | Inspeção do modelo de dados (por exemplo, o tipo `timestamptz`). |
+| RNF27 (novo) | Guardar coordenadas em WGS84/SRID 4326 e validar longitude/latitude e território aprovado; os limites territoriais oficiais ainda têm de ser disponibilizados/confirmados pela ULSBA. | O limite geográfico provisório não pode excluir automaticamente casos reais sem validação institucional. | E | Must | Teste com pontos inválidos, que a base de dados deve recusar. |
 
 ### 6.5 Manutenibilidade, testes e documentação
 
 | ID | Requisito | Justificação | Origem | Prior. | Verificação |
 |---|---|---|---|---|---|
-| RNF15 | Código separado em camadas (interface, lógica de negócio, acesso a dados), em TypeScript no *frontend* e com tipagem no *backend*. | Equipa a trabalhar em paralelo exige fronteiras claras e modulares. | P, E | Should | Revisão estrutural do repositório. |
+| RNF15 (alt.) | Código organizado em componentes de interface reutilizáveis, páginas, estado/serviços, regras de negócio e acesso a dados; TypeScript no frontend e modelos tipados na API. Não considerar o estado React em memória como persistência final. | A evolução da Agenda, detalhes da volta e Dashboard exige reutilização sem duplicar regras clínicas ou de autorização. | P, E, D | Should | Revisão estrutural do repositório e teste de integração frontend–API para operações de criação/edição. |
 | RNF17 | API testada com ferramentas de validação de endpoints (ex: Postman). Regras de prioridade e de planeamento cobertas com testes. | A proposta nomeia ferramentas de endpoint validation. As regras de negócio são o ponto crítico do sistema. | P, E | Must | Evidência de coleções de testes ou execução CI. |
 | RNF18 | API documentada (ex: OpenAPI), arquitetura geral e modelo de dados documentados. | A proposta inclui documentação técnica entre as competências a desenvolver. | P | Must | Inspeção da documentação da API e do diagrama entidade-relação. |
 | RNF28 (novo) | O esquema da base de dados deve ser versionado com migrações. O modelo, o diagrama e o dicionário de dados devem ser atualizados em conjunto com cada alteração. | Sem versionamento, cada programador acaba com uma base de dados diferente. | E | Must | Inspeção das migrações e da documentação do modelo de dados. |
@@ -275,12 +312,13 @@ Os valores numéricos são metas de trabalho, não compromissos contratuais. Nã
 | RNF20 | API REST desacoplada da interface, suportando formatos estandardizados (JSON, CSV). | Facilita a ligação ao algoritmo de otimização de rotas, que pode estar noutra linguagem. | P | Must | Inspeção da especificação da API e teste das exportações. |
 | RNF21 | Compatibilidade com as duas últimas versões dos navegadores atuais (Chrome, Edge, Firefox, Safari). | A ULSBA pode usar dispositivos e navegadores que a equipa não testa por omissão. | E | Should | Teste nos quatro navegadores. |
 
-O RNF16 da versão 0.1 (Git, GitHub, Conventional Commits e *pull requests*) passou para a secção 7, porque é uma regra de trabalho da equipa e não uma qualidade do sistema.
+O RNF16 da versão 0.1 (Git, GitHub, Conventional Commits e *pull requests*) passou para a secção 7, porque é uma regra de trabalho da equipa e não uma qualidade do sistema. Os RNF04, RNF06 e RNF22 passam a *Must* nesta proposta de versão 0.3, sujeitos à validação do âmbito.
 
 ---
 
 ## 7. Restrições
 
+- **Entrega mínima.** O núcleo que tem de ficar demonstrável em fevereiro é: autenticação com perfis (RF37), utentes e ficha (RF01–RF03, RF08), mapa (RF15), calendário e criação de volta a partir de um dia vazio (RF19, RF50) e registo de visitas e ocorrências (RF29, RF45). Os restantes *Must* avançam por ordem de dependência; a capacidade real da equipa (horas por semana) tem de ser confirmada, e o que não couber desce para *Should*.
 - **Prazo e equipa.** De outubro de 2026 ao início de fevereiro de 2027, com três ou quatro estudantes. Parte da equipa trabalha em simultâneo, o que reduz a capacidade real. Por isso se separou com cuidado o que é essencial (*Must*) do que pode ficar para o fim. Os requisitos mais pesados são o RF04, o RF21 e o RF37. Se as estimativas de esforço não couberem no prazo, são os primeiros candidatos a simplificação.
 - **Dados.** Apenas dados fictícios, em ambiente sandbox. Não serão utilizados dados pessoais ou clínicos reais nesta fase.
 - **Integração.** Sem ligação aos sistemas da ULSBA nesta fase.
@@ -288,27 +326,34 @@ O RNF16 da versão 0.1 (Git, GitHub, Conventional Commits e *pull requests*) pas
 - **Cartografia.** Integração orientada a Leaflet e OpenStreetMap (proposta). Os mapas base do OpenStreetMap têm limites de tráfego que, para a sandbox, servirão; a longo prazo sugerem fornecedor alternativo.
 - **Geocodificação.** A conversão de moradas em coordenadas (RF09) usa um serviço externo, que também tem política de utilização e limite de pedidos. Os resultados devem ser guardados para não repetir pedidos.
 - **Convenções de desenvolvimento.** Controlo de versões com Git e GitHub, *commits* segundo a convenção Conventional Commits e alterações integradas por *pull request* (antigo RNF16). A convenção torna o histórico legível para quem não escreveu o código.
-- **Algoritmo.** Concebido pela docente de Matemática, fora do controlo da equipa informática.
+- **Algoritmo.** Concebido pela docente de Matemática, fora do controlo da equipa informática. A construção manual de agendas/voltas continua disponível sem esse algoritmo; qualquer rota simulada deve estar identificada como protótipo.
 
 ## 8. Pontos em aberto
 
-Questões que devem ser fechadas na próxima reunião de acompanhamento ou diretamente com a ULSBA e com a docente de Matemática. Cada uma altera requisitos concretos no desenho.
+Questões que devem ser fechadas na próxima reunião de acompanhamento ou diretamente com a ULSBA e com a docente de Matemática. Cada uma altera requisitos concretos no desenho. Quando aplicável, indica-se o **valor provisório** usado no desenvolvimento até haver validação.
 
-1. **Modelo final de prioridades.** Os níveis em dias do mockup, a triagem A/B/C da ULSBA e a classificação IPCPAL a partir do PPS são três modelos diferentes. Qual manda na cor do mapa e na ordem das visitas? O IPCPAL resulta do PPS ou são avaliações separadas? Existe um prazo de visita por nível? Afeta o planeamento (RF10 a RF13, RF17, RF22 e RF14).
-2. **Regras de planeamento.** Confirmar horário (9h30 às 16h), regresso a Beja às 16h, número de viaturas e equipas, duração média por tipo de visita e eventuais pausas. As equipas têm profissionais e viatura fixos, ou variam de dia para dia? Afeta estrutura de agenda (RF20, RF21, RF39 e RF24).
-3. **Dados mínimos na ficha.** O mockup mostra diagnósticos e notas clínicas. Que campos a equipa precisa mesmo de ver para planear? Afeta o detalhe da entidade base (RF02 e RNF01).
-4. **Âmbito do algoritmo.** A proposta diz, numa passagem, que a integração é futura e, noutra, que compete à equipa integrá-lo. Se for nesta fase, RF27 sobe para *Should* e o calendário muda. Que formato de dados espera a docente de Matemática? Afeta modelo de extração (RF26 e RF27).
+1. **Modelo final de prioridade e complexidade.** A reunião distinguiu urgência (ordem de atendimento) de complexidade (apoio à duração). Continuam por validar os níveis de triagem usados no mapa, os prazos de visita, a relação entre PPS e IPCPAL e a estimativa de duração por complexidade (RF10–RF14, RF19, RF22 e RF39). **Valor provisório:** níveis A, B, C e Não urgente (Anexo A) num catálogo configurável (RF11); duração por defeito por complexidade em parâmetros (RF39); PPS e IPCPAL registados em separado.
+2. **Regras de planeamento e equipas.** Confirmar horário habitual (hipótese 9h30–16h), regresso a Beja, pausas, números de recursos, disponibilidade e durações. Confirmar se cada utente mantém a mesma equipa responsável e em que exceções a equipa executante/viatura ou composição da equipa pode mudar (RF19–RF24, RF43, RF48 e RF49). **Valor provisório:** horário 9h30–16h e duas equipas e viaturas (Anexo A), configuráveis (RF39); disponibilidade dos profissionais dada pela escala registada (RF24); para confirmar uma volta são obrigatórios data, equipa, viatura, partida e chegada previstas e pelo menos uma visita (RF43); exceções com motivo (RF21).
+3. **Dados mínimos na ficha.** Confirmar diagnósticos/notas imprescindíveis e os dados do **Cuidador Principal** (pessoa da família ou do domicílio que presta cuidados), incluindo se é necessário registar o seu contacto. Confirmar a atribuição da **Equipa Responsável**, mostrada no Dashboard em substituição do campo «Médico Assistente», e quais os profissionais que podem consultar e editar cada campo. Caso o nome do médico assistente continue a ser necessário noutro contexto, definir essa necessidade separadamente, sem substituir o cuidador. (RF02, RF03, RF37, RF49, RNF01 e RNF22).
+4. **Âmbito do algoritmo.** Confirmar com a docente de Matemática se haverá integração nesta fase, formato dos dados e critérios de aceitação da proposta. A criação manual mantém-se obrigatória. Uma rota ilustrativa no frontend não satisfaz RF27 (RF19, RF26–RF28 e RF47).
 5. **Fonte das distâncias.** Linha reta, serviço de encaminhamento externo ou motor próprio? Condiciona lógicas de processamento do espaço (RF17, RF25 e RF32).
-6. **Utilização no terreno.** As equipas vão consultar a plataforma no telemóvel durante as visitas? Se sim, poderá existir necessidade de suporte off-line (RNF06).
+6. **Utilização no terreno.** Confirmar quais tarefas serão feitas em telemóvel (horários reais, ocorrências, consulta do mapa), requisitos mínimos de responsividade e eventual necessidade futura de suporte offline, atualmente fora do âmbito (RF45, RF46 e RNF06).
 7. **Mensagens e notificações.** Existe necessidade real de comunicação dentro da plataforma? O que representa o número no sino do mockup? Afeta desenho do chat e interações (RF13 e RF36).
 8. **Números de referência.** Quantos utentes ativos, quantos utilizadores simultâneos? Afeta dimensionamento e testes de carga (RNF09 e RNF10).
 9. **Estrutura dos dados para importação.** Confirmar com a ULSBA, sem partilha de dados pessoais, os campos necessários, os tipos de dados, os valores permitidos e as regras de validação do CSV. Como devem ser representados o género e o local? Afeta a modelação dos dados e a importação (RF02, RF05 e RF41).
-10. **Registo de visitas.** Quem regista as visitas e quando (no momento ou no fim do dia)? Há contactos não presenciais (telefone) a registar? Que campos são obrigatórios e que motivos de cancelamento existem? Afeta workflow de conclusão de visita (RF29).
+10. **Registo de visitas e ocorrências.** Quem regista e confirma horas reais, com que data/hora e possibilidade de correção? Que notas são clínicas vs. operacionais, que motivos de cancelamento existem e quem os consulta? Confirmar limiar de alerta para durações suspeitas e tratamento de visitas breves (RF29, RF45, RF46 e RNF04).
 11. **Estados do utente e reavaliações.** Que estados existem (referenciado, admitido, alta, óbito)? Um utente pode ser readmitido? Com que frequência se reavaliam a triagem, o PPS e o IPCPAL? Afeta histórico e campos de estado (RF10 e RF07).
 12. **Lares e unidades.** Quantos utentes se visitam por cada ida a um lar ou unidade, e quanto dura uma visita coletiva? Qual é o concelho da unidade de Montemor admitida no Anexo A? Afeta estruturação da relação local-utente e planeamento (RF05, RF21 e RF06).
 13. **Conservação dos dados.** Por quanto tempo se guardam os dados de utentes inativos e o que acontece depois? Afeta compliance de integridade referencial (RF03 e RNF23).
-14. **Perfis e permissões.** Quem pode alterar prioridades? Quem vê as coordenadas exatas e os dados clínicos? Afeta tabelas de privilégios ou encriptação por roles (RF37, RNF02 e RNF22).
-15. **Validação das hipóteses de trabalho.** Todas as hipóteses do Anexo A (triagem A/B/C, classificação IPCPAL, horário das visitas, viaturas e equipas, tipos de local e campos do utente) têm de ser confirmadas pela equipa da ULSBA. Afeta todos os requisitos com origem U.
+14. **Perfis e permissões.** Confirmar matriz de leitura/edição por campo, equipa e profissional, visibilidade de coordenadas/notas clínicas, exceções dos coordenadores e acesso à informação de voltas alheias. A autorização tem de ser aplicada no servidor (RF03, RF37, RF45, RF49, RNF02 e RNF22). **Valor provisório:** os três perfis da secção 3; o profissional vê as suas equipas, voltas e utentes; o coordenador tem vista geral; o administrador não vê dados clínicos (RNF22).
+15. **Validação das hipóteses de trabalho.** Todas as hipóteses do Anexo A (triagem A/B/C, classificação IPCPAL, horário das visitas, viaturas e equipas, tipos de local e campos do utente), bem como as sugestões da reunião da docente, têm de ser confirmadas operacionalmente com a ULSBA. Afeta todos os requisitos com origem U ou D.
+
+16. **Atualização por atrasos.** Confirmar se uma equipa pode aceitar novas previsões diretamente ou se o coordenador valida; que conflitos e notificações devem aparecer e como guardar versões do plano (RF47).
+17. **Viaturas e manutenção.** Confirmar categorias de combustível, unidade da autonomia (km, percentagem/energia), datas e periodicidades de revisão, responsável pelas indisponibilidades e se autonomia condiciona ou apenas alerta o planeamento (RF20, RF21 e RF48).
+18. **Vistas e terminologia da agenda.** Confirmar se «Unidade» corresponde ao calendário geral; se a equipa responsável pelo utente é fixa e se existem exceções que justifiquem filtro por equipa na vista Utente; confirmar estados e horários que devem aparecer no cartão mensal (RF19, RF24, RF43 e RF44).
+19. **Ocorrências e histórico.** Validar tipos de ocorrências, possibilidade de editar registos já guardados, correções por adenda e perfis com acesso ao histórico; confirmar política de auditoria (RF45, RF46, RNF04 e RNF23).
+20. **Construção da volta a partir do dia vazio.** Confirmar se o painel é lateral, modal ou ecrã completo; se lista só utentes com visita em atraso ou todos os ativos; se um utente pode estar em duas voltas no mesmo dia; e se a autonomia da viatura apenas alerta ou condiciona a gravação (RF50, RF20, RF21 e RF48).
+21. **Histórico de alterações da volta.** Com a remoção dos submenus, confirmar se é preciso consultar no ecrã o registo de alterações da volta (quem alterou equipa, viatura, horários ou visitas), por exemplo com um botão no cabeçalho, ou se basta manter o registo na base de dados (RF44, RF21, RF47 e RNF04).
 
 ## 9. Rastreabilidade
 
@@ -316,27 +361,49 @@ Cada objetivo da proposta tem de ter pelo menos um requisito que o realize.
 
 | Objetivo | Requisitos funcionais |
 |---|---|
-| O1 Aceder à informação relevante dos utentes | RF01, RF02, RF03, RF05, RF31, RF06, RF07, RF08 |
-| O2 Georreferenciar e visualizar a distribuição geográfica | RF04, RF15, RF16, RF17, RF18, RF09 |
+| O1 Aceder à informação relevante dos utentes | RF01, RF02, RF03, RF05, RF06, RF07, RF08, RF31 |
+| O2 Georreferenciar e visualizar a distribuição geográfica | RF04, RF09, RF15, RF16, RF17, RF18 |
 | O3 Definir e atualizar prioridades de atendimento | RF10, RF11, RF12, RF13, RF14 |
-| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF25, RF26, RF27, RF23, RF24, RF28 |
-| O5 Registar as visitas domiciliárias | RF29, RF30, RF31, RF32 |
+| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF28, RF43, RF44, RF47, RF48, RF50, RF52 |
+| O5 Registar as visitas domiciliárias | RF29, RF30, RF31, RF32, RF45, RF46, RF51 |
 | O6 Sistematizar e disponibilizar informação de acompanhamento | RF26, RF33, RF34, RF35 |
-| Suporte transversal (acessos, dados de teste, comunicação, importação) | RF36, RF37, RF38, RF39, RF40, RF41, RF42 |
+| Suporte transversal (acessos, dados de teste, comunicação, importação) | RF36, RF37, RF38, RF39, RF40, RF41, RF42, RF49 |
 
 Os requisitos não funcionais não realizam um objetivo, protegem a forma como os objetivos são cumpridos. Ligam-se aos requisitos funcionais assim:
 
 | Requisitos não funcionais | Protegem |
 |---|---|
-| RNF01, RNF22, RNF23, RNF24 (dados e privacidade) | RF02, RF03, RF26, RF40 |
-| RNF02, RNF03, RNF25 (acesso e segurança) | RF37, RF38 |
-| RNF04 (auditoria) | RF10, RF29 |
-| RNF05, RNF06, RNF07, RNF08 (usabilidade) | RF01, RF15, RF19, RF29 |
-| RNF09, RNF10, RNF11 (desempenho e escala) | RF15, RF16, RF20 |
-| RNF12, RNF13, RNF26, RNF27 (integridade) | RF04, RF19, RF21, RF29 |
+| RNF01, RNF22, RNF23, RNF24 (dados e privacidade) | RF02, RF03, RF26, RF40, RF45, RF49 |
+| RNF02, RNF03, RNF25 (acesso e segurança) | RF03, RF37, RF38, RF45, RF49 |
+| RNF04 (auditoria) | RF03, RF10, RF29, RF45, RF46, RF47 |
+| RNF05, RNF06, RNF07, RNF08 (usabilidade) | RF01, RF15, RF19, RF29, RF33, RF44, RF46, RF50 |
+| RNF09, RNF10, RNF11 (desempenho e escala) | RF15, RF16, RF20, RF43, RF48 |
+| RNF12, RNF13, RNF26, RNF27 (integridade) | RF04, RF19, RF21, RF29, RF43, RF46, RF47, RF50 |
 | RNF14 (disponibilidade, só como recomendação para produção) | Todos |
 | RNF15, RNF17, RNF18, RNF19, RNF28 (qualidade da construção) | Todos |
-| RNF20, RNF21 (interoperabilidade) | RF26, RF34 |
+| RNF20, RNF21 (interoperabilidade) | RF26, RF27, RF34, RF43 |
+
+### 9.1. Decisões de âmbito e rastreabilidade da revisão técnica (v0.3)
+
+| Tema | Decisão proposta | Estado |
+|---|---|---|
+| Urgência / triagem | Hierarquia clínica configurável distinta da complexidade | **A validar com a ULSBA** |
+| Complexidade / PPS | Registo, apresentação e histórico separados; estima duração | Princípio sugerido pela docente; parâmetros **por validar** |
+| Equipa responsável | Campo na ficha; composição por período; atribuição temporal | Proposta técnica; exceções **por validar** |
+| Agenda por utente | Horário da visita; sem filtro de equipas | Alinhado com os exemplos do frontend/reunião |
+| Voltas e paragens | Volta pode conter uma visita; paragem pode agrupar utentes | Correção técnica necessária |
+| Construção da volta | Painel aberto a partir do dia vazio do calendário; ordem das paragens manual | Pedido da docente; formato do painel **por validar** |
+| Conflitos | Equipa, profissional, viatura e utente; não confundir mesmo local com simultaneidade clínica | Regra de integridade proposta |
+| Atrasos | Proposta de replaneamento com confirmação e histórico | Sugestão da docente; algoritmo **por validar** |
+| PDF/Excel | Opcional, não integrar no caminho crítico | Backlog |
+| Geocodificação automática | Não bloqueante | Backlog |
+| Importação CSV/Mensagens/heurística | Não centrais à reunião | Backlog, manter IDs históricos |
+| Algoritmo de otimização | Exportação RF26 obrigatória; integração RF27 condicionada | Validar com docente de Matemática |
+| Estado de implementação | Interface com dados em memória não comprova persistência/segurança | Exige testes API + BD |
+
+**Regra de versionamento:** não reutilizar IDs eliminados; se a equipa aprovar retirar um RF, registar «Retirado do âmbito desta versão» com motivo, sem renumerar ou reaproveitar o código. Assim, PRs, diagramas e relatórios não ficam com referências inconsistentes.
+
+---
 
 ## 10. Referências
 
@@ -361,7 +428,47 @@ Ainda não foi recebida da ULSBA nenhuma informação além da proposta de proje
 
 1. **Dias de visita.** Admite-se que não há dias fixos para as visitas e que dependem das situações de urgência.
 2. **Triagem (urgência).** Admite-se uma triagem com quatro níveis: A (muito urgente), B (urgente), C (pouco urgente) e Não urgente.
-3. **Priorização (complexidade), baseada no PPS.** Admite-se a classificação IPCPAL: altamente complexo, complexo e não complexo.
-4. **Dados do utente.** Admite-se que a ficha tem nome, número de utente, datas de referenciação, de triagem e de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas. Admite-se que o local é a casa do utente, um lar ou uma unidade (por exemplo, em Serpa ou em Montemor), com estado ativo ou inativo e histórico de visitas.
+3. **Complexidade (hipótese da v0.2, ainda não validada).** Admitiu-se a classificação IPCPAL: altamente complexo, complexo e não complexo, e uma possível relação com o PPS. Esta relação não está demonstrada nem deve ser automatizada sem validação clínica. Na presente versão, o PPS e a complexidade são registados separadamente (RF12 e RF14).
+4. **Dados do utente.** Admite-se que a ficha tem nome, número de utente, datas de referenciação, de triagem e de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas, incluindo a identificação do cuidador principal quando exista e da equipa responsável pelo acompanhamento. Admite-se que o local é a casa do utente, um lar ou uma unidade (por exemplo, em Serpa ou em Montemor), com estado ativo ou inativo e histórico de visitas.
 5. **Horário.** Admite-se que as visitas decorrem entre as 9h30 e as 16h e que às 16h as equipas estão de volta a Beja.
 6. **Viaturas e equipas.** Admite-se que há duas viaturas, ou seja, duas equipas em simultâneo, e que o território é o Baixo Alentejo.
+
+---
+
+## Anexo B. Registo das propostas da reunião de 28/10/2026
+
+Este anexo separa as **sugestões da docente**, os requisitos documentados e a situação da implementação. Não declara funcionalidades prontas apenas por existirem ecrãs React com dados fictícios.
+
+| Página | Sugestão registada | Requisitos relacionados | Situação para validação |
+|---|---|---|---|
+| Dashboard | Manter pesquisa/ficha/mapa e **manter «Cuidador Principal»** para a pessoa da família ou do domicílio que presta cuidados; **substituir «Médico Assistente» por «Equipa Responsável»** para identificar os profissionais de saúde responsáveis pelo utente. | RF02, RF33 | Preservar o cuidador como dado distinto da equipa responsável e distinguir esta da equipa executante da visita. |
+| Utentes | Edição autorizada, prioridade separada da complexidade, colunas de complexidade e equipa responsável, filtros (prioridade, estado, complexidade, equipa responsável, última visita entre datas), alterar a prioridade na lista; melhor experiência móvel. | RF03, RF08, RF10–RF12, RF37, RNF06 | Confirmar matriz de campos editáveis e critérios clínicos. |
+| Utentes | Exportar ficha em PDF ou Excel. | RF35 | Opcional (*Could*), condicionado a permissões. |
+| Equipas | Separador específico; profissionais, viatura, códigos A/B/C e acesso às próprias voltas. | RF20, RF24, RF49, RF52 | Confirmar estabilidade das equipas e exceções de acesso. |
+| Viaturas | Listagem, características, combustível/autonomia, depósito, lugares, estado, disponibilidade, revisões e reparações; ação «Agendar» no calendário. | RF20, RF48 | Confirmar campos e calendário de indisponibilidade. |
+| Agenda | Planeamento manual; algoritmo como proposta, aceite/ajustado por utilizador quando disponível. | RF19, RF26, RF27 | Integração do algoritmo continua pendente de definição de âmbito. |
+| Agenda | Calendário mensal com perspetivas Unidade, Utente e Profissional; início/fim dos eventos; selecionar volta para detalhe. | RF19, RF43, RF44 | Confirmar significado dos horários e exceções à equipa responsável fixa. |
+| Agenda | Clicar na caixa de um dia vazio mostra utentes a visitar, equipas, viaturas e mapa para construir a volta, com horas de partida e chegada. | RF50, RF20, RF21, RF48 | Confirmar formato do painel e se os avisos de autonomia bloqueiam ou apenas alertam. |
+| Volta | Ecrã único, sem submenus, como no ecrã de referência: cabeçalho, visitas ordenadas com horários previstos/reais e ocorrências, mapa com distância e caixa de ocorrências gerais no fundo, com botão «Imprimir relatório». O separador Histórico deixa de existir. | RF43–RF45, RF51 | Esclarecer fonte das distâncias e visibilidade clínica; confirmar se é preciso consultar no ecrã o histórico de alterações da volta. |
+| Visitas | Criação pendente/planeada, edição dos instantes reais, duração, alerta de valores suspeitos, ocorrências com autor e atrasos. | RF23, RF29, RF45–RF47, RNF12 | Confirmar quem pode corrigir horários e regras de confirmação. |
+
+### Dependências para implementação além do frontend
+
+- **API:** autorização por perfil/equipa/campo, endpoints para utentes, voltas, visitas, ocorrências, viaturas e disponibilidade; regras de validação temporal e deteção de conflitos.
+- **Modelo de dados e migrações:** equipa responsável do utente, registos de atribuição e composição; voltas/paragens/visitas; instantes previstos/reais em `timestamptz`; ocorrências com autor e histórico; características e períodos de indisponibilidade das viaturas; prioridades e complexidade separadas.
+- **Frontend:** integrar os formulários com API, tratar erros e permissões devolvidos pelo servidor, conservar a interface responsiva e identificar claramente qualquer simulação de rota.
+- **Testes:** cobrir autorização cruzada, horários inválidos, visitas suspeitamente curtas, sobreposição de recursos, filtro por utente e recalculação de previsões com confirmação.
+
+---
+
+## Anexo C. Histórico anterior — passagem da v0.1 para a v0.2 (já partilhada)
+
+A numeração das secções e dos pontos em aberto neste anexo é a da v0.2. A v0.2 manteve a organização temática da v0.1 e renumerou os RF por ordem crescente (RF01–RF42); os RNF mantiveram a numeração da v0.1, com novos RNF22 a RNF28. Os alterados traziam «(alt.)» e os novos «(novo)».
+
+- **Hipóteses sobre a ULSBA.** Sem informação da ULSBA, as hipóteses constam do Anexo A e sustentam os requisitos com origem U.
+- **RF novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42.
+- **RF alterados:** RF02, RF03, RF04, RF05, RF10, RF11, RF12, RF13, RF15, RF16, RF17, RF19, RF20, RF21, RF22, RF25, RF26, RF29, RF30, RF32, RF33, RF34, RF37, RF38, RF39 e RF40.
+- **Prioridades alteradas:** RF05 de Should para Must; RF38 de Must para Should; RF04 passa a cobrir só a marcação manual do ponto (a geocodificação automática é o novo RF09, Should).
+- **RNF:** passaram a ter prioridade e método de verificação; sete novos (RNF22 a RNF28); RNF13 e RNF14 reformulados (produção fora do âmbito); RNF01 e RNF04 precisados; RNF16 passou para a secção 7.
+- **Novas secções:** 5.10 (critérios de aceitação dos Must), pontos em aberto 9 a 15 e Anexo A.
+- **Totais:** 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF.
