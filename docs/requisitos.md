@@ -6,27 +6,27 @@
 |---|---|
 | Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (UPBeja, ESTIG) |
 | Tutora | Elsa Rodrigues |
-| Versão | 0.3, proposta de atualização após a reunião de 28/10/2026 (pendente de validação) |
+| Versão | 0.3, versão para entrega, após a reunião de 28/10/2026 (requisitos pendentes de validação com a ULSBA) |
 | Data | 31 de outubro de 2026 |
 
 ---
 
 ## Alterações face à versão 0.2
 
-A **versão 0.3** é a primeira atualização proposta para partilha com a equipa após a **v0.2, de 11/10/2026**. Incorpora as observações registadas na reunião com a docente Maria Teresa de Abreu Luís Godinho, em **28/10/2026**, bem como os esclarecimentos resultantes da revisão técnica e da evolução do frontend.
+A **versão 0.3** atualiza a **v0.2, de 11/10/2026**. Incorpora as observações registadas na reunião com a docente Maria Teresa de Abreu Luís Godinho, em **28/10/2026**, bem como os esclarecimentos resultantes da revisão técnica e da evolução do frontend.
 
 As alterações descrevem **requisitos propostos ou clarificados**, não regras clínicas ou operacionais confirmadas pela ULSBA. A existência de uma interface no protótipo não demonstra que a funcionalidade esteja implementada na API, na base de dados ou em termos de segurança.
 
 - **Correção de terminologia (31/10/2026):** o campo **Cuidador Principal** mantém-se para identificar o familiar ou outra pessoa que presta cuidados ao utente no domicílio. No Dashboard, o campo **Médico Assistente** é substituído por **Equipa Responsável**, que designa a equipa de profissionais responsável pelo acompanhamento do utente. São pessoas/funções distintas e não devem partilhar o mesmo campo de dados.
 - **Requisitos funcionais existentes revistos (26):** RF02, RF03, RF07, RF08, RF10, RF11, RF12, RF14, RF17, RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF29, RF31, RF32, RF33, RF34, RF35, RF37 e RF39.
-- **Requisitos funcionais acrescentados (9):** RF43 a RF51, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas, restrições de acesso por equipa construção da volta a partir de um dia vazio do calendário e impressão do relatório da volta.
+- **Requisitos funcionais acrescentados (10):** RF43 a RF52, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas, restrições de acesso por equipa, construção da volta a partir de um dia vazio do calendário, impressão do relatório da volta e ecrã de equipas.
 - **Requisitos não funcionais revistos (9):** RNF02, RNF04, RNF05, RNF06, RNF12, RNF15, RNF22, RNF26 e RNF27. Não foram introduzidos novos RNF.
 - **Prioridades propostas:** RF08, RF12 e RF24 passam de *Should* para *Must*; RNF04, RNF06 e RNF22 passam de *Should* para *Must*. Esta alteração depende da concordância da equipa e da tutora, tendo em conta o prazo disponível.
-- **Totais da proposta v0.3:** **51 requisitos funcionais (29 Must, 16 Should, 6 Could)** e **27 requisitos não funcionais (16 Must, 10 Should, 1 Could)**. Na v0.2 existiam 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF (13 Must, 13 Should, 1 Could).
+- **Totais da proposta v0.3:** **52 requisitos funcionais (29 Must, 17 Should, 6 Could)** e **27 requisitos não funcionais (16 Must, 10 Should, 1 Could)**. Na v0.2 existiam 42 RF (20 Must, 16 Should, 6 Could) e 27 RNF (13 Must, 13 Should, 1 Could).
 
 ### Consolidação técnica e decisões propostas para a versão 0.3
 
-Esta revisão mantém a numeração **RF01–RF42** da versão partilhada e acrescenta **RF43–RF51**, sem reutilizar identificadores. Mantém igualmente os 27 RNF em vigor. Os critérios de aceitação foram aprofundados para possibilitar testes objetivos. **O documento não constitui validação clínica ou operacional da ULSBA**; as decisões de âmbito e a priorização abaixo permanecem propostas.
+Esta revisão mantém a numeração **RF01–RF42** da versão partilhada e acrescenta **RF43–RF52**, sem reutilizar identificadores. Mantém igualmente os 27 RNF em vigor. Os critérios de aceitação foram aprofundados para possibilitar testes objetivos. **O documento não constitui validação clínica ou operacional da ULSBA**; as decisões de âmbito e a priorização abaixo permanecem propostas.
 
 - **Urgência, complexidade e PPS são conceitos distintos:** a urgência determina a prioridade clínica; a complexidade pode apoiar a estimativa de duração; o PPS não determina automaticamente a complexidade sem regra clínica validada (RF12 e RF14).
 - **Planeamento:** uma volta confirmada pode ter uma ou mais visitas; uma volta em rascunho pode ainda não ter visitas. Uma paragem partilhada não implica que um profissional consiga executar atos clínicos simultâneos.
@@ -35,18 +35,6 @@ Esta revisão mantém a numeração **RF01–RF42** da versão partilhada e acre
 - **Segurança e rastreabilidade:** permissões de consulta/edição e identificação do autor devem ser verificadas e persistidas na API, não apenas simuladas ou apresentadas no React.
 - **Algoritmo:** mantém-se obrigatório disponibilizar os dados necessários à otimização (RF26). A integração do algoritmo (RF27, *Could*) depende da decisão sobre o âmbito e da docente de Matemática; o planeamento manual tem de funcionar autonomamente.
 - **Funcionalidades não bloqueantes:** RF09, RF14, RF28, RF35, RF36 e RF41 permanecem documentados como candidatos a desenvolvimento posterior. RF38 pode ser implementado após a autenticação base; RF34 pode começar por relatórios simples. A classificação *Should* ou *Could* de cada requisito permanece na respetiva tabela.
-
-### Histórico anterior — passagem da v0.1 para a v0.2 (já partilhada)
-
-Para contextualização, a versão 0.2 manteve a organização temática da versão 0.1 e reorganizou a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos não funcionais mantêm a numeração da versão 0.1 e os novos (RNF22 a RNF28) continuam a sequência. Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
-
-- **Hipóteses sobre a ULSBA.** Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a sua operação constam do Anexo A e servem de base aos requisitos com origem U, que têm de ser validados com a ULSBA.
-- **Requisitos funcionais novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42. Correspondem à gestão de locais, aos estados e à lista de utentes, à geocodificação, à classificação IPCPAL, às visitas pendentes, aos profissionais, à sugestão de ordem das paragens, à exportação em PDF, à importação de dados e ao aviso de ambiente de teste.
-- **Requisitos funcionais alterados:** RF02, RF03, RF04, RF05, RF10, RF11, RF12, RF13, RF15, RF16, RF17, RF19, RF20, RF21, RF22, RF25, RF26, RF29, RF30, RF32, RF33, RF34, RF37, RF38, RF39 e RF40.
-- **Prioridades alteradas:** RF05 de Should para Must; RF38 de Must para Should; RF04 passa a cobrir só a marcação manual do ponto (a geocodificação automática é o novo RF09, Should).
-- **Requisitos não funcionais.** Passam a ter prioridade e método de verificação. Há sete novos (RNF22 a RNF28). O RNF13 e o RNF14 foram reformulados, porque falam de produção e a produção está fora do âmbito. O RNF01 e o RNF04 foram precisados. O RNF16 passou para a secção 7.
-- **Novas secções:** 5.10 (critérios de aceitação dos requisitos Must), pontos em aberto 9 a 15 e Anexo A (hipóteses de trabalho sobre a operação da ULSBA).
-- **Totais:** 42 requisitos funcionais (20 Must, 16 Should, 6 Could) e 27 requisitos não funcionais em vigor.
 
 ---
 
@@ -222,10 +210,11 @@ Estes requisitos complementam os RF01–RF42, sem os renumerar. A existência de
 | RF45 (novo) | Registar ocorrências **operacionais da volta** e notas/ocorrências **da visita**, classificadas por visibilidade (operacional ou clínica), com autor e instante atribuídos pelo backend; permitir consulta e retificação auditada conforme permissão, sem edição silenciosa do histórico. | A reunião solicita rastreabilidade e uma separação de registos clínicos dos avisos operacionais. | D, E | Must |
 | RF46 (novo) | Para instantes previstos e reais, recusar intervalos de duração negativa e, nas visitas concluídas, fim anterior/igual ao início. Calcular duração pelos instantes completos com fuso; durações positivas abaixo de limiar configurável (ex.: 4 min) desencadeiam aviso e confirmação, não bloqueio automático. | Distingue inconsistência objetiva de duração improvável; preserva correção de horas e fusos. | D, E | Must |
 | RF47 (novo) | Após registar atraso, **propor** novas previsões para visitas seguintes da volta e mostrar conflitos de horários, recursos ou janelas; confirmar alterações antes de as gravar, mantendo histórico e preservando horas reais já registadas. | Atualizações automáticas silenciosas poderiam destruir evidência temporal e criar conflitos. | D, E | Should |
-| RF48 (novo) | Registar ficha de viatura (identificação, tipo de motorização/energia, capacidade de lugares, autonomia quando aplicável e respetiva unidade, manutenção/revisões e intervalos de indisponibilidade); calcular disponibilidade para um período a partir de reservas e bloqueios. | Uma viatura «disponível agora» pode estar ocupada no horário de uma visita futura. | D, E | Should |
+| RF48 (novo) | Registar ficha de viatura (identificação, tipo de motorização/energia, capacidade de lugares, capacidade do depósito, estado, autonomia quando aplicável e respetiva unidade, manutenção/revisões e intervalos de indisponibilidade), com a ação «Agendar» para marcar no calendário revisões, reparações ou outras indisponibilidades; calcular disponibilidade para um período a partir de reservas e bloqueios. | Uma viatura «disponível agora» pode estar ocupada no horário de uma visita futura. | D, E | Should |
 | RF49 (novo) | Aplicar o âmbito funcional de cada utilizador: profissionais consultam por omissão as suas equipas, voltas e utentes associados, e só editam o permitido; coordenadores autorizados têm vista geral. A ausência do filtro «Equipas» na agenda por utente é opção de interface, **não substitui** esta verificação de autorização. | Especifica a regra funcional que RNF02/RNF22 obrigam a proteger na API. | D, E | Must |
 | RF50 (novo) | Ao selecionar um dia sem voltas no calendário, apresentar um painel de construção da volta com os utentes a visitar (prioridade, complexidade, equipa responsável, última visita, localização), as equipas e as viaturas disponíveis nesse dia e um mapa. O utilizador escolhe equipa, viatura e utentes, ordena as paragens, define as horas previstas de partida e de chegada e guarda a volta. Autonomia insuficiente ou falta de lugares geram aviso e permitem gravar; sobreposições de equipa, profissional, viatura ou utente seguem o RF20 e o RF21. | A docente pediu, na reunião de 28/10/2026, que ao clicar na caixa de um dia vazio se veja tudo o que é preciso para construir a rota. Junta num só ecrã informação hoje dispersa. A ordem das paragens é manual; a sugestão automática pertence ao RF27/RF28. Autonomia e lugares dependem dos dados do RF48. | D | Must |
 | RF51 (novo) | No detalhe da volta, disponibilizar a ação «Imprimir relatório», que gera uma vista de impressão (ou PDF) com cabeçalho, visitas e horários previstos/reais, ocorrências e distância, sem os controlos da interface. Respeita as permissões do RF37 e do RF49. | A docente pediu que os relatórios se imprimissem a partir do ecrã de detalhe da volta. Pode ser feito com a impressão do navegador, sem pesar no prazo. A exportação em PDF da ficha continua no RF35. | D | Should |
+| RF52 (novo) | Disponibilizar um ecrã **Equipas** com a listagem das equipas (códigos A, B, C…), os profissionais que as compõem, a viatura habitualmente associada e as voltas de cada equipa. Um profissional vê as voltas da sua equipa; a vista geral depende de autorização (RF49). A composição segue o RF24. | A docente pediu um separador específico para as equipas. O RF24 e o RF49 definem as regras; este requisito acrescenta o ecrã. | D | Should |
 
 ### 5.11 Critérios de aceitação dos requisitos Must
 
@@ -377,7 +366,7 @@ Cada objetivo da proposta tem de ter pelo menos um requisito que o realize.
 | O1 Aceder à informação relevante dos utentes | RF01, RF02, RF03, RF05, RF06, RF07, RF08, RF31 |
 | O2 Georreferenciar e visualizar a distribuição geográfica | RF04, RF09, RF15, RF16, RF17, RF18 |
 | O3 Definir e atualizar prioridades de atendimento | RF10, RF11, RF12, RF13, RF14 |
-| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF28, RF43, RF44, RF47, RF48, RF50 |
+| O4 Apoiar o planeamento da agenda de visitas e viaturas | RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF28, RF43, RF44, RF47, RF48, RF50, RF52 |
 | O5 Registar as visitas domiciliárias | RF29, RF30, RF31, RF32, RF45, RF46, RF51 |
 | O6 Sistematizar e disponibilizar informação de acompanhamento | RF26, RF33, RF34, RF35 |
 | Suporte transversal (acessos, dados de teste, comunicação, importação) | RF36, RF37, RF38, RF39, RF40, RF41, RF42, RF49 |
@@ -457,8 +446,8 @@ Este anexo separa as **sugestões da docente**, os requisitos documentados e a s
 | Dashboard | Manter pesquisa/ficha/mapa e **manter «Cuidador Principal»** para a pessoa da família ou do domicílio que presta cuidados; **substituir «Médico Assistente» por «Equipa Responsável»** para identificar os profissionais de saúde responsáveis pelo utente. | RF02, RF33 | Preservar o cuidador como dado distinto da equipa responsável e distinguir esta da equipa executante da visita. |
 | Utentes | Edição autorizada, prioridade separada da complexidade, colunas de complexidade e equipa responsável, filtros (prioridade, estado, complexidade, equipa responsável, última visita entre datas), alterar a prioridade na lista; melhor experiência móvel. | RF03, RF08, RF10–RF12, RF37, RNF06 | Confirmar matriz de campos editáveis e critérios clínicos. |
 | Utentes | Exportar ficha em PDF ou Excel. | RF35 | Opcional (*Could*), condicionado a permissões. |
-| Equipas | Separador específico; profissionais, viatura, códigos A/B/C e acesso às próprias voltas. | RF20, RF24, RF49 | Confirmar estabilidade das equipas e exceções de acesso. |
-| Viaturas | Listagem, características, combustível/autonomia, lugares, disponibilidade, revisões e reparações. | RF20, RF48 | Confirmar campos e calendário de indisponibilidade. |
+| Equipas | Separador específico; profissionais, viatura, códigos A/B/C e acesso às próprias voltas. | RF20, RF24, RF49, RF52 | Confirmar estabilidade das equipas e exceções de acesso. |
+| Viaturas | Listagem, características, combustível/autonomia, depósito, lugares, estado, disponibilidade, revisões e reparações; ação «Agendar» no calendário. | RF20, RF48 | Confirmar campos e calendário de indisponibilidade. |
 | Agenda | Planeamento manual; algoritmo como proposta, aceite/ajustado por utilizador quando disponível. | RF19, RF26, RF27 | Integração do algoritmo continua pendente de definição de âmbito. |
 | Agenda | Calendário mensal com perspetivas Unidade, Utente e Profissional; início/fim dos eventos; selecionar volta para detalhe. | RF19, RF43, RF44 | Confirmar significado dos horários e exceções à equipa responsável fixa. |
 | Agenda | Clicar na caixa de um dia vazio mostra utentes a visitar, equipas, viaturas e mapa para construir a volta, com horas de partida e chegada. | RF50, RF20, RF21, RF48 | Confirmar formato do painel e se os avisos de autonomia bloqueiam ou apenas alertam. |
@@ -471,3 +460,17 @@ Este anexo separa as **sugestões da docente**, os requisitos documentados e a s
 - **Modelo de dados e migrações:** equipa responsável do utente, registos de atribuição e composição; voltas/paragens/visitas; instantes previstos/reais em `timestamptz`; ocorrências com autor e histórico; características e períodos de indisponibilidade das viaturas; prioridades e complexidade separadas.
 - **Frontend:** integrar os formulários com API, tratar erros e permissões devolvidos pelo servidor, conservar a interface responsiva e identificar claramente qualquer simulação de rota.
 - **Testes:** cobrir autorização cruzada, horários inválidos, visitas suspeitamente curtas, sobreposição de recursos, filtro por utente e recalculação de previsões com confirmação.
+
+---
+
+## Anexo C. Histórico anterior — passagem da v0.1 para a v0.2 (já partilhada)
+
+Para contextualização (a numeração das secções e dos pontos em aberto indicada neste anexo é a da v0.2), a versão 0.2 manteve a organização temática da versão 0.1 e reorganizou a numeração dos requisitos funcionais para que apareçam por ordem crescente (RF01 a RF42). Os requisitos não funcionais mantêm a numeração da versão 0.1 e os novos (RNF22 a RNF28) continuam a sequência. Os requisitos alterados trazem "(alt.)" no identificador e os novos trazem "(novo)".
+
+- **Hipóteses sobre a ULSBA.** Ainda não foi recebida informação da ULSBA. As hipóteses de trabalho sobre a sua operação constam do Anexo A e servem de base aos requisitos com origem U, que têm de ser validados com a ULSBA.
+- **Requisitos funcionais novos (11):** RF06 a RF09, RF14, RF23, RF24, RF28, RF35, RF41 e RF42. Correspondem à gestão de locais, aos estados e à lista de utentes, à geocodificação, à classificação IPCPAL, às visitas pendentes, aos profissionais, à sugestão de ordem das paragens, à exportação em PDF, à importação de dados e ao aviso de ambiente de teste.
+- **Requisitos funcionais alterados:** RF02, RF03, RF04, RF05, RF10, RF11, RF12, RF13, RF15, RF16, RF17, RF19, RF20, RF21, RF22, RF25, RF26, RF29, RF30, RF32, RF33, RF34, RF37, RF38, RF39 e RF40.
+- **Prioridades alteradas:** RF05 de Should para Must; RF38 de Must para Should; RF04 passa a cobrir só a marcação manual do ponto (a geocodificação automática é o novo RF09, Should).
+- **Requisitos não funcionais.** Passam a ter prioridade e método de verificação. Há sete novos (RNF22 a RNF28). O RNF13 e o RNF14 foram reformulados, porque falam de produção e a produção está fora do âmbito. O RNF01 e o RNF04 foram precisados. O RNF16 passou para a secção 7.
+- **Novas secções:** 5.10 (critérios de aceitação dos requisitos Must), pontos em aberto 9 a 15 e Anexo A (hipóteses de trabalho sobre a operação da ULSBA).
+- **Totais:** 42 requisitos funcionais (20 Must, 16 Should, 6 Could) e 27 requisitos não funcionais em vigor.
