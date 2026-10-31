@@ -7,16 +7,17 @@
 | Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (UPBeja, ESTIG) |
 | Tutora | Elsa Rodrigues |
 | Versão | 0.3, proposta de atualização após a reunião de 28/10/2026 (pendente de validação) |
-| Data | 30 de outubro de 2026 |
+| Data | 31 de outubro de 2026 |
 
 ---
 
 ## Alterações face à versão 0.2
 
-A **versão 0.3** é a primeira atualização proposta para partilha com a equipa após a **v0.2, de 11/10/2026**. Incorpora as observações registadas na reunião com a docente Maria Teresa de Abreu Luís Godinho, em **28/10/2026**, bem como os esclarecimentos resultantes da revisão técnica e da evolução do frontend. Não existiu uma versão 0.3 anterior aprovada ou partilhada com o grupo.
+A **versão 0.3** é a primeira atualização proposta para partilha com a equipa após a **v0.2, de 11/10/2026**. Incorpora as observações registadas na reunião com a docente Maria Teresa de Abreu Luís Godinho, em **28/10/2026**, bem como os esclarecimentos resultantes da revisão técnica e da evolução do frontend.
 
 As alterações descrevem **requisitos propostos ou clarificados**, não regras clínicas ou operacionais confirmadas pela ULSBA. A existência de uma interface no protótipo não demonstra que a funcionalidade esteja implementada na API, na base de dados ou em termos de segurança.
 
+- **Correção de terminologia (31/10/2026):** o campo **Cuidador Principal** mantém-se para identificar o familiar ou outra pessoa que presta cuidados ao utente no domicílio. No Dashboard, o campo **Médico Assistente** é substituído por **Equipa Responsável**, que designa a equipa de profissionais responsável pelo acompanhamento do utente. São pessoas/funções distintas e não devem partilhar o mesmo campo de dados.
 - **Requisitos funcionais existentes revistos (26):** RF02, RF03, RF07, RF08, RF10, RF11, RF12, RF14, RF17, RF19, RF20, RF21, RF22, RF23, RF24, RF25, RF26, RF27, RF29, RF31, RF32, RF33, RF34, RF35, RF37 e RF39.
 - **Requisitos funcionais acrescentados (7):** RF43 a RF49, relativos à gestão de voltas, detalhe do calendário, ocorrências, validação de horários, atrasos, gestão detalhada de viaturas e restrições de acesso por equipa.
 - **Requisitos não funcionais revistos (9):** RNF02, RNF04, RNF05, RNF06, RNF12, RNF15, RNF22, RNF26 e RNF27. Não foram introduzidos novos RNF.
@@ -90,7 +91,7 @@ A proposta não define perfis de utilizador, mas o mockup mostra uma sessão da 
 | Profissional de saúde | Consulta os utentes e as voltas a que tem acesso, regista horários reais e ocorrências e edita os campos para os quais tem autorização. |
 | Administrador | Gere utilizadores, parâmetros e dados de referência. Não precisa de ver dados clínicos (RNF22). |
 
-O perfil de acesso (o que se pode fazer na plataforma) é diferente da função clínica da pessoa (médico, enfermeiro). A mesma enfermeira pode ter o perfil de coordenador. Os dois conceitos devem ficar separados. Uma **equipa responsável pelo utente** não deve ser confundida com a **equipa executante de uma visita**. A reunião sugeriu ausência de rotação habitual e a ocultação do filtro de equipas na vista Utente; isso não basta para proibir substituições excepcionais na base de dados sem validação com a ULSBA.
+O **Cuidador Principal** é o familiar ou outra pessoa que presta habitualmente cuidados ao utente no domicílio; não corresponde a uma equipa clínica. A **Equipa Responsável** é o conjunto de profissionais de saúde responsável pelo acompanhamento do utente. O perfil de acesso (o que se pode fazer na plataforma) é diferente da função clínica da pessoa (médico, enfermeiro). A mesma enfermeira pode ter o perfil de coordenador. Os dois conceitos devem ficar separados. Uma **equipa responsável pelo utente** não deve ser confundida com a **equipa executante de uma visita**. A reunião sugeriu ausência de rotação habitual e a ocultação do filtro de equipas na vista Utente; isso não basta para proibir substituições excepcionais na base de dados sem validação com a ULSBA.
 
 ## 4. Convenções
 
@@ -128,7 +129,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
 | RF01 | Pesquisar um utente por número ou por nome, com sugestões à medida que se escreve. | O mockup tem os dois campos de pesquisa. Os nomes repetem-se muito (a lista de exemplo tem quatro "Maria Teresa"), por isso o número serve para desambiguar. | M | Must |
-| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, local (tipo, morada, código postal, localidade, concelho e coordenadas), equipa responsável, médico assistente, situação clínica, datas de referenciação, triagem e admissão, última visita, notas, prioridade, complexidade e estado. No Dashboard, apresentar «Equipa Responsável» em vez de «Cuidador Principal»; eventual contacto de cuidador, se clinicamente necessário, é um campo distinto a validar. | O1 e painel do mockup; substituição da etiqueta e distinção prioridade/complexidade sugeridas na reunião. A existência e composição exatas dos dados clínicos continuam a requerer validação. | P, M, U, D | Must |
+| RF02 (alt.) | Consultar a ficha do utente: identificação (número, nome, género, data de nascimento e idade), contacto, **Cuidador Principal** (familiar ou outra pessoa que habitualmente presta cuidados no domicílio), local (tipo, morada, código postal, localidade, concelho e coordenadas), **Equipa Responsável** (profissionais de saúde responsáveis pelo acompanhamento), situação clínica, datas de referenciação, triagem e admissão, última visita, notas, prioridade, complexidade e estado. No Dashboard, **manter «Cuidador Principal» e substituir o campo «Médico Assistente» por «Equipa Responsável»**. Os dois campos representam entidades distintas. | O1 e painel do mockup; esclarecimento da reunião sobre o cuidador informal e a equipa clínica, mantendo prioridade e complexidade separadas. Não se deve substituir ou sobrescrever o cuidador com informação da equipa. A necessidade de outros campos clínicos permanece sujeita a validação. | P, M, U, D | Must |
 | RF03 (alt.) | Criar, editar e inativar utentes, sem apagamento físico durante a atividade; disponibilizar formulário de edição com campos editáveis apenas a profissionais autorizados. Manter histórico e respeitar as regras de conservação por definir (RNF23). | A docente salientou que o botão Editar deve funcionar e que não basta ocultar campos a utilizadores sem permissão: a API deve rejeitar alterações não autorizadas. | M, E, D | Must |
 | RF04 (alt.) | Definir ou corrigir as coordenadas de um utente ou de um local marcando o ponto no mapa, com validação de que o ponto está no território. | A população é dispersa e muitas moradas rurais não são resolvidas bem por geocodificação automática. Sem coordenadas certas, mapa e rotas não servem. | P | Must |
 | RF05 (alt.) | Registar o local onde o utente se encontra (domicílio, lar, unidade de cuidados continuados ou unidade de cuidados paliativos), com nome da instituição, morada, localidade, contacto telefónico e concelho. | Admite-se que haja utentes em lares e unidades (Serpa e Montemor, por exemplo), com implicações no acesso, na duração da visita e nas rotas (Anexo A, nota 4). | U | Must |
@@ -189,7 +190,7 @@ O perfil de acesso (o que se pode fazer na plataforma) é diferente da função 
 
 | ID | Requisito | Justificação | Origem | Prior. |
 |---|---|---|---|---|
-| RF33 (alt.) | Apresentar no Dashboard a pesquisa e ficha do utente, equipa responsável, médico assistente, prioridade e complexidade em campos distintos, mapa, filtros de urgência e indicadores agregados (utentes ativos, visitas planeadas/realizadas/pendentes, ausência de visita e quilómetros estimados). | Preserva o aspeto do Dashboard original e integra as informações acrescentadas após a reunião. | P, M, D | Should |
+| RF33 (alt.) | Apresentar no Dashboard a pesquisa e ficha do utente, **Cuidador Principal e Equipa Responsável em campos distintos** (a Equipa Responsável ocupa o lugar anteriormente apresentado como «Médico Assistente»), prioridade e complexidade em campos distintos, mapa, filtros de urgência e indicadores agregados (utentes ativos, visitas planeadas/realizadas/pendentes, ausência de visita e quilómetros estimados). | Preserva o aspeto do Dashboard original e respeita a distinção entre o cuidador do domicílio e os profissionais de saúde responsáveis pelo utente. | P, M, D | Should |
 | RF34 (alt.) | Apresentar relatórios filtráveis por período, equipa e concelho; disponibilizar exportações CSV de relatórios e listagens de utentes quando autorizadas. | A exportação fica na prioridade Should para não tornar obrigatório um formato de ficheiro dentro do RF08, relativo à listagem e filtros. | P, M, E | Should |
 | RF35 (alt.) | [BACKLOG] Exportar relatórios, plano do dia e, caso autorizado, ficha individual em PDF; suportar Excel/XLSX apenas após definir os campos e a necessidade real. Em exportações com dados clínicos, aplicar controlo de acesso e minimização. | A docente referiu PDF/Excel da ficha como possível funcionalidade não essencial; não confundir com a exportação CSV da listagem nem a exportação técnica do RF26. | E, D | Could |
 
@@ -231,7 +232,7 @@ Os valores numéricos são metas de trabalho a validar. Os critérios abaixo cob
 | ID | Critério de aceitação |
 |---|---|
 | RF01 | Ao escrever 3 ou mais caracteres do nome ou do número, aparecem até 5 sugestões em menos de 1 segundo. Selecionar uma sugestão abre a ficha. |
-| RF02 | A ficha apresenta identificação, local, equipa responsável, médico assistente, prioridade e complexidade separados, entre os restantes campos previstos. Um campo sem valor mostra «sem informação». O Dashboard apresenta «Equipa Responsável» em lugar de «Cuidador Principal». |
+| RF02 | A ficha apresenta identificação, local, **Cuidador Principal**, **Equipa Responsável**, prioridade e complexidade em campos distintos, entre os restantes campos previstos. Um campo sem valor mostra «sem informação». No Dashboard, a etiqueta «Cuidador Principal» mantém-se, e a etiqueta «Médico Assistente» é substituída por «Equipa Responsável». Alterar a equipa responsável não altera nem elimina o cuidador registado. |
 | RF03 | O botão Editar permite atualizar os campos autorizados e mostra o resultado após guardar; um profissional sem permissão não consegue alterar os dados nem através de pedido direto à API. Inativar preserva o histórico e retira o utente do planeamento por omissão. |
 | RF04 | Marcar um ponto no mapa grava as coordenadas. Um ponto fora de Portugal continental, ou com latitude e longitude trocadas, é recusado com uma mensagem. |
 | RF05 | Cada utente tem exatamente um local associado. Os locais do tipo lar ou unidade exigem nome. |
@@ -343,7 +344,7 @@ Questões que devem ser fechadas na próxima reunião de acompanhamento ou diret
 
 1. **Modelo final de prioridade e complexidade.** A reunião distinguiu urgência (ordem de atendimento) de complexidade (apoio à duração). Continuam por validar os níveis de triagem usados no mapa, os prazos de visita, a relação entre PPS e IPCPAL e a estimativa de duração por complexidade (RF10–RF14, RF19, RF22 e RF39).
 2. **Regras de planeamento e equipas.** Confirmar horário habitual (hipótese 9h30–16h), regresso a Beja, pausas, números de recursos, disponibilidade e durações. Confirmar se cada utente mantém a mesma equipa responsável e em que exceções a equipa executante/viatura ou composição da equipa pode mudar (RF19–RF24, RF43, RF48 e RF49).
-3. **Dados mínimos na ficha.** Confirmar diagnósticos/notas imprescindíveis, médico assistente, atribuição de equipa responsável e necessidade de guardar um contacto de cuidador separadamente. Quais profissionais podem consultar e editar cada campo? (RF02, RF03, RF37, RF49, RNF01 e RNF22).
+3. **Dados mínimos na ficha.** Confirmar diagnósticos/notas imprescindíveis e os dados do **Cuidador Principal** (pessoa da família ou do domicílio que presta cuidados), incluindo se é necessário registar o seu contacto. Confirmar a atribuição da **Equipa Responsável**, mostrada no Dashboard em substituição do campo «Médico Assistente», e quais os profissionais que podem consultar e editar cada campo. Caso o nome do médico assistente continue a ser necessário noutro contexto, definir essa necessidade separadamente, sem substituir o cuidador. (RF02, RF03, RF37, RF49, RNF01 e RNF22).
 4. **Âmbito do algoritmo.** Confirmar com a docente de Matemática se haverá integração nesta fase, formato dos dados e critérios de aceitação da proposta. A criação manual mantém-se obrigatória. Uma rota ilustrativa no frontend não satisfaz RF27 (RF19, RF26–RF28 e RF47).
 5. **Fonte das distâncias.** Linha reta, serviço de encaminhamento externo ou motor próprio? Condiciona lógicas de processamento do espaço (RF17, RF25 e RF32).
 6. **Utilização no terreno.** Confirmar quais tarefas serão feitas em telemóvel (horários reais, ocorrências, consulta do mapa), requisitos mínimos de responsividade e eventual necessidade futura de suporte offline, atualmente fora do âmbito (RF45, RF46 e RNF06).
@@ -435,7 +436,7 @@ Ainda não foi recebida da ULSBA nenhuma informação além da proposta de proje
 1. **Dias de visita.** Admite-se que não há dias fixos para as visitas e que dependem das situações de urgência.
 2. **Triagem (urgência).** Admite-se uma triagem com quatro níveis: A (muito urgente), B (urgente), C (pouco urgente) e Não urgente.
 3. **Complexidade (hipótese da v0.2, ainda não validada).** Admitiu-se a classificação IPCPAL: altamente complexo, complexo e não complexo, e uma possível relação com o PPS. Esta relação não está demonstrada nem deve ser automatizada sem validação clínica. Na presente versão, o PPS e a complexidade são registados separadamente (RF12 e RF14).
-4. **Dados do utente.** Admite-se que a ficha tem nome, número de utente, datas de referenciação, de triagem e de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas. Admite-se que o local é a casa do utente, um lar ou uma unidade (por exemplo, em Serpa ou em Montemor), com estado ativo ou inativo e histórico de visitas.
+4. **Dados do utente.** Admite-se que a ficha tem nome, número de utente, datas de referenciação, de triagem e de admissão, idade, género, concelho, local, morada, localidade, contacto telefónico e coordenadas, incluindo a identificação do cuidador principal quando exista e da equipa responsável pelo acompanhamento. Admite-se que o local é a casa do utente, um lar ou uma unidade (por exemplo, em Serpa ou em Montemor), com estado ativo ou inativo e histórico de visitas.
 5. **Horário.** Admite-se que as visitas decorrem entre as 9h30 e as 16h e que às 16h as equipas estão de volta a Beja.
 6. **Viaturas e equipas.** Admite-se que há duas viaturas, ou seja, duas equipas em simultâneo, e que o território é o Baixo Alentejo.
 
@@ -447,7 +448,7 @@ Este anexo separa as **sugestões da docente**, os requisitos documentados e a s
 
 | Página | Sugestão registada | Requisitos relacionados | Situação para validação |
 |---|---|---|---|
-| Dashboard | Manter pesquisa/ficha/mapa e substituir «Cuidador Principal» por «Equipa Responsável»; apresentar médico assistente. | RF02, RF33 | Definir equipa responsável vs. executante da visita. |
+| Dashboard | Manter pesquisa/ficha/mapa e **manter «Cuidador Principal»** para a pessoa da família ou do domicílio que presta cuidados; **substituir «Médico Assistente» por «Equipa Responsável»** para identificar os profissionais de saúde responsáveis pelo utente. | RF02, RF33 | Preservar o cuidador como dado distinto da equipa responsável e distinguir esta da equipa executante da visita. |
 | Utentes | Edição autorizada, prioridade separada da complexidade, coluna e filtros (prioridade, estado, complexidade, última visita); melhor experiência móvel. | RF03, RF08, RF10–RF12, RF37, RNF06 | Confirmar matriz de campos editáveis e critérios clínicos. |
 | Utentes | Exportar ficha em PDF ou Excel. | RF35 | Opcional (*Could*), condicionado a permissões. |
 | Equipas | Separador específico; profissionais, viatura, códigos A/B/C e acesso às próprias voltas. | RF20, RF24, RF49 | Confirmar estabilidade das equipas e exceções de acesso. |
