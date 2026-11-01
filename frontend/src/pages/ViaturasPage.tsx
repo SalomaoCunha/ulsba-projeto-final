@@ -5,7 +5,7 @@ const ViaturasPage: React.FC = () => (
   <EmConstrucaoPage
     titulo="Viaturas"
     icone="bi-truck"
-    descricao="Autonomia, combustível, lugares e disponibilidade das viaturas. Em desenvolvimento (T5)."
+    descricao="Gestão de viaturas, estado e disponibilidade. Em desenvolvimento (T5)."
   />
 );
 
