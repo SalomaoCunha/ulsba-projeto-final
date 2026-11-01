@@ -15,6 +15,14 @@ export interface Utente {
   lng: number;
   notas: string;
   prioridade: PrioridadeValor;
+  historicoPrioridade: AlteracaoPrioridade[];
   complexidade: ComplexidadeValor;
   estado: 'Ativo' | 'Inativo';
+}
+
+export interface AlteracaoPrioridade {
+  prioridadeAnterior: PrioridadeValor;
+  prioridadeNova: PrioridadeValor;
+  data: string;
+  autor: string;  
 }
