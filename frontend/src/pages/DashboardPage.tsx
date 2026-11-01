@@ -52,7 +52,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="h-100 d-flex flex-column overflow-hidden">
       <div className="row g-3 flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
-        <div className="col-md-4 d-flex flex-column gap-2" style={{ minHeight: 0, overflowY: 'auto' }}>
+        <div className="col-md-4 h-100 d-flex flex-column gap-2" style={{ minHeight: 0, maxHeight: '100%', overflowY: 'auto' }}>
           <PesquisaUtente utentes={utentes} onPesquisar={executarPesquisa} />
           <div className="flex-grow-1" style={{ minHeight: '220px' }}>
             <FichaUtenteCard utente={utenteSelecionado} onEditar={abrirEdicao} />

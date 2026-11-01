@@ -23,11 +23,11 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
   const nivelComplexidade = getNivelComplexidade(utente.complexidade);
 
   return (
-    <div className="card shadow-sm border-0 h-100 d-flex flex-column" style={{ minHeight: 0 }}>
+    <div className="card shadow-sm border-0 h-100 d-flex flex-column" style={{ minHeight: 0, maxHeight: '100%' }}>
       {/* Cabeçalho */}
-      <div className="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center flex-shrink-0">
-        <h6 className="fw-bold mb-0 text-dark">Ficha do Utente</h6>
-        <div className="d-flex align-items-center gap-2">
+      <div className="card-header bg-white border-bottom-0 pt-3 pb-2 d-flex flex-wrap justify-content-between align-items-center gap-2 flex-shrink-0">
+        <h6 className="fw-bold mb-0 text-dark text-nowrap">Ficha do Utente</h6>
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           {nivelComplexidade && (
             <span
               className="ulsba-pill"
@@ -39,15 +39,15 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
           <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
             {utente.estado}
           </span>
-          <button className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onClick={onEditar}>
-            <i className="bi bi-pencil"></i> Editar
+          <button className="btn btn-sm btn-outline-secondary" onClick={onEditar} title="Editar">
+            <i className="bi bi-pencil"></i>
           </button>
         </div>
       </div>
 
-      <div className="card-body p-3" style={{ overflowY: 'auto', minHeight: 0 }}>
+      <div className="card-body p-3" style={{ overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
         {/* Identificação Base */}
-        <div className="d-flex align-items-center gap-3 mb-3 pb-2 border-bottom border-light">
+        <div className="d-flex align-items-center gap-3 mb-2 pb-1 border-bottom border-light">
           <div className="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px' }}>
             <i className="bi bi-person-fill" style={{ fontSize: '1.4rem' }}></i>
           </div>
@@ -58,9 +58,9 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
         </div>
 
         {/* Grelha de Dados (2 Colunas) */}
-        <div className="row g-3">
+        <div className="row g-2">
           {/* Coluna Esquerda */}
-          <div className="col-md-6 d-flex flex-column gap-2">
+          <div className="col-md-6 d-flex flex-column gap-1">
             <DetailItem icon="bi-calendar3" label="Data de Nascimento:" value={utente.dataNascimento} />
             <DetailItem icon="bi-telephone" label="Telefone:" value={utente.telefone} />
             <DetailItem icon="bi-person-heart" label="Cuidador Principal:" value={utente.cuidadorPrincipal} />
@@ -69,11 +69,10 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
               <DetailItem icon="bi-building" label="Instituição:" value={utente.nomeInstituicao} />
             )}
             <DetailItem icon="bi-geo-alt" label="Morada:" value={formatarMorada(utente)} />
-            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
           </div>
 
           {/* Coluna Direita */}
-          <div className="col-md-6 d-flex flex-column gap-2">
+          <div className="col-md-6 d-flex flex-column gap-1">
             <DetailItem icon="bi-clock" label="Última Visita:" value={utente.ultimaVisita} />
             <DetailItem icon="bi-people" label="Equipa Responsável:" value={utente.equipaResponsavel} />
 
@@ -87,6 +86,8 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
                 </ul>
               </div>
             </div>
+
+            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
           </div>
         </div>
       </div>
