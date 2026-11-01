@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUtentesFicticios } from '../services/utenteService'
 import type { Utente } from '../types/utente'
-import {getNivelPrioridade} from '@/config/niveis';
+import { getNivelPrioridade } from '@/config/niveis';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
@@ -10,7 +10,7 @@ const UtentesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUtentesFicticios().then(setUtentes);  
+    getUtentesFicticios().then(setUtentes);
   }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
@@ -36,14 +36,14 @@ const UtentesPage: React.FC = () => {
 
   return (
     <div className="h-100 d-flex flex-column">
-      
+
       {/* Cabeçalho da Página */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Lista de Utentes</h1>
           <p className="text-muted mb-0 small">Gestão e consulta do diretório de pacientes</p>
         </div>
-        <button 
+        <button
           className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
           onClick={() => navigate('/utentes/novo')}
         >
@@ -54,22 +54,22 @@ const UtentesPage: React.FC = () => {
 
       {/* Cartão Branco Principal */}
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden">
-        
+
         {/* Barra de Ferramentas (Filtros) */}
         <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
           <div className="input-group w-auto" style={{ minWidth: '300px' }}>
             <span className="input-group-text bg-light border-end-0 text-muted">
               <i className="bi bi-search"></i>
             </span>
-            <input 
-              type="text" 
-              className="form-control bg-light border-start-0" 
-              placeholder="Pesquisar por nome ou número..." 
+            <input
+              type="text"
+              className="form-control bg-light border-start-0"
+              placeholder="Pesquisar por nome ou número..."
               value={termoPesquisa}
               onChange={(e) => setTermoPesquisa(e.target.value)}
             />
           </div>
-          
+
           <div className="d-flex gap-2">
             <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
               <i className="bi bi-funnel"></i> Filtros
@@ -87,6 +87,7 @@ const UtentesPage: React.FC = () => {
               <tr>
                 <th className="fw-medium border-bottom-0 ps-4 py-3">N.º Utente</th>
                 <th className="fw-medium border-bottom-0 py-3">Nome</th>
+                <th className="fw-medium border-bottom-0 ps-4 py-3">Equipa Responsável</th>
                 <th className="fw-medium border-bottom-0 py-3">Contacto</th>
                 <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
@@ -106,6 +107,7 @@ const UtentesPage: React.FC = () => {
                       {utente.nome}
                     </div>
                   </td>
+                  <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
                   <td className="py-3 text-muted">{utente.telefone}</td>
                   <td className="py-3 text-muted">{utente.ultimaVisita}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
@@ -123,7 +125,7 @@ const UtentesPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-        
+
         {/* Rodapé da Tabela com Paginação */}
         <div className="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center text-muted small">
           <span>A mostrar 1 a 5 de 24 utentes</span>
