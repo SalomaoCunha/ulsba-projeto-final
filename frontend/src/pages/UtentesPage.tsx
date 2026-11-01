@@ -87,7 +87,7 @@ const UtentesPage: React.FC = () => {
               <tr>
                 <th className="fw-medium border-bottom-0 ps-4 py-3">N.º Utente</th>
                 <th className="fw-medium border-bottom-0 py-3">Nome</th>
-                <th className="fw-medium border-bottom-0 ps-4 py-3">Equipa Responsável</th>
+                <th className="fw-medium border-bottom-0 py-3">Equipa Responsável</th>
                 <th className="fw-medium border-bottom-0 py-3">Contacto</th>
                 <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
