@@ -7,6 +7,9 @@ interface Props {
   onEditar: () => void;
 }
 
+const formatarMorada = (utente: Utente) =>
+  `${utente.ruaNumero}, ${utente.codigoPostal} ${utente.localidade} (${utente.concelho})`;
+
 const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
   // Se não houver utente selecionado, mostra um ecrã vazio
   if (!utente) {
@@ -61,7 +64,11 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
             <DetailItem icon="bi-calendar3" label="Data de Nascimento:" value={utente.dataNascimento} />
             <DetailItem icon="bi-telephone" label="Telefone:" value={utente.telefone} />
             <DetailItem icon="bi-person-heart" label="Cuidador Principal:" value={utente.cuidadorPrincipal} />
-            <DetailItem icon="bi-geo-alt" label="Morada:" value={utente.morada} />
+            <DetailItem icon="bi-signpost" label="Tipo de Local:" value={utente.tipoLocal} />
+            {utente.nomeInstituicao && (
+              <DetailItem icon="bi-building" label="Instituição:" value={utente.nomeInstituicao} />
+            )}
+            <DetailItem icon="bi-geo-alt" label="Morada:" value={formatarMorada(utente)} />
             <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
           </div>
 
