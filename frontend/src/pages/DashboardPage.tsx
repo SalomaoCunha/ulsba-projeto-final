@@ -4,7 +4,8 @@ import MapaLeaflet from '../components/MapaLeaflet';
 import PesquisaUtente from '../components/PesquisaUtente';
 import PainelPrioridades from '../components/PainelPrioridades';
 import BarraAcoesDashboard from '../components/BarraAcoesDashboard';
-import { getUtentesFicticios } from '../services/utenteService';
+import { getUtentesFicticios, updateUtente } from '../services/utenteService';
+import EditarUtenteModal from '../components/EditarUtenteModal';
 import type { Utente } from '../types/utente';
 
 
@@ -12,6 +13,7 @@ const DashboardPage: React.FC = () => {
   const [utentes, setUtentes] = useState<Utente[]>([]);
   const [utenteSelecionado, setUtenteSelecionado] = useState<Utente | null>(null);
   const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
     getUtentesFicticios().then((lista) => {
@@ -35,13 +37,25 @@ const DashboardPage: React.FC = () => {
   // Utentes inativos não entram no planeamento nem no mapa (RF03)
   const utentesNoMapa = utentes.filter(u => u.estado === 'Ativo');
 
+  const abrirEdicao = () => {
+    setModalAberto(true);
+  }
+
+  const guardarEdicao = async (utenteAtualizado: Utente) => {
+    const resultado = await updateUtente(utenteAtualizado);
+
+    setUtenteSelecionado(resultado);
+    setUtentes(utentes.map(u => u.id === resultado.id ? resultado : u));
+    setModalAberto(false);
+  }
+
   return (
     <div className="h-100 d-flex flex-column overflow-hidden">
       <div className="row g-3 flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
         <div className="col-md-4 d-flex flex-column gap-2" style={{ minHeight: 0, overflowY: 'auto' }}>
           <PesquisaUtente utentes={utentes} onPesquisar={executarPesquisa} />
           <div className="flex-grow-1" style={{ minHeight: '220px' }}>
-            <FichaUtenteCard utente={utenteSelecionado} />
+            <FichaUtenteCard utente={utenteSelecionado} onEditar={abrirEdicao} />
           </div>
         </div>
 
@@ -58,6 +72,13 @@ const DashboardPage: React.FC = () => {
       <div className="pt-2 flex-shrink-0">
         <BarraAcoesDashboard />
       </div>
+      <EditarUtenteModal
+        key={utenteSelecionado?.id}
+        utente={utenteSelecionado}
+        show={modalAberto}
+        onHide={() => setModalAberto(false)}
+        onGuardar={guardarEdicao}
+      />
     </div>
   );
 };

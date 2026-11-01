@@ -4,9 +4,10 @@ import { getNivelComplexidade } from '@/config/niveis';
 
 interface Props {
   utente: Utente | null;
+  onEditar: () => void;
 }
 
-const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
+const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
   // Se não houver utente selecionado, mostra um ecrã vazio
   if (!utente) {
     return (
@@ -35,6 +36,9 @@ const FichaUtenteCard: React.FC<Props> = ({ utente }) => {
           <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
             {utente.estado}
           </span>
+          <button className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onClick={onEditar}>
+            <i className="bi bi-pencil"></i> Editar
+          </button>
         </div>
       </div>
 
