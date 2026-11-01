@@ -45,6 +45,33 @@ const UtentesPage: React.FC = () => {
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 
+  const utentesFiltrados = utentes.filter((u) => {
+    if (filtroPrioridade && u.prioridade !== filtroPrioridade) {
+      return false;
+    }
+    if (filtroComplexidade && u.complexidade !== filtroComplexidade) {
+      return false;
+    }
+    if (filtroEstado && u.estado !== filtroEstado) {
+      return false;
+    }
+    if (filtroEquipa && u.equipaResponsavel !== filtroEquipa) {
+      return false;
+    }
+
+    const [dia, mes, ano] = u.ultimaVisita.split('-').map(Number);
+    const dataVisita = new Date(ano, mes - 1, dia);
+
+    if (filtroDataDe && dataVisita < new Date(filtroDataDe)) {
+      return false;
+    }
+    if (filtroDataAte && dataVisita > new Date(filtroDataAte)) {
+      return false;
+    }
+
+    return true;
+  });
+
   return (
     <div className="h-100 d-flex flex-column">
 
@@ -140,7 +167,7 @@ const UtentesPage: React.FC = () => {
                   onChange={(e) => setFiltroEquipa(e.target.value || null)}
                 >
                   <option value="">Todas</option>
-                  {[...new Set(utentes.map((u) => u.equipaResponsavel))].map((eq) => (
+                  {[...new Set(utentesFiltrados.map((u) => u.equipaResponsavel))].map((eq) => (
                     <option key={eq} value={eq}>{eq}</option>
                   ))}
                 </select>
@@ -199,7 +226,7 @@ const UtentesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {utentes.map((utente) => (
+              {utentesFiltrados.map((utente) => (
                 <tr key={utente.id}>
                   <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
                   <td className="py-3 fw-medium text-dark">
