@@ -2,7 +2,7 @@
 
 **Plataforma de Apoio à Equipa de Serviços Integrados de Cuidados Paliativos da ULSBA**
 
-| | |
+
 |---|---|
 | Unidade curricular | Projecto Integrado 2026-2027, Licenciatura em Engenharia Informática (UPBeja, ESTIG) |
 | Tutora | Elsa Rodrigues |
