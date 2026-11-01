@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUtentesFicticios } from '../services/utenteService'
+import { getUtentesFicticios, updateUtente } from '../services/utenteService'
 import type { Utente } from '../types/utente'
 import { getNivelPrioridade, NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
+import VerUtenteModal from '../components/VerUtenteModal';
+import EditarUtenteModal from '../components/EditarUtenteModal';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
@@ -17,6 +19,9 @@ const UtentesPage: React.FC = () => {
 
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
+  const [utenteEmFoco, setUtenteEmFoco] = useState<Utente | null>(null);
+  const [modalVerAberto, setModalVerAberto] = useState(false);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
 
   const navigate = useNavigate();
 
@@ -71,6 +76,29 @@ const UtentesPage: React.FC = () => {
 
     return true;
   });
+
+  const abrirVisualizacao = (utente: Utente) => {
+    setUtenteEmFoco(utente);
+    setModalVerAberto(true);
+  };
+
+  const abrirEdicao = (utente: Utente) => {
+    setUtenteEmFoco(utente);
+    setModalEditarAberto(true);
+  };
+
+  const passarDeVerParaEditar = () => {
+    setModalVerAberto(false);
+    setModalEditarAberto(true);
+  };
+
+  const guardarEdicao = async (utenteAtualizado: Utente) => {
+    const resultado = await updateUtente(utenteAtualizado);
+
+    setUtentes(utentes.map(u => u.id === resultado.id ? resultado : u));
+    setUtenteEmFoco(resultado);
+    setModalEditarAberto(false);
+  };
 
   return (
     <div className="h-100 d-flex flex-column">
@@ -243,10 +271,18 @@ const UtentesPage: React.FC = () => {
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
                   <td className="pe-4 py-3 text-end">
-                    <button className="btn btn-sm btn-light text-primary me-2 shadow-sm border">
+                    <button
+                      className="btn btn-sm btn-light text-primary me-2 shadow-sm border"
+                      onClick={() => abrirVisualizacao(utente)}
+                      title="Ver"
+                    >
                       <i className="bi bi-eye"></i>
                     </button>
-                    <button className="btn btn-sm btn-light text-secondary shadow-sm border">
+                    <button
+                      className="btn btn-sm btn-light text-secondary shadow-sm border"
+                      onClick={() => abrirEdicao(utente)}
+                      title="Editar"
+                    >
                       <i className="bi bi-pencil"></i>
                     </button>
                   </td>
@@ -271,6 +307,21 @@ const UtentesPage: React.FC = () => {
         </div>
 
       </div>
+
+      <VerUtenteModal
+        utente={utenteEmFoco}
+        show={modalVerAberto}
+        onHide={() => setModalVerAberto(false)}
+        onEditar={passarDeVerParaEditar}
+      />
+
+      <EditarUtenteModal
+        key={utenteEmFoco?.id}
+        utente={utenteEmFoco}
+        show={modalEditarAberto}
+        onHide={() => setModalEditarAberto(false)}
+        onGuardar={guardarEdicao}
+      />
     </div>
   );
 };
