@@ -96,3 +96,15 @@ const utentes: Utente[] = [
 export async function getUtentesFicticios(): Promise<Utente[]> {
   return new Promise((resolve) => setTimeout(() => resolve(utentes), 300));
 }
+
+export async function updateUtente(utenteAtualizado: Utente): Promise<Utente> {
+  const indice = utentes.findIndex(u => u.id === utenteAtualizado.id)
+
+  if (indice === -1) {
+    throw new Error('Utente não encontrado');
+  }
+
+  utentes[indice] = utenteAtualizado;
+
+  return new Promise((resolve) => setTimeout(() => resolve(utenteAtualizado), 300));
+}
