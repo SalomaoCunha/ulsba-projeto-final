@@ -85,105 +85,102 @@ const UtentesPage: React.FC = () => {
             <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={() => setFiltrosAbertos(!filtrosAbertos)}>
               <i className="bi bi-funnel"></i> Filtros
             </button>
-            <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
-              <i className="bi bi-download"></i> Exportar
-            </button>
           </div>
         </div>
 
         {filtrosAbertos && (
-            <div className="card-header bg-white border-bottom p-3">
-              <div className="d-flex gap-3 flex-wrap align-items-end">
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Prioridade</label>
-                  <select
-                    className="form-select form-select-sm"
-                    value={filtroPrioridade ?? ''}
-                    onChange={(e) => setFiltroPrioridade(e.target.value || null)}
-                  >
-                    <option value="">Todas</option>
-                    {NIVEIS_PRIORIDADE.map((n) => (
-                      <option key={n.valor} value={n.valor}>{n.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Complexidade</label>
-                  <select
-                    className="form-select form-select-sm"
-                    value={filtroComplexidade ?? ''}
-                    onChange={(e) => setFiltroComplexidade(e.target.value || null)}
-                  >
-                    <option value="">Todas</option>
-                    {NIVEIS_COMPLEXIDADE.map((n) => (
-                      <option key={n.valor} value={n.valor}>{n.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Estado</label>
-                  <select
-                    className="form-select form-select-sm"
-                    value={filtroEstado ?? ''}
-                    onChange={(e) => setFiltroEstado(e.target.value || null)}
-                  >
-                    <option value="">Todos</option>
-                    <option value="Ativo">Ativo</option>
-                    <option value="Inativo">Inativo</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Equipa</label>
-                  <select
-                    className="form-select form-select-sm"
-                    value={filtroEquipa ?? ''}
-                    onChange={(e) => setFiltroEquipa(e.target.value || null)}
-                  >
-                    <option value="">Todas</option>
-                    {[...new Set(utentes.map((u) => u.equipaResponsavel))].map((eq) => (
-                      <option key={eq} value={eq}>{eq}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Última visita (de)</label>
-                  <input
-                    type="date"
-                    className="form-control form-control-sm"
-                    value={filtroDataDe}
-                    onChange={(e) => setFiltroDataDe(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label text-muted small fw-medium mb-1">Última visita (até)</label>
-                  <input
-                    type="date"
-                    className="form-control form-control-sm"
-                    value={filtroDataAte}
-                    onChange={(e) => setFiltroDataAte(e.target.value)}
-                  />
-                </div>
-
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => {
-                    setFiltroPrioridade(null);
-                    setFiltroComplexidade(null);
-                    setFiltroEstado(null);
-                    setFiltroEquipa(null);
-                    setFiltroDataDe('');
-                    setFiltroDataAte('');
-                  }}
+          <div className="card-header bg-white border-bottom p-3">
+            <div className="d-flex gap-3 flex-wrap align-items-end">
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Prioridade</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroPrioridade ?? ''}
+                  onChange={(e) => setFiltroPrioridade(e.target.value || null)}
                 >
-                  Limpar filtros
-                </button>
+                  <option value="">Todas</option>
+                  {NIVEIS_PRIORIDADE.map((n) => (
+                    <option key={n.valor} value={n.valor}>{n.label}</option>
+                  ))}
+                </select>
               </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Complexidade</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroComplexidade ?? ''}
+                  onChange={(e) => setFiltroComplexidade(e.target.value || null)}
+                >
+                  <option value="">Todas</option>
+                  {NIVEIS_COMPLEXIDADE.map((n) => (
+                    <option key={n.valor} value={n.valor}>{n.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Estado</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroEstado ?? ''}
+                  onChange={(e) => setFiltroEstado(e.target.value || null)}
+                >
+                  <option value="">Todos</option>
+                  <option value="Ativo">Ativo</option>
+                  <option value="Inativo">Inativo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Equipa</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroEquipa ?? ''}
+                  onChange={(e) => setFiltroEquipa(e.target.value || null)}
+                >
+                  <option value="">Todas</option>
+                  {[...new Set(utentes.map((u) => u.equipaResponsavel))].map((eq) => (
+                    <option key={eq} value={eq}>{eq}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Última visita (de)</label>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={filtroDataDe}
+                  onChange={(e) => setFiltroDataDe(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Última visita (até)</label>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={filtroDataAte}
+                  onChange={(e) => setFiltroDataAte(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => {
+                  setFiltroPrioridade(null);
+                  setFiltroComplexidade(null);
+                  setFiltroEstado(null);
+                  setFiltroEquipa(null);
+                  setFiltroDataDe('');
+                  setFiltroDataAte('');
+                }}
+              >
+                Limpar filtros
+              </button>
             </div>
+          </div>
         )}
 
         {/* Tabela de Dados */}
