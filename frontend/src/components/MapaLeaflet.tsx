@@ -51,7 +51,7 @@ const MapaLeaflet: React.FC<Props> = ({ filtroAtivo }) => {
 
   return (
     <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative">
-      <div className="position-absolute bg-white p-3 rounded shadow-sm border" style={{ top: '20px', left: '20px', zIndex: 1000, width: '180px', opacity: 0.95 }}>
+      <div className="map-legend position-absolute bg-white p-3 rounded shadow-sm border" style={{ top: '20px', left: '20px', zIndex: 1000, width: '180px', opacity: 0.95 }}>
         <h6 className="fw-bold text-dark mb-3 small">Legenda</h6>
         <div className="d-flex flex-column gap-2 small mb-3">
           <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-danger" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Urgente 0 dias</span></div>

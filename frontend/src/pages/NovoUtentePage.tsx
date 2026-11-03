@@ -54,13 +54,13 @@ const NovoUtentePage: React.FC = () => {
 
   return (
     <div className="h-100 d-flex flex-column">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Registar Novo Utente</h1>
           <p className="text-muted mb-0 small">Preencha os dados para adicionar um paciente ao sistema</p>
         </div>
         <button 
-          className="btn btn-outline-secondary d-flex align-items-center gap-2 shadow-sm"
+          className="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 shadow-sm w-100 w-sm-auto"
           onClick={() => navigate('/utentes')}
           type="button"
         >
@@ -68,7 +68,7 @@ const NovoUtentePage: React.FC = () => {
         </button>
       </div>
 
-      <div className="card shadow-sm border-0 flex-grow-1 bg-white p-4">
+      <div className="card shadow-sm border-0 flex-grow-1 bg-white p-3 p-md-4">
         {/* Formulário ligado à função handleGuardar */}
         <form onSubmit={handleGuardar}>
           <h5 className="fw-bold text-dark mb-4"><i className="bi bi-person-lines-fill me-2"></i>Dados do Paciente</h5>
@@ -114,7 +114,7 @@ const NovoUtentePage: React.FC = () => {
           <hr className="text-muted opacity-25 mb-4" />
 
           {/* Botões de Ação */}
-          <div className="d-flex justify-content-end gap-2">
+          <div className="d-flex flex-column flex-sm-row justify-content-end gap-2">
             <button 
               type="button" 
               className="btn btn-light border text-dark"
