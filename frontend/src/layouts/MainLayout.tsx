@@ -79,19 +79,22 @@ const MainLayout: React.FC = () => {
             </nav>
           </div>
 
-          <div className="d-flex align-items-center gap-2 gap-md-3">
+          <div className="d-flex align-items-center gap-3">
             {/* Sino de Notificações com o número 3 */}
-            <div className="position-relative cursor-pointer">
+            <div className="position-relative cursor-pointer flex-shrink-0">
               <i className="bi bi-bell fs-5 text-secondary"></i>
               <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style={{ fontSize: '0.6rem', padding: '0.2em 0.4em' }}>
                 3
               </span>
             </div>
 
+            {/* Separador — só faz sentido a partir de sm, quando há nome/cargo ao lado */}
+            <div className="d-none d-sm-block vr"></div>
+
             {/* Perfil + seletor de acesso */}
-            <div className="d-flex align-items-center gap-2 ms-1 border-start ps-3 cursor-pointer">
+            <div className="d-flex align-items-center gap-2 cursor-pointer">
               <div
-                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
                 style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-primario)', fontSize: '0.8rem' }}
               >
                 AS
@@ -100,7 +103,7 @@ const MainLayout: React.FC = () => {
                 <p className="mb-0 fw-bold small text-dark lh-1 mt-1">Enf. Ana Silva</p>
                 <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Coordenadora</p>
               </div>
-              <i className="bi bi-chevron-down text-muted small ms-1 d-none d-sm-inline"></i>
+              <i className="bi bi-chevron-down text-muted small d-none d-sm-inline"></i>
             </div>
           </div>
         </header>
