@@ -1,3 +1,7 @@
+import type { ComplexidadeValor, PrioridadeValor } from "@/config/niveis";
+
+export type TipoLocal = 'Domicílio' | 'Lar' | 'Unidade de Saúde';
+
 export interface Utente {
   id: string | number;
   numeroUtente: string;
@@ -5,12 +9,36 @@ export interface Utente {
   dataNascimento: string;
   ultimaVisita: string;
   telefone: string;
-  medicoAssistente: string;
+  equipaResponsavel: string;
   cuidadorPrincipal: string;
   situacaoClinica: string[];
-  morada: string;
-  coordenadas: string;
+  tipoLocal: TipoLocal;
+  nomeInstituicao?: string;
+  ruaNumero: string;
+  codigoPostal: string;
+  localidade: string;
+  concelho: string;
+  lat: number;
+  lng: number;
   notas: string;
-  prioridade: 'Urgente 0 dias' | 'Urgente 1 dia' | 'Urgente 2 dias' | 'Não urgente 1' | 'Não urgente 2' | 'Prioritário' | 'Normal';
+  prioridade: PrioridadeValor;
+  historicoPrioridade: AlteracaoPrioridade[];
+  complexidade: ComplexidadeValor;
+  historicoComplexidade: AlteracaoComplexidade[];
   estado: 'Ativo' | 'Inativo';
+}
+
+export interface AlteracaoPrioridade {
+  prioridadeAnterior: PrioridadeValor;
+  prioridadeNova: PrioridadeValor;
+  motivo: string;
+  data: string;
+  autor: string;
+}
+
+export interface AlteracaoComplexidade {
+  complexidadeAnterior: ComplexidadeValor;
+  complexidadeNova: ComplexidadeValor;
+  data: string;
+  autor: string;
 }

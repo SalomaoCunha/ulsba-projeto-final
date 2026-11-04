@@ -1,20 +1,35 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import type { Utente } from '../types/utente'
+import { NIVEIS_PRIORIDADE, getNivelPrioridade } from '@/config/niveis';
+
+// O mapa vive numa grelha flexível (altura calculada em runtime); sem isto,
+// o Leaflet mede o contentor antes do layout estabilizar e fica com o
+// tamanho errado (tiles cortados/"a sair da caixa").
+const AjustarTamanhoMapa: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    map.invalidateSize();
+
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+};
 
 interface Props {
+  utentes: Utente[];
   filtroAtivo?: string | null;
 }
 
 const criarIconePersonalizado = (prioridade: string) => {
-  let cor = '#6c757d'; 
-  switch (prioridade) {
-    case 'Urgente 0 dias': cor = '#dc3545'; break;
-    case 'Urgente 1 dia': cor = '#fd7e14'; break;
-    case 'Urgente 2 dias': cor = '#ffc107'; break;
-    case 'Não urgente 1': cor = '#ffda6a'; break;
-    case 'Não urgente 2': cor = '#20c997'; break;
-  }
+  const cor = getNivelPrioridade(prioridade)?.corDot;
 
   const svgIcon = `
     <div style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.4));">
@@ -33,45 +48,39 @@ const criarIconePersonalizado = (prioridade: string) => {
   });
 };
 
-const MapaLeaflet: React.FC<Props> = ({ filtroAtivo }) => {
+const MapaLeaflet: React.FC<Props> = ({ utentes, filtroAtivo }) => {
   const center: [number, number] = [38.015, -7.863];
 
-  const utentesMapa = [
-    { nome: 'Maria Teresa Almeida', coords: [38.015, -7.863] as [number, number], prioridade: 'Urgente 0 dias' },
-    { nome: 'Maria Teresa Godinho', coords: [38.012, -7.867] as [number, number], prioridade: 'Urgente 1 dia' },
-    { nome: 'Maria Teresa Silva', coords: [38.018, -7.859] as [number, number], prioridade: 'Urgente 2 dias' },
-    { nome: 'Maria Teresa Sousa', coords: [38.009, -7.861] as [number, number], prioridade: 'Não urgente 1' },
-    { nome: 'Maria Isabel Ferreira', coords: [38.021, -7.865] as [number, number], prioridade: 'Não urgente 2' },
-  ];
-
   // A magia acontece aqui: Filtramos os pinos se houver um botão clicado!
-  const pinosVisiveis = filtroAtivo 
-    ? utentesMapa.filter(ut => ut.prioridade === filtroAtivo)
-    : utentesMapa;
+  const pinosVisiveis = filtroAtivo
+    ? utentes.filter(ut => ut.prioridade === filtroAtivo)
+    : utentes;
 
   return (
-    <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative">
+    <div className="card shadow-sm border-0 h-100 overflow-hidden position-relative" style={{ maxHeight: '100%' }}>
       <div className="position-absolute bg-white p-3 rounded shadow-sm border" style={{ top: '20px', left: '20px', zIndex: 1000, width: '180px', opacity: 0.95 }}>
         <h6 className="fw-bold text-dark mb-3 small">Legenda</h6>
         <div className="d-flex flex-column gap-2 small mb-3">
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-danger" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Urgente 0 dias</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#fd7e14' }}></span><span className="text-muted">Urgente 1 dia</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-warning" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Urgente 2 dias</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#ffda6a' }}></span><span className="text-muted">Não urgente 1</span></div>
-          <div className="d-flex align-items-center gap-2"><span className="rounded-circle bg-success" style={{ width: '12px', height: '12px' }}></span><span className="text-muted">Não urgente 2</span></div>
+          {NIVEIS_PRIORIDADE.map(nivel => (
+            <div key={nivel.valor} className="d-flex align-items-center gap-2">
+              <span className="rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: nivel.corDot }}></span>
+              <span className="text-muted">{nivel.label}</span>
+            </div>
+          ))}
         </div>
         <button className="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2">
           <i className="bi bi-funnel"></i> Filtrar Utentes
         </button>
       </div>
 
-      <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%', minHeight: '400px' }} zoomControl={false}>
+      <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
         <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomControl position="bottomright" />
-        
+        <AjustarTamanhoMapa />
+
         {/* Renderiza apenas os pinos que passaram no filtro */}
-        {pinosVisiveis.map((ut, index) => (
-          <Marker key={index} position={ut.coords} icon={criarIconePersonalizado(ut.prioridade)}>
+        {pinosVisiveis.map((ut) => (
+          <Marker key={ut.id} position={[ut.lat, ut.lng]} icon={criarIconePersonalizado(ut.prioridade)}>
             <Popup><strong>Utente:</strong> {ut.nome}<br />Prioridade: {ut.prioridade}</Popup>
           </Marker>
         ))}
