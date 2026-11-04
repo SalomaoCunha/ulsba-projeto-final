@@ -104,7 +104,7 @@ const UtentesPage: React.FC = () => {
     <div className="h-100 d-flex flex-column">
 
       {/* Cabeçalho da Página */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Lista de Utentes</h1>
           <p className="text-muted mb-0 small">Gestão e consulta do diretório de pacientes</p>
@@ -122,8 +122,8 @@ const UtentesPage: React.FC = () => {
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden">
 
         {/* Barra de Ferramentas (Filtros) */}
-        <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
-          <div className="input-group w-auto" style={{ minWidth: '300px' }}>
+        <div className="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div className="input-group flex-grow-1" style={{ minWidth: '220px', maxWidth: '420px' }}>
             <span className="input-group-text bg-light border-end-0 text-muted">
               <i className="bi bi-search"></i>
             </span>
@@ -293,7 +293,7 @@ const UtentesPage: React.FC = () => {
         </div>
 
         {/* Rodapé da Tabela com Paginação */}
-        <div className="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center text-muted small">
+        <div className="card-footer bg-white border-top p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 text-muted small">
           <span>A mostrar 1 a 5 de 24 utentes</span>
           <nav>
             <ul className="pagination pagination-sm mb-0">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
 
 const MainLayout: React.FC = () => {
   const location = useLocation();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const getMenuClass = (path: string) => {
     return location.pathname === path ? "side-link side-link-active" : "side-link";
@@ -25,8 +26,11 @@ const MainLayout: React.FC = () => {
   return (
     <div className="d-flex vh-100 bg-light">
 
-      {/* Menu Lateral (Sidebar) */}
-      <aside className="side-panel">
+      {/* Fundo escurecido atrás do menu, só visível em mobile com o menu aberto */}
+      {menuAberto && <div className="side-backdrop" onClick={() => setMenuAberto(false)} />}
+
+      {/* Menu Lateral (Sidebar) — fixo em ecrãs largos, retrátil abaixo de 992px */}
+      <aside className={`side-panel ${menuAberto ? 'side-panel-aberto' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-symbol">
             <i className="bi bi-heart-pulse"></i>
@@ -41,7 +45,7 @@ const MainLayout: React.FC = () => {
 
         <nav className="side-nav flex-grow-1 overflow-auto" aria-label="Navegação principal">
           {NAV_ITEMS.map((item) => (
-            <Link key={item.path} to={item.path} className={getMenuClass(item.path)}>
+            <Link key={item.path} to={item.path} className={getMenuClass(item.path)} onClick={() => setMenuAberto(false)}>
               <i className={`bi ${item.icon}`}></i> {item.label}
             </Link>
           ))}
@@ -57,15 +61,25 @@ const MainLayout: React.FC = () => {
 
       {/* Área Principal */}
       <main className="flex-grow-1 d-flex flex-column overflow-hidden">
-        <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-4 shadow-sm" style={{ height: '64px' }}>
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0 small">
-              <li className="breadcrumb-item text-muted">Plataforma de apoio</li>
-              <li className="breadcrumb-item active fw-medium text-dark" aria-current="page">Gestão de cuidados domiciliários</li>
-            </ol>
-          </nav>
+        <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-3 px-md-4 shadow-sm" style={{ height: '64px' }}>
+          <div className="d-flex align-items-center gap-2 gap-md-3">
+            <button
+              className="btn btn-light border d-lg-none"
+              onClick={() => setMenuAberto(true)}
+              aria-label="Abrir menu"
+            >
+              <i className="bi bi-list fs-5"></i>
+            </button>
 
-          <div className="d-flex align-items-center gap-3">
+            <nav aria-label="breadcrumb" className="d-none d-md-block">
+              <ol className="breadcrumb mb-0 small">
+                <li className="breadcrumb-item text-muted">Plataforma de apoio</li>
+                <li className="breadcrumb-item active fw-medium text-dark" aria-current="page">Gestão de cuidados domiciliários</li>
+              </ol>
+            </nav>
+          </div>
+
+          <div className="d-flex align-items-center gap-2 gap-md-3">
             {/* Sino de Notificações com o número 3 */}
             <div className="position-relative cursor-pointer">
               <i className="bi bi-bell fs-5 text-secondary"></i>
@@ -86,13 +100,13 @@ const MainLayout: React.FC = () => {
                 <p className="mb-0 fw-bold small text-dark lh-1 mt-1">Enf. Ana Silva</p>
                 <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Coordenadora</p>
               </div>
-              <i className="bi bi-chevron-down text-muted small ms-1"></i>
+              <i className="bi bi-chevron-down text-muted small ms-1 d-none d-sm-inline"></i>
             </div>
           </div>
         </header>
 
         {/* Injeção de Páginas */}
-        <div className="flex-grow-1 overflow-auto p-4 bg-light">
+        <div className="flex-grow-1 overflow-auto p-3 p-md-4 bg-light">
           <Outlet />
         </div>
       </main>

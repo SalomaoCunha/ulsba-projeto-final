@@ -26,7 +26,7 @@ const EquipasPage: React.FC = () => {
     <div className="h-100 d-flex flex-column">
 
       {/* Cabeçalho da Página */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Equipas</h1>
           <p className="text-muted mb-0 small">Gestão de equipas, profissionais e viaturas associadas</p>
@@ -44,7 +44,7 @@ const EquipasPage: React.FC = () => {
       {/* Grelha de Cartões por Equipa */}
       <div className="row g-3">
         {equipas.map((equipa) => (
-          <div key={equipa.id} className="col-md-6">
+          <div key={equipa.id} className="col-12 col-md-6">
             <div className="ulsba-card h-100">
 
               <div className="d-flex justify-content-between align-items-start">

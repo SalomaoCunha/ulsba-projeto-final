@@ -50,21 +50,21 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="h-100 d-flex flex-column overflow-hidden">
-      <div className="row g-3 flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
-        <div className="col-md-4 h-100 d-flex flex-column gap-2" style={{ minHeight: 0, maxHeight: '100%', overflowY: 'auto' }}>
+    <div className="h-100 d-flex flex-column overflow-hidden dashboard-shell">
+      <div className="row g-3 flex-grow-1 dashboard-row">
+        <div className="col-12 col-md-4 h-100 d-flex flex-column gap-2 dashboard-col dashboard-col-ficha">
           <PesquisaUtente utentes={utentes} onPesquisar={executarPesquisa} />
           <div className="flex-grow-1" style={{ minHeight: '220px' }}>
             <FichaUtenteCard utente={utenteSelecionado} onEditar={abrirEdicao} />
           </div>
         </div>
 
-        <div className="col-md-5 h-100" style={{ minHeight: 0, maxHeight: '100%', overflow: 'hidden' }}>
+        <div className="col-12 col-md-5 h-100 dashboard-col dashboard-col-mapa">
           {/* Passamos a lista (sem inativos) e o filtro para o mapa */}
           <MapaLeaflet utentes={utentesNoMapa} filtroAtivo={filtroPrioridade} />
         </div>
 
-        <div className="col-md-3 h-100" style={{ minHeight: 0, maxHeight: '100%', overflow: 'hidden' }}>
+        <div className="col-12 col-md-3 h-100 dashboard-col dashboard-col-prioridades">
           <PainelPrioridades filtroAtivo={filtroPrioridade} onAlterarFiltro={aplicarFiltroMapa} />
         </div>
       </div>
