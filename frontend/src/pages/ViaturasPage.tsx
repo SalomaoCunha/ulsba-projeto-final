@@ -51,8 +51,8 @@ const ViaturasPage: React.FC = () => {
       </div>
 
       {/* Cartão Branco Principal */}
-      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden">
-        <div className="table-responsive flex-grow-1" style={{ minHeight: 0 }}>
+      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
+        <div className="table-responsive flex-grow-1">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>

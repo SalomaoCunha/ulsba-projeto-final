@@ -299,7 +299,11 @@ h1, h2, h3, h4, h5, h6 {
      e cada painel passa a ter uma altura fixa (em vez de "auto"), porque os
      componentes lá dentro (mapa, cartão da ficha) usam height:100% em
      cascata — uma percentagem só resolve se o pai tiver altura concreta. */
-  .dashboard-shell {
+  /* .dashboard-shell.dashboard-shell: duplicar a classe sobe a
+     especificidade acima de .h-100/.overflow-hidden do Bootstrap — como
+     as duas têm !important, ganha quem for mais específico, não quem
+     vem depois no ficheiro (e o Bootstrap carrega depois do nosso CSS). */
+  .dashboard-shell.dashboard-shell {
     height: auto !important;
     overflow: visible !important;
   }
@@ -312,16 +316,60 @@ h1, h2, h3, h4, h5, h6 {
     max-height: none !important;
   }
 
-  .dashboard-col-ficha {
-    height: 600px !important;
+  /* A ficha e o painel de prioridades são só HTML normal — crescem ao
+     tamanho do conteúdo, sem precisarem de altura fixa nem scroll interno
+     (ao contrário do mapa, que tem de ter altura concreta para o Leaflet
+     conseguir desenhar). */
+  .dashboard-col-ficha.dashboard-col-ficha {
+    height: auto !important;
   }
 
-  .dashboard-col-mapa {
+  .dashboard-col-ficha .card {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .dashboard-col-ficha .card-body {
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  .dashboard-col-mapa.dashboard-col-mapa {
     height: 380px !important;
   }
 
-  .dashboard-col-prioridades {
-    height: 420px !important;
+  .dashboard-col-prioridades.dashboard-col-prioridades {
+    height: auto !important;
+  }
+
+  .dashboard-col-prioridades .ulsba-card {
+    height: auto !important;
+  }
+}
+
+/* Em mobile a tabela nunca deve competir por espaço fixo dentro do
+   cartão: um elemento com overflow:auto (necessário para o scroll
+   horizontal) tem altura mínima automática = 0 dentro de um flex
+   container — por isso, mesmo sem min-height:0 explícito, acaba
+   espremido sempre que o espaço disponível é menor que o conteúdo,
+   ganhando um scroll vertical interno que esconde linhas (e, consoante
+   a posição do scroll, até o cabeçalho). A correção: deixar o cartão
+   crescer ao tamanho natural e a página (que já tem scroll próprio)
+   trata do resto — tal como a ficha do Dashboard. */
+@media (max-width: 767.98px) {
+  .ulsba-table-card-shell.ulsba-table-card-shell {
+    /* flex-grow-1 (Bootstrap) é quem define a altura aqui, não
+       height/auto — o cartão vive num flex container em coluna, e isso
+       é o eixo principal. Por isso é o grow que tem de ser desligado.
+       Classe duplicada para ganhar especificidade ao .flex-grow-1 e
+       .overflow-hidden do Bootstrap (ambos com !important). */
+    flex-grow: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .ulsba-table-card-shell .table-responsive {
+    flex-grow: 0 !important;
   }
 }
 

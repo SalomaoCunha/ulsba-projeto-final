@@ -119,7 +119,7 @@ const UtentesPage: React.FC = () => {
       </div>
 
       {/* Cartão Branco Principal */}
-      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden">
+      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
 
         {/* Barra de Ferramentas (Filtros) */}
         <div className="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -239,7 +239,7 @@ const UtentesPage: React.FC = () => {
         )}
 
         {/* Tabela de Dados */}
-        <div className="table-responsive flex-grow-1" style={{ minHeight: 0 }}>
+        <div className="table-responsive flex-grow-1">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
