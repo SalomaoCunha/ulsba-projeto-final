@@ -61,14 +61,14 @@ const MainLayout: React.FC = () => {
 
       {/* Área Principal */}
       <main className="flex-grow-1 d-flex flex-column overflow-hidden">
-        <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-3 px-md-4 shadow-sm" style={{ height: '64px' }}>
+        <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-3 px-md-4 py-3 py-md-2 shadow-sm ulsba-topbar">
           <div className="d-flex align-items-center gap-2 gap-md-3">
             <button
-              className="btn btn-light border d-lg-none"
+              className="d-lg-none d-flex align-items-center justify-content-center flex-shrink-0 border-0 ulsba-menu-btn"
               onClick={() => setMenuAberto(true)}
               aria-label="Abrir menu"
             >
-              <i className="bi bi-list fs-5"></i>
+              <i className="bi bi-list"></i>
             </button>
 
             <nav aria-label="breadcrumb" className="d-none d-md-block">
@@ -80,8 +80,8 @@ const MainLayout: React.FC = () => {
           </div>
 
           <div className="d-flex align-items-center gap-3">
-            {/* Sino de Notificações com o número 3 */}
-            <div className="position-relative cursor-pointer flex-shrink-0">
+            {/* Sino de Notificações — só a partir de md (tal como na referência) */}
+            <div className="position-relative cursor-pointer flex-shrink-0 d-none d-md-flex align-items-center">
               <i className="bi bi-bell fs-5 text-secondary"></i>
               <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style={{ fontSize: '0.6rem', padding: '0.2em 0.4em' }}>
                 3
@@ -94,8 +94,8 @@ const MainLayout: React.FC = () => {
             {/* Perfil + seletor de acesso */}
             <div className="d-flex align-items-center gap-2 cursor-pointer">
               <div
-                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-primario)', fontSize: '0.8rem' }}
+                className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-claro)', color: 'var(--ulsba-verde-claro-texto)', fontSize: '0.8rem' }}
               >
                 AS
               </div>
@@ -109,7 +109,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Injeção de Páginas */}
-        <div className="flex-grow-1 overflow-auto p-3 p-md-4 bg-light">
+        <div className="flex-grow-1 overflow-auto p-3 pt-4 p-md-4 bg-light">
           <Outlet />
         </div>
       </main>

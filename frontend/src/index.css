@@ -373,6 +373,36 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ===== Barra do topo ===== */
+/* min-height (não height) para que o py-3/py-md-2 do JSX acrescente
+   espaço de verdade, em vez de ficar sem efeito dentro de uma altura fixa */
+.ulsba-topbar {
+  min-height: 72px;
+}
+
+@media (min-width: 768px) {
+  .ulsba-topbar {
+    min-height: 64px;
+  }
+}
+
+/* Botão do menu — valores tirados do CSS da referência (.mobile-menu) */
+.ulsba-menu-btn {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--ulsba-verde-claro);
+  color: var(--ulsba-verde-claro-texto);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.ulsba-menu-btn:hover {
+  background: var(--ulsba-verde-claro);
+  color: var(--ulsba-verde-claro-texto);
+}
+
 /* ===== Cabeçalhos de tabela (maiúsculas pequenas) ===== */
 .ulsba-table-head {
   font-size: 0.75rem;
