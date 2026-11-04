@@ -48,10 +48,6 @@ body {
   overflow: hidden;
 }
 
-.app-header .min-w-0 {
-  min-width: 0;
-}
-
 .mobile-menu-toggle,
 .sidebar-backdrop {
   display: none;
@@ -130,24 +126,6 @@ body {
   .pagination {
     flex-wrap: wrap;
     justify-content: center;
-  }
-}
-
-@media (min-width: 576px) {
-  .w-sm-auto {
-    width: auto !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .w-md-auto {
-    width: auto !important;
-  }
-}
-
-@media (min-width: 1200px) {
-  .w-xl-auto {
-    width: auto !important;
   }
 }
 
