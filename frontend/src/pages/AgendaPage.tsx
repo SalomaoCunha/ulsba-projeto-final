@@ -4,12 +4,12 @@ const AgendaPage: React.FC = () => {
   return (
     <div className="h-100 d-flex flex-column">
       {/* Cabeçalho da Página */}
-      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Agenda e Roteiros</h1>
           <p className="text-muted mb-0 small">Planeamento diário de visitas ao domicílio</p>
         </div>
-        <button className="btn btn-success d-flex align-items-center justify-content-center gap-2 shadow-sm w-100 w-sm-auto">
+        <button className="btn btn-success d-flex align-items-center gap-2 shadow-sm">
           <i className="bi bi-calendar-plus"></i>
           Nova Visita
         </button>

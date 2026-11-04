@@ -6,6 +6,7 @@ import PainelPrioridades from '../components/PainelPrioridades';
 import BarraAcoesDashboard from '../components/BarraAcoesDashboard';
 import type { Utente } from '../types/utente';
 
+// Base de dados simulada para a ficha ser dinâmica
 const baseDadosMockup: Utente[] = [
   {
     id: '1', numeroUtente: '12569', nome: 'Maria Teresa Almeida', dataNascimento: '12-03-1942', ultimaVisita: '02-07-2026',
@@ -33,6 +34,7 @@ const DashboardPage: React.FC = () => {
   const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
 
   const executarPesquisa = (termo: string) => {
+    // Procura o utente na nossa base de dados simulada
     const utenteEncontrado = baseDadosMockup.find(u => u.numeroUtente === termo || u.nome === termo);
     if (utenteEncontrado) {
       setUtenteSelecionado(utenteEncontrado);
@@ -44,22 +46,23 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="d-flex flex-column pb-3 dashboard-page">
+    <div className="h-100 d-flex flex-column pb-3">
       <h1 className="h4 fw-bold mb-4 text-dark">Painel Operacional</h1>
       
       <div className="row g-4 flex-grow-1">
-        <div className="col-12 col-lg-5 col-xl-3 d-flex flex-column gap-4">
+        <div className="col-md-4 d-flex flex-column gap-4">
           <PesquisaUtente onPesquisar={executarPesquisa} />
           <div className="flex-grow-1">
             <FichaUtenteCard utente={utenteSelecionado} />
           </div>
         </div>
         
-        <div className="col-12 col-lg-7 col-xl-6 dashboard-map-column">
+        <div className="col-md-6 h-100">
+          {/* Passamos o filtro para o mapa */}
           <MapaLeaflet filtroAtivo={filtroPrioridade} />
         </div>
 
-        <div className="col-12 col-xl-3">
+        <div className="col-md-2 h-100">
           <PainelPrioridades filtroAtivo={filtroPrioridade} onAlterarFiltro={aplicarFiltroMapa} />
         </div>
       </div>
