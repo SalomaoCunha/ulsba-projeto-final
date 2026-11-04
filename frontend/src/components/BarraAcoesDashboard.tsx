@@ -9,7 +9,7 @@ const BarraAcoesDashboard: React.FC = () => {
       <div className="card-body p-2 d-flex flex-wrap justify-content-between align-items-center gap-3">
         
         {/* Lado Esquerdo: Botões de Ação com navegação real */}
-        <div className="d-flex gap-3">
+        <div className="d-flex flex-wrap gap-3">
           <button 
             className="btn btn-success fw-medium d-flex align-items-center gap-2 px-4 shadow-sm"
             onClick={() => navigate('/rotas')}

@@ -60,7 +60,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
         {/* Grelha de Dados (2 Colunas) */}
         <div className="row g-2">
           {/* Coluna Esquerda */}
-          <div className="col-md-6 d-flex flex-column gap-1">
+          <div className="col-12 col-md-6 d-flex flex-column gap-1">
             <DetailItem icon="bi-calendar3" label="Data de Nascimento:" value={utente.dataNascimento} />
             <DetailItem icon="bi-telephone" label="Telefone:" value={utente.telefone} />
             <DetailItem icon="bi-person-heart" label="Cuidador Principal:" value={utente.cuidadorPrincipal} />
@@ -72,7 +72,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
           </div>
 
           {/* Coluna Direita */}
-          <div className="col-md-6 d-flex flex-column gap-1">
+          <div className="col-12 col-md-6 d-flex flex-column gap-1">
             <DetailItem icon="bi-clock" label="Última Visita:" value={utente.ultimaVisita} />
             <DetailItem icon="bi-people" label="Equipa Responsável:" value={utente.equipaResponsavel} />
 

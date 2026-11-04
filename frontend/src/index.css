@@ -295,6 +295,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 767.98px) {
+  /* Em ecrãs estreitos as 3 colunas empilham: a página ganha scroll próprio
+     e cada painel passa a ter uma altura fixa (em vez de "auto"), porque os
+     componentes lá dentro (mapa, cartão da ficha) usam height:100% em
+     cascata — uma percentagem só resolve se o pai tiver altura concreta. */
   .dashboard-shell {
     height: auto !important;
     overflow: visible !important;
@@ -305,17 +309,19 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .dashboard-col {
-    height: auto !important;
     max-height: none !important;
-    overflow: visible !important;
+  }
+
+  .dashboard-col-ficha {
+    height: 600px !important;
   }
 
   .dashboard-col-mapa {
-    min-height: 360px;
+    height: 380px !important;
   }
 
   .dashboard-col-prioridades {
-    min-height: 280px;
+    height: 420px !important;
   }
 }
 
