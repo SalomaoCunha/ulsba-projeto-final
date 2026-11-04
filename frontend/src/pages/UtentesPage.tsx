@@ -238,16 +238,55 @@ const UtentesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Tabela de Dados */}
-        <div className="table-responsive flex-grow-1">
+        {/* Lista em cartões — só em mobile (<md), cabe sempre sem scroll horizontal */}
+        <div className="d-md-none">
+          {utentesFiltrados.map((utente) => (
+            <div key={utente.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
+              <div
+                className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                style={{ width: '38px', height: '38px' }}
+              >
+                <i className="bi bi-person-fill"></i>
+              </div>
+
+              <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                <div className="fw-medium text-dark text-truncate">{utente.nome}</div>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {getBadgePrioridade(utente.prioridade)}
+                  {getBadgeEstado(utente.estado)}
+                </div>
+              </div>
+
+              <div className="d-flex gap-1 flex-shrink-0">
+                <button
+                  className="btn btn-sm btn-light text-primary shadow-sm border"
+                  onClick={() => abrirVisualizacao(utente)}
+                  title="Ver"
+                >
+                  <i className="bi bi-eye"></i>
+                </button>
+                <button
+                  className="btn btn-sm btn-light text-secondary shadow-sm border"
+                  onClick={() => abrirEdicao(utente)}
+                  title="Editar"
+                >
+                  <i className="bi bi-pencil"></i>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabela de Dados — a partir de md */}
+        <div className="table-responsive flex-grow-1 d-none d-md-block">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
-                <th className="fw-medium border-bottom-0 ps-4 py-3 d-none d-md-table-cell">N.º Utente</th>
-                <th className="fw-medium border-bottom-0 py-3 ps-4 ps-md-0">Nome</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Equipa Responsável</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Contacto</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Última Visita</th>
+                <th className="fw-medium border-bottom-0 ps-4 py-3">N.º Utente</th>
+                <th className="fw-medium border-bottom-0 py-3">Nome</th>
+                <th className="fw-medium border-bottom-0 py-3">Equipa Responsável</th>
+                <th className="fw-medium border-bottom-0 py-3">Contacto</th>
+                <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
                 <th className="fw-medium border-bottom-0 py-3">Estado</th>
                 <th className="fw-medium border-bottom-0 pe-4 py-3 text-end">Ações</th>
@@ -256,8 +295,8 @@ const UtentesPage: React.FC = () => {
             <tbody className="border-top-0">
               {utentesFiltrados.map((utente) => (
                 <tr key={utente.id}>
-                  <td className="ps-4 py-3 text-muted d-none d-md-table-cell">{utente.numeroUtente}</td>
-                  <td className="py-3 ps-4 ps-md-0 fw-medium text-dark text-nowrap">
+                  <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
+                  <td className="py-3 fw-medium text-dark text-nowrap">
                     <div className="d-flex align-items-center gap-3">
                       <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
                         <i className="bi bi-person-fill"></i>
@@ -265,9 +304,9 @@ const UtentesPage: React.FC = () => {
                       {utente.nome}
                     </div>
                   </td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{utente.equipaResponsavel}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{utente.telefone}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{utente.ultimaVisita}</td>
+                  <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
+                  <td className="py-3 text-muted">{utente.telefone}</td>
+                  <td className="py-3 text-muted">{utente.ultimaVisita}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
                   <td className="pe-4 py-3 text-end">

@@ -52,17 +52,36 @@ const ViaturasPage: React.FC = () => {
 
       {/* Cartão Branco Principal */}
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
-        <div className="table-responsive flex-grow-1">
+
+        {/* Lista em cartões — só em mobile (<md) */}
+        <div className="d-md-none">
+          {viaturas.map((viatura) => (
+            <div key={viatura.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
+              <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                <div className="fw-medium text-dark text-truncate">{viatura.matricula} — {viatura.modelo}</div>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {getBadgeEstado(viatura.estado)}
+                </div>
+              </div>
+              <button className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0" disabled title="Em breve">
+                <i className="bi bi-pencil"></i>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabela de Dados — a partir de md */}
+        <div className="table-responsive flex-grow-1 d-none d-md-block">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
                 <th className="fw-medium border-bottom-0 ps-4 py-3">Matrícula</th>
                 <th className="fw-medium border-bottom-0 py-3">Modelo</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Combustível</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Autonomia</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Lugares</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Equipa</th>
-                <th className="fw-medium border-bottom-0 py-3 d-none d-md-table-cell">Próxima Revisão</th>
+                <th className="fw-medium border-bottom-0 py-3">Combustível</th>
+                <th className="fw-medium border-bottom-0 py-3">Autonomia</th>
+                <th className="fw-medium border-bottom-0 py-3">Lugares</th>
+                <th className="fw-medium border-bottom-0 py-3">Equipa</th>
+                <th className="fw-medium border-bottom-0 py-3">Próxima Revisão</th>
                 <th className="fw-medium border-bottom-0 py-3">Estado</th>
                 <th className="fw-medium border-bottom-0 pe-4 py-3 text-end">Ações</th>
               </tr>
@@ -72,11 +91,11 @@ const ViaturasPage: React.FC = () => {
                 <tr key={viatura.id}>
                   <td className="ps-4 py-3 fw-medium text-dark">{viatura.matricula}</td>
                   <td className="py-3 text-muted">{viatura.modelo}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{viatura.combustivel}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{viatura.autonomiaKm} km</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{viatura.lugares}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{nomeDaEquipa(viatura.equipaId)}</td>
-                  <td className="py-3 text-muted d-none d-md-table-cell">{viatura.proximaRevisao}</td>
+                  <td className="py-3 text-muted">{viatura.combustivel}</td>
+                  <td className="py-3 text-muted">{viatura.autonomiaKm} km</td>
+                  <td className="py-3 text-muted">{viatura.lugares}</td>
+                  <td className="py-3 text-muted">{nomeDaEquipa(viatura.equipaId)}</td>
+                  <td className="py-3 text-muted">{viatura.proximaRevisao}</td>
                   <td className="py-3">{getBadgeEstado(viatura.estado)}</td>
                   <td className="pe-4 py-3 text-end">
                     <button className="btn btn-sm btn-light text-secondary shadow-sm border" disabled title="Em breve">
