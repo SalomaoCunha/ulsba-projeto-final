@@ -1,8 +1,8 @@
 # Desenho do Modelo de Dados — Plataforma de Cuidados Paliativos ULSBA
 
-**Projeto:** Projeto Integrado 2026–2027 · Engenharia Informática · IPBeja  
+**Projeto:** Projeto Integrado 2026–2027 · Engenharia Informática · UPBeja  
 **Referência funcional:** [`docs/requisitos.md`](requisitos.md) — Especificação de Requisitos v0.3, de 31/10/2026, incluindo as alterações discutidas na reunião de 28/10/2026  
-**Versão do modelo:** 1.0 · 01/11/2026 · Proposta para revisão da equipa e da docente  
+**Versão do modelo:** 1.1 · 05/11/2026 · Proposta para revisão da equipa e da docente (rev.: níveis de urgência do mockup, nulabilidade e entidades nos diagramas por domínio, extensões e vistas)  
 **Tecnologias previstas:** PostgreSQL 16, PostGIS 3, API FastAPI e frontend React/TypeScript  
 **Âmbito:** modelo conceptual, modelo lógico, dicionário de dados e regras de integridade.
 
@@ -55,6 +55,8 @@ A documentação final dos requisitos distingue pedidos de interface de obrigaç
 | `1:1` | Um registo corresponde a um registo. |
 | `1:0..1` | Um registo pode ter zero ou um registo relacionado. |
 | `1:N` | Um registo pode relacionar-se com vários. |
+| `\|\|--o{` | Relação obrigatória: cada registo do lado dependente tem exatamente um registo do lado `\|\|` (FK `NOT NULL`). |
+| `o\|--o{` | Relação opcional: a FK do lado dependente pode ser nula (por exemplo, em rascunho ou antes do agendamento). |
 | `PK` | Chave primária (identifica um registo). |
 | `FK` | Chave estrangeira (referencia outra tabela). |
 | `UQ` / `UK` | Valor ou combinação de valores únicos. |
@@ -252,9 +254,9 @@ Antes de apresentar as tabelas e as chaves estrangeiras, o **modelo conceptual**
 |---|---|---|
 | Local **aloja** Utente | Local (1) — Utente (0..N) | Cada utente possui **um** local atual; vários utentes podem estar no mesmo lar (RF05). |
 | Utente **recebe** Visita | Utente (1) — Visita (0..N) | Uma visita é de um utente; pode ainda não estar planeada (RF23, RF29). |
-| Equipa **executa** Volta | Equipa (1) — Volta (0..N) | A associação da equipa numa volta **em rascunho é opcional**; torna-se obrigatória ao confirmar (RF43, RF50). |
+| Equipa **executa** Volta | Equipa (0..1) — Volta (0..N) | A associação da equipa numa volta **em rascunho é opcional**; torna-se obrigatória ao confirmar (RF43, RF50). |
 | Volta **contém** Paragem | Volta (1) — Paragem (0..N) | Rascunhos podem não ter paragens; cada paragem pertence a uma volta. |
-| Paragem **agrupa** Visita | Paragem (1) — Visita (0..N) | A visita pendente pode não ter paragem. Uma paragem pode agrupar visitas a utentes do mesmo lar (RF21). |
+| Paragem **agrupa** Visita | Paragem (0..1) — Visita (0..N) | A visita pendente pode não ter paragem. Uma paragem pode agrupar visitas a utentes do mesmo lar (RF21). |
 
 **Outras relações deliberadamente omitidas desta vista simplificada para evitar cruzamentos:** cada paragem referencia um local; a equipa responsável acompanha um utente ao longo de períodos de validade; a viatura é atribuída por volta; e os profissionais participam através de associações próprias. Estas relações aparecem nos diagramas lógicos seguintes e no dicionário de dados. As cardinalidades **não substituem** as regras de validação de confirmação e conflitos de recursos.
 
@@ -267,7 +269,7 @@ flowchart LR
   AL ---|0..N| UT[UTENTE]:::entidade
   UT ---|1| REC{RECEBE}:::relacao
   REC ---|0..N| VI[VISITA]:::entidade
-  EQ[EQUIPA]:::entidade ---|1| EX{EXECUTA}:::relacao
+  EQ[EQUIPA]:::entidade ---|0..1| EX{EXECUTA}:::relacao
   EX ---|0..N| VO[VOLTA]:::entidade
   VO ---|1| CON{CONTÉM}:::relacao
   CON ---|0..N| PA[PARAGEM]:::entidade
@@ -731,6 +733,9 @@ erDiagram
 
 ```mermaid
 erDiagram
+    CONCELHO {
+        integer id PK
+    }
     LOCAL {
         integer id PK
         integer concelho_id FK
@@ -762,13 +767,19 @@ erDiagram
         integer utente_id FK
         integer paragem_id FK
     }
+    UTILIZADOR {
+        integer id PK
+    }
+    CONCELHO ||--o{ LOCAL : "concelho_id"
     LOCAL ||--o{ UTENTE : "local"
+    UTILIZADOR ||--o{ UTENTE : "criado_por"
+    VIATURA o|--o{ EQUIPA : "viatura_habitual_id"
     UTENTE ||--o{ VISITA : "utente"
-    EQUIPA ||--o{ VOLTA : "equipa"
-    VIATURA ||--o{ VOLTA : "viatura"
+    EQUIPA o|--o{ VOLTA : "equipa_id"
+    VIATURA o|--o{ VOLTA : "viatura_id"
     VOLTA ||--o{ PARAGEM : "volta"
     LOCAL ||--o{ PARAGEM : "local"
-    PARAGEM ||--o{ VISITA : "paragem"
+    PARAGEM o|--o{ VISITA : "paragem_id"
 ```
 
 
@@ -810,7 +821,6 @@ erDiagram
     }
     EQUIPA {
         integer id PK
-        integer viatura_habitual_id FK
     }
     UTILIZADOR {
         integer id PK
@@ -821,8 +831,8 @@ erDiagram
     UTENTE ||--o{ UTENTE_TRANSICAO_ESTADO : "utente"
     UTENTE ||--o{ ATRIBUICAO_EQUIPA_RESPONSAVEL : "utente"
     EQUIPA ||--o{ ATRIBUICAO_EQUIPA_RESPONSAVEL : "equipa"
-    UTILIZADOR ||--o{ UTENTE : "utilizador"
-    UTILIZADOR ||--o{ UTENTE_TRANSICAO_ESTADO : "utilizador"
+    UTILIZADOR ||--o{ UTENTE : "criado_por"
+    UTILIZADOR ||--o{ UTENTE_TRANSICAO_ESTADO : "registada_por"
 ```
 
 
@@ -835,8 +845,6 @@ erDiagram
 erDiagram
     UTENTE {
         integer id PK
-        integer local_id FK
-        integer criado_por FK
     }
     NIVEL_URGENCIA {
         integer id PK
@@ -864,12 +872,17 @@ erDiagram
         integer nivel_complexidade_id FK
         integer definido_por FK
     }
+    UTILIZADOR {
+        integer id PK
+    }
     UTENTE ||--o{ AVALIACAO_TRIAGEM : "utente"
     NIVEL_URGENCIA ||--o{ AVALIACAO_TRIAGEM : "nivel_urgencia"
     UTENTE ||--o{ AVALIACAO_COMPLEXIDADE : "utente"
     NIVEL_COMPLEXIDADE ||--o{ AVALIACAO_COMPLEXIDADE : "nivel_complexidade"
     UTENTE ||--o{ REGISTO_PPS : "utente"
     NIVEL_COMPLEXIDADE ||--o{ DURACAO_PADRAO_COMPLEXIDADE : "nivel_complexidade"
+    UTILIZADOR ||--o{ REGISTO_PPS : "registado_por"
+    UTILIZADOR ||--o{ DURACAO_PADRAO_COMPLEXIDADE : "definido_por"
 ```
 
 
@@ -913,14 +926,15 @@ erDiagram
         integer viatura_id FK
         integer criada_por FK
     }
-    UTILIZADOR ||--o| PROFISSIONAL : "utilizador"
+    UTILIZADOR o|--o| PROFISSIONAL : "utilizador_id"
     FUNCAO_PROFISSIONAL ||--o{ PROFISSIONAL : "funcao_profissional"
     EQUIPA ||--o{ EQUIPA_MEMBRO : "equipa"
     PROFISSIONAL ||--o{ EQUIPA_MEMBRO : "profissional"
     EQUIPA ||--o{ ESCALA_PROFISSIONAL : "equipa"
     PROFISSIONAL ||--o{ ESCALA_PROFISSIONAL : "profissional"
-    VIATURA ||--o{ EQUIPA : "viatura"
+    VIATURA o|--o{ EQUIPA : "viatura_habitual_id"
     VIATURA ||--o{ VIATURA_INDISPONIBILIDADE : "viatura"
+    UTILIZADOR ||--o{ VIATURA_INDISPONIBILIDADE : "criada_por"
 ```
 
 
@@ -933,7 +947,6 @@ erDiagram
 erDiagram
     EQUIPA {
         integer id PK
-        integer viatura_habitual_id FK
     }
     VIATURA {
         integer id PK
@@ -950,7 +963,6 @@ erDiagram
     }
     LOCAL {
         integer id PK
-        integer concelho_id FK
     }
     VISITA {
         integer id PK
@@ -959,14 +971,12 @@ erDiagram
     }
     UTENTE {
         integer id PK
-        integer local_id FK
-        integer criado_por FK
     }
-    EQUIPA ||--o{ VOLTA : "equipa"
-    VIATURA ||--o{ VOLTA : "viatura"
+    EQUIPA o|--o{ VOLTA : "equipa_id"
+    VIATURA o|--o{ VOLTA : "viatura_id"
     VOLTA ||--o{ PARAGEM : "volta"
     LOCAL ||--o{ PARAGEM : "local"
-    PARAGEM ||--o{ VISITA : "paragem"
+    PARAGEM o|--o{ VISITA : "paragem_id"
     UTENTE ||--o{ VISITA : "utente"
 ```
 
@@ -980,36 +990,30 @@ erDiagram
 erDiagram
     VOLTA {
         integer id PK
-        integer equipa_id FK
-        integer viatura_id FK
     }
     VOLTA_PROFISSIONAL {
-        integer volta_id PK
-        integer profissional_id PK
+        integer volta_id PK,FK
+        integer profissional_id PK,FK
     }
     PROFISSIONAL {
         integer id PK
-        integer utilizador_id FK
-        integer funcao_id FK
     }
     PARAGEM {
         integer id PK
         integer volta_id FK
-        integer local_id FK
     }
     VISITA {
         integer id PK
-        integer utente_id FK
         integer paragem_id FK
     }
     VISITA_PARTICIPANTE {
-        integer visita_id PK
-        integer profissional_id PK
+        integer visita_id PK,FK
+        integer profissional_id PK,FK
     }
     VOLTA ||--o{ VOLTA_PROFISSIONAL : "volta"
     PROFISSIONAL ||--o{ VOLTA_PROFISSIONAL : "profissional"
     VOLTA ||--o{ PARAGEM : "volta"
-    PARAGEM ||--o{ VISITA : "paragem"
+    PARAGEM o|--o{ VISITA : "paragem_id"
     VISITA ||--o{ VISITA_PARTICIPANTE : "visita"
     PROFISSIONAL ||--o{ VISITA_PARTICIPANTE : "profissional"
 ```
@@ -1024,13 +1028,9 @@ erDiagram
 erDiagram
     VOLTA {
         integer id PK
-        integer equipa_id FK
-        integer viatura_id FK
     }
     VISITA {
         integer id PK
-        integer utente_id FK
-        integer paragem_id FK
     }
     TIPO_OCORRENCIA {
         integer id PK
@@ -1039,6 +1039,8 @@ erDiagram
         integer id PK
         integer volta_id FK
         integer visita_id FK
+        integer tipo_ocorrencia_id FK
+        integer autor_id FK
     }
     UTILIZADOR {
         integer id PK
@@ -1060,14 +1062,15 @@ erDiagram
         integer remetente_id FK
         integer destinatario_id FK
     }
-    VOLTA ||--o{ OCORRENCIA : "volta"
-    VISITA ||--o{ OCORRENCIA : "visita"
-    TIPO_OCORRENCIA ||--o{ OCORRENCIA : "tipo_ocorrencia"
-    UTILIZADOR ||--o{ OCORRENCIA : "utilizador"
-    UTILIZADOR ||--o{ AUDITORIA : "utilizador"
-    UTILIZADOR ||--o{ PARAMETRO_SISTEMA : "utilizador"
-    UTILIZADOR ||--o{ EXPORTACAO_ALGORITMO : "utilizador"
-    UTILIZADOR ||--o{ MENSAGEM : "utilizador"
+    VOLTA o|--o{ OCORRENCIA : "volta_id"
+    VISITA o|--o{ OCORRENCIA : "visita_id"
+    TIPO_OCORRENCIA ||--o{ OCORRENCIA : "tipo_ocorrencia_id"
+    UTILIZADOR ||--o{ OCORRENCIA : "autor_id"
+    UTILIZADOR o|--o{ AUDITORIA : "utilizador_id"
+    UTILIZADOR ||--o{ PARAMETRO_SISTEMA : "definido_por"
+    UTILIZADOR ||--o{ EXPORTACAO_ALGORITMO : "gerada_por"
+    UTILIZADOR ||--o{ MENSAGEM : "remetente_id"
+    UTILIZADOR ||--o{ MENSAGEM : "destinatario_id"
 ```
 
 
@@ -1146,6 +1149,9 @@ O modelo lógico define **32 entidades e 252 atributos** para discussão, com ti
 | `paragem.geom_planeada`, `paragem.coordenada_registada_em` | **Proposta de histórico:** preservar as coordenadas usadas durante o planeamento, mesmo após correção do local | RF21, RF25, RF44 |
 | `local.geom` | Utilizar `geography(Point,4326)` com índice GiST; para extrair longitude/latitude, converter em geometria com `ST_X(geom::geometry)` e `ST_Y(geom::geometry)` | RF04, RNF11, RNF27 |
 | `mensagem` | Entidade de suporte opcional; a sua implementação funcional depende da priorização do RF36 (*Could*) | RF36 |
+| Extensões PostgreSQL | **`postgis`** (tipos e índices geográficos); **`btree_gist`** (restrições `EXCLUDE` que combinam igualdade e intervalos, como `ex_volta_viatura_sem_sobreposicao` ou `ex_escala_profissional_sem_sobreposicao`); **`pg_trgm`** (índice `ix_utente_nome_trgm`, pesquisa de utentes por nome com sugestões). Ativadas na migração `0001` (o PostGIS também em `db/init/`) | RF01, RF21, RF50, RNF09, RNF11, RNF12 |
+| Vistas de leitura | `vw_utente_ficha` (ficha com campos derivados: idade, prioridade e complexidade atuais, PPS, equipa responsável em vigor e última visita concluída; exclui `situacao_clinica` e `notas`); `vw_calendario_unidade` (voltas e indisponibilidades de viaturas); `vw_calendario_visitas` (uma linha por visita, com a volta e os participantes); `vw_local_cobertura` (pertença a perímetros aprovados; `NULL` sem perímetro aprovado ou sem coordenadas). Não são tabelas: não alteram as 32 entidades nem os 252 atributos | RF02, RF04, RF08, RF19, RF30, RF33, RF48, RNF22, RNF27 |
+| Catálogo `nivel_urgencia` | **Provisório:** cinco níveis do mockup (`U0`, `U1`, `U2`, `NU1`, `NU2`), com `prazo_max_sem_visita_dias` por definir. Os níveis iniciais A/B/C/NU ficam inativos (migração `0004`), preservando o histórico de triagens. Códigos, cores e prazos por validar com a ULSBA | RF10, RF11, RF13, RF15, RNF08 |
 
 **Critério de implementação:** após validação do modelo, as regras que abrangem várias entidades devem ser implementadas em transações e, quando necessário, com restrições ou triggers da base de dados. As migrações devem ser criadas e versionadas juntamente com as alterações ao diagrama e ao dicionário (RNF28).
 
@@ -1193,13 +1199,13 @@ Catálogo configurável de níveis de triagem/urgência. Determina a prioridade 
 | Coluna | Tipo PostgreSQL | Propriedades | Descrição |
 |---|---|---|---|
 | `id` | `integer` | PK, NN, IDENTITY | Identificador técnico (chave primária gerada pela base de dados). |
-| `codigo` | `varchar(10)` | NN, UQ | Código curto (hipótese de trabalho: A, B, C, NU). |
-| `designacao` | `varchar(60)` | NN | Designação por extenso (ex.: «Muito urgente»). Garante que a prioridade nunca depende só da cor (RNF08). |
+| `codigo` | `varchar(10)` | NN, UQ | Código curto (provisório, alinhado com o mockup: U0, U1, U2, NU1, NU2). Os códigos iniciais A, B, C e NU ficam inativos desde a migração `0004`. |
+| `designacao` | `varchar(60)` | NN | Designação por extenso (ex.: «Urgente 0 dias»). Garante que a prioridade nunca depende só da cor (RNF08). |
 | `cor_hex` | `char(7)` | NN | Cor do marcador no mapa, formato #RRGGBB. |
 | `icone` | `varchar(40)` | NULL permitido | Nome de ícone opcional, complementar à designação (RNF08). |
 | `ordem` | `smallint` | NN, UQ | Ordem clínica: 1 = mais urgente. Usada na ordenação das listas e das necessidades de visita (RF22). |
-| `prazo_max_sem_visita_dias` | `smallint` | NULL permitido | Limite de dias sem visita para este nível, usado nos alertas (RF13). Nulo = por definir. |
-| `ativo` | `boolean` | NN, DEF `true` | Nível em uso. Níveis antigos desativam-se para preservar o histórico de triagens. |
+| `prazo_max_sem_visita_dias` | `smallint` | NULL permitido | Limite de dias sem visita para este nível, usado nos alertas (RF13). Nulo = por definir. Nos cinco níveis provisórios está por definir: não se presume que «0 dias» seja um prazo, e a restrição `ck_nivel_urgencia_prazo` só aceita valores positivos. |
+| `ativo` | `boolean` | NN, DEF `true` | Nível em uso. Níveis antigos desativam-se para preservar o histórico de triagens: A/B/C/NU foram desativados pela migração `0004` (`ordem` deslocada para 101–104). |
 
 **Regras de integridade previstas:**
 
@@ -1973,6 +1979,7 @@ Os valores seguintes foram propostos para tipar dados e evitar variantes livres.
 
 **Decisões propostas a validar:**
 
+- Níveis de urgência do mockup (U0, U1, U2, NU1, NU2): confirmar com a ULSBA se «Urgente 0/1/2 dias» corresponde a prazos de visita ou apenas a uma ordem, e se «Não urgente 1/2» têm critérios distintos; até lá, os prazos ficam por definir (migração `0004`).
 - Perímetro de atuação e tratamento de pontos fora do território; uma caixa delimitadora aproximada não prova pertencer a Portugal continental.
 - Escalas reais, pausas, horários operacionais e exceções com motivo; não fixar 09:30–16:00 como regra clínica permanente.
 - Critérios de urgência, IPCPAL/PPS e valores padrão de duração, sem inferência clínica não validada.
@@ -1985,4 +1992,3 @@ Os valores seguintes foram propostos para tipar dados e evitar variantes livres.
 ### Referência funcional
 
 - [`docs/requisitos.md`](requisitos.md) — Especificação de Requisitos v0.3 (31/10/2026), incluindo os 52 RF, os 27 RNF e as decisões propostas na reunião de 28/10/2026.
-
