@@ -88,7 +88,7 @@ O teste de fumo **não cobre** todas as regras de negócio, autorizações, conc
 - Não há geração automática de eventos em `auditoria`; a futura API deverá registar mudanças sensíveis na mesma transação e assegurar restrições de acesso.
 - `escala_profissional` permite planear turnos e impede sobreposições, mas **exigir uma escala prévia como requisito da confirmação** depende de validação operacional.
 - Os limites geográficos aprovados dependem de dados oficiais. Não foram inventados polígonos do Baixo Alentejo.
-- **Níveis de urgência provisórios:** os cinco níveis (U0, U1, U2, NU1, NU2) seguem o mockup e as cores do frontend, mas ainda não foram validados pela ULSBA (RF11, ponto em aberto 1). `prazo_max_sem_visita_dias` está a `NULL` («por definir») porque não se presume que «0 dias» seja um prazo; o CHECK atual só aceita valores positivos.
+- **Níveis de urgência:** os cinco níveis (U0, U1, U2, NU1, NU2) seguem o mockup e as cores do frontend, e foram revistos com a docente. O significado operacional dos rótulos em dias ainda não foi confirmado pela ULSBA (RF11, ponto em aberto 1): por isso `prazo_max_sem_visita_dias` está a `NULL` («por definir»), sem presumir que «0 dias» seja um prazo; o CHECK atual só aceita valores positivos.
 - As restrições de integridade em SQL não substituem validação na API nem testes concorrentes (operações simultâneas).
 - Os requisitos RF/RNF e o modelo ER ainda podem evoluir durante a revisão pela equipa/professora.
 - O script `0001` usa uma baseline inicial e deve ser aplicado **somente sobre uma base sem este esquema**. Não foi usado nenhum dado real de utentes.

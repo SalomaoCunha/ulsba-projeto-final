@@ -4,13 +4,14 @@
 -- RF10, RF11, RF15, RNF08. Dependência: 0001_modelo_inicial.sql.
 -- Aplicar apenas uma vez, numa BD de desenvolvimento (dados fictícios).
 --
--- DADOS PROVISÓRIOS (requisitos, ponto em aberto 1): os níveis, as cores e a
--- correspondência entre os rótulos em dias e eventuais prazos de visita ainda
--- não foram validados pela ULSBA. Por isso prazo_max_sem_visita_dias fica NULL
+-- Os cinco níveis são os do mockup e foram revistos com a docente (a hipótese
+-- inicial A/B/C/NU foi abandonada). O significado operacional dos rótulos em
+-- dias e eventuais prazos de visita ainda não foram confirmados pela ULSBA
+-- (requisitos, ponto em aberto 1). Por isso prazo_max_sem_visita_dias fica NULL
 -- («por definir») e não se presume que «0 dias» signifique um prazo de 0 dias
 -- (o CHECK ck_nivel_urgencia_prazo exige valor positivo ou NULL).
 --
--- Os níveis da hipótese inicial (A, B, C, NU) são desativados, não apagados,
+-- Os níveis da hipótese inicial abandonada (A, B, C, NU) são desativados, não apagados,
 -- para preservar o histórico de avaliacao_triagem que os referencie.
 BEGIN;
 

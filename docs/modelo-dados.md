@@ -1,6 +1,6 @@
 # Desenho do Modelo de Dados — Plataforma de Cuidados Paliativos ULSBA
 
-**Projeto:** Projeto Integrado 2026–2027 · Engenharia Informática · UPBeja  
+**Projeto:** Projeto Integrado 2026–2027 · Engenharia Informática · IPBeja  
 **Referência funcional:** [`docs/requisitos.md`](requisitos.md) — Especificação de Requisitos v0.3, de 31/10/2026, incluindo as alterações discutidas na reunião de 28/10/2026  
 **Versão do modelo:** 1.1 · 05/11/2026 · Proposta para revisão da equipa e da docente (rev.: níveis de urgência do mockup, nulabilidade e entidades nos diagramas por domínio, extensões e vistas)  
 **Tecnologias previstas:** PostgreSQL 16, PostGIS 3, API FastAPI e frontend React/TypeScript  
@@ -1151,7 +1151,7 @@ O modelo lógico define **32 entidades e 252 atributos** para discussão, com ti
 | `mensagem` | Entidade de suporte opcional; a sua implementação funcional depende da priorização do RF36 (*Could*) | RF36 |
 | Extensões PostgreSQL | **`postgis`** (tipos e índices geográficos); **`btree_gist`** (restrições `EXCLUDE` que combinam igualdade e intervalos, como `ex_volta_viatura_sem_sobreposicao` ou `ex_escala_profissional_sem_sobreposicao`); **`pg_trgm`** (índice `ix_utente_nome_trgm`, pesquisa de utentes por nome com sugestões). Ativadas na migração `0001` (o PostGIS também em `db/init/`) | RF01, RF21, RF50, RNF09, RNF11, RNF12 |
 | Vistas de leitura | `vw_utente_ficha` (ficha com campos derivados: idade, prioridade e complexidade atuais, PPS, equipa responsável em vigor e última visita concluída; exclui `situacao_clinica` e `notas`); `vw_calendario_unidade` (voltas e indisponibilidades de viaturas); `vw_calendario_visitas` (uma linha por visita, com a volta e os participantes); `vw_local_cobertura` (pertença a perímetros aprovados; `NULL` sem perímetro aprovado ou sem coordenadas). Não são tabelas: não alteram as 32 entidades nem os 252 atributos | RF02, RF04, RF08, RF19, RF30, RF33, RF48, RNF22, RNF27 |
-| Catálogo `nivel_urgencia` | **Provisório:** cinco níveis do mockup (`U0`, `U1`, `U2`, `NU1`, `NU2`), com `prazo_max_sem_visita_dias` por definir. Os níveis iniciais A/B/C/NU ficam inativos (migração `0004`), preservando o histórico de triagens. Códigos, cores e prazos por validar com a ULSBA | RF10, RF11, RF13, RF15, RNF08 |
+| Catálogo `nivel_urgencia` | Cinco níveis do mockup (`U0`, `U1`, `U2`, `NU1`, `NU2`), revistos com a docente, com `prazo_max_sem_visita_dias` por definir. Os níveis iniciais A/B/C/NU (hipótese abandonada) ficam inativos (migração `0004`), preservando o histórico de triagens. O significado operacional dos rótulos em dias e os prazos ficam por confirmar com a ULSBA | RF10, RF11, RF13, RF15, RNF08 |
 
 **Critério de implementação:** após validação do modelo, as regras que abrangem várias entidades devem ser implementadas em transações e, quando necessário, com restrições ou triggers da base de dados. As migrações devem ser criadas e versionadas juntamente com as alterações ao diagrama e ao dicionário (RNF28).
 
@@ -1199,12 +1199,12 @@ Catálogo configurável de níveis de triagem/urgência. Determina a prioridade 
 | Coluna | Tipo PostgreSQL | Propriedades | Descrição |
 |---|---|---|---|
 | `id` | `integer` | PK, NN, IDENTITY | Identificador técnico (chave primária gerada pela base de dados). |
-| `codigo` | `varchar(10)` | NN, UQ | Código curto (provisório, alinhado com o mockup: U0, U1, U2, NU1, NU2). Os códigos iniciais A, B, C e NU ficam inativos desde a migração `0004`. |
+| `codigo` | `varchar(10)` | NN, UQ | Código curto dos cinco níveis do mockup, revistos com a docente: U0, U1, U2, NU1, NU2 (códigos atribuídos pela equipa). Os códigos iniciais A, B, C e NU (hipótese abandonada) ficam inativos desde a migração `0004`. |
 | `designacao` | `varchar(60)` | NN | Designação por extenso (ex.: «Urgente 0 dias»). Garante que a prioridade nunca depende só da cor (RNF08). |
 | `cor_hex` | `char(7)` | NN | Cor do marcador no mapa, formato #RRGGBB. |
 | `icone` | `varchar(40)` | NULL permitido | Nome de ícone opcional, complementar à designação (RNF08). |
 | `ordem` | `smallint` | NN, UQ | Ordem clínica: 1 = mais urgente. Usada na ordenação das listas e das necessidades de visita (RF22). |
-| `prazo_max_sem_visita_dias` | `smallint` | NULL permitido | Limite de dias sem visita para este nível, usado nos alertas (RF13). Nulo = por definir. Nos cinco níveis provisórios está por definir: não se presume que «0 dias» seja um prazo, e a restrição `ck_nivel_urgencia_prazo` só aceita valores positivos. |
+| `prazo_max_sem_visita_dias` | `smallint` | NULL permitido | Limite de dias sem visita para este nível, usado nos alertas (RF13). Nulo = por definir. Nos cinco níveis do mockup está por definir: o significado operacional dos rótulos em dias ainda não foi confirmado pela ULSBA, não se presume que «0 dias» seja um prazo, e a restrição `ck_nivel_urgencia_prazo` só aceita valores positivos. |
 | `ativo` | `boolean` | NN, DEF `true` | Nível em uso. Níveis antigos desativam-se para preservar o histórico de triagens: A/B/C/NU foram desativados pela migração `0004` (`ordem` deslocada para 101–104). |
 
 **Regras de integridade previstas:**
@@ -1979,7 +1979,7 @@ Os valores seguintes foram propostos para tipar dados e evitar variantes livres.
 
 **Decisões propostas a validar:**
 
-- Níveis de urgência do mockup (U0, U1, U2, NU1, NU2): confirmar com a ULSBA se «Urgente 0/1/2 dias» corresponde a prazos de visita ou apenas a uma ordem, e se «Não urgente 1/2» têm critérios distintos; até lá, os prazos ficam por definir (migração `0004`).
+- Níveis de urgência do mockup (U0, U1, U2, NU1, NU2), já revistos com a docente: confirmar com a ULSBA se «Urgente 0/1/2 dias» corresponde a prazos de visita ou apenas a uma ordem, e se «Não urgente 1/2» têm critérios distintos; até lá, os prazos ficam por definir (migração `0004`).
 - Perímetro de atuação e tratamento de pontos fora do território; uma caixa delimitadora aproximada não prova pertencer a Portugal continental.
 - Escalas reais, pausas, horários operacionais e exceções com motivo; não fixar 09:30–16:00 como regra clínica permanente.
 - Critérios de urgência, IPCPAL/PPS e valores padrão de duração, sem inferência clínica não validada.
