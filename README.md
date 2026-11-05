@@ -1,6 +1,6 @@
 # ULSBA – Plataforma de Apoio à Equipa de Cuidados Paliativos
 
-Plataforma web de apoio à equipa de cuidados paliativos da ULSBA, desenvolvida no âmbito do **Projeto Integrado 2026/2027** da Licenciatura em Engenharia Informática do Instituto Politécnico de Beja (IPBeja).
+Plataforma web de apoio à equipa de cuidados paliativos da ULSBA, desenvolvida no âmbito do **Projeto Integrado 2026/2027** da Licenciatura em Engenharia Informática do Instituto Politécnico de Beja (UPBeja).
 
 > **Estado:** em desenvolvimento. Todos os dados usados atualmente são **fictícios**.
 
