@@ -54,7 +54,7 @@ const NovoUtentePage: React.FC = () => {
 
   return (
     <div className="h-100 d-flex flex-column">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Registar Novo Utente</h1>
           <p className="text-muted mb-0 small">Preencha os dados para adicionar um paciente ao sistema</p>
@@ -74,31 +74,31 @@ const NovoUtentePage: React.FC = () => {
           <h5 className="fw-bold text-dark mb-4"><i className="bi bi-person-lines-fill me-2"></i>Dados do Paciente</h5>
           
           <div className="row g-4 mb-4" style={{ maxWidth: '800px' }}>
-            <div className="col-md-4">
+            <div className="col-12 col-md-4">
               <label className="form-label text-muted small fw-medium">N.º de Utente *</label>
-              <input 
-                type="text" 
-                className="form-control bg-light" 
+              <input
+                type="text"
+                className="form-control bg-light"
                 name="numeroUtente"
                 value={formData.numeroUtente}
                 onChange={handleChange}
-                placeholder="Ex: 12575" 
-                required 
+                placeholder="Ex: 12575"
+                required
               />
             </div>
-            <div className="col-md-8">
+            <div className="col-12 col-md-8">
               <label className="form-label text-muted small fw-medium">Nome Completo *</label>
-              <input 
-                type="text" 
-                className="form-control bg-light" 
+              <input
+                type="text"
+                className="form-control bg-light"
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}
-                placeholder="Ex: Manuel Joaquim..." 
-                required 
+                placeholder="Ex: Manuel Joaquim..."
+                required
               />
             </div>
-            <div className="col-md-4">
+            <div className="col-12 col-md-4">
               <label className="form-label text-muted small fw-medium">Contacto Telefónico</label>
               <input 
                 type="text" 

@@ -1,32 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Dados fictícios para preencher a tabela e dar um aspeto real
-const mockUtentesList = [
-  { id: 1, num: '12569', nome: 'Maria Teresa Almeida', contacto: '912 345 678', ultimaVisita: '02-10-2026', prioridade: 'Urgente 0 dias', estado: 'Ativo' },
-  { id: 2, num: '12560', nome: 'Maria Teresa Godinho', contacto: '912 345 671', ultimaVisita: '01-10-2026', prioridade: 'Urgente 1 dia', estado: 'Ativo' },
-  { id: 3, num: '12570', nome: 'Maria Teresa Silva', contacto: '912 345 674', ultimaVisita: '05-10-2026', prioridade: 'Urgente 2 dias', estado: 'Ativo' },
-  { id: 4, num: '12561', nome: 'Maria Teresa Sousa', contacto: '912 345 672', ultimaVisita: '28-09-2026', prioridade: 'Não urgente 1', estado: 'Ativo' },
-  { id: 5, num: '12562', nome: 'Maria Isabel Ferreira', contacto: '912 345 673', ultimaVisita: '15-09-2026', prioridade: 'Não urgente 2', estado: 'Inativo' },
-];
+import { getUtentesFicticios, updateUtente } from '../services/utenteService'
+import type { Utente } from '../types/utente'
+import { getNivelPrioridade, NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
+import VerUtenteModal from '../components/VerUtenteModal';
+import EditarUtenteModal from '../components/EditarUtenteModal';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
+  const [utentes, setUtentes] = useState<Utente[]>([]);
+
+  const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
+  const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
+  const [filtroComplexidade, setFiltroComplexidade] = useState<string | null>(null);
+  const [filtroEquipa, setFiltroEquipa] = useState<string | null>(null);
+  const [filtroDataDe, setFiltroDataDe] = useState('');
+  const [filtroDataAte, setFiltroDataAte] = useState('');
+
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+
+  const [utenteEmFoco, setUtenteEmFoco] = useState<Utente | null>(null);
+  const [modalVerAberto, setModalVerAberto] = useState(false);
+  const [modalEditarAberto, setModalEditarAberto] = useState(false);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getUtentesFicticios().then(setUtentes);
+  }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
   const getBadgePrioridade = (prioridade: string) => {
-    switch (prioridade) {
-      case 'Urgente 0 dias': return <span className="badge bg-danger fw-normal px-2 py-1">Urgente 0 dias</span>;
-      case 'Urgente 1 dia': return <span className="badge text-white fw-normal px-2 py-1" style={{ backgroundColor: '#fd7e14' }}>Urgente 1 dia</span>;
-      case 'Urgente 2 dias': return <span className="badge bg-warning text-dark fw-normal px-2 py-1">Urgente 2 dias</span>;
-      case 'Não urgente 1': return <span className="badge text-dark fw-normal px-2 py-1" style={{ backgroundColor: '#ffda6a' }}>Não urgente 1</span>;
-      case 'Não urgente 2': return <span className="badge bg-success fw-normal px-2 py-1">Não urgente 2</span>;
-      default: return <span className="badge bg-secondary fw-normal px-2 py-1">{prioridade}</span>;
-    }
+    const nivel = getNivelPrioridade(prioridade);
+    const { corDot, corTexto, label } = nivel ?? { corDot: '#6c757d', corTexto: '#fff', label: prioridade };
+
+    return (
+      <span className='badge fw-normal px-2 py-1' style={{ backgroundColor: corDot, color: corTexto }}>
+        {label}
+      </span>
+    );
+
   };
 
-  // Função auxiliar para renderizar o estado com o estilo do teu mockup
+  // Função auxiliar para renderizar o estado com o estilo do mockup
   const getBadgeEstado = (estado: string) => {
     if (estado === 'Ativo') {
       return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill">Ativo</span>;
@@ -34,16 +50,66 @@ const UtentesPage: React.FC = () => {
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 
+  const utentesFiltrados = utentes.filter((u) => {
+    if (filtroPrioridade && u.prioridade !== filtroPrioridade) {
+      return false;
+    }
+    if (filtroComplexidade && u.complexidade !== filtroComplexidade) {
+      return false;
+    }
+    if (filtroEstado && u.estado !== filtroEstado) {
+      return false;
+    }
+    if (filtroEquipa && u.equipaResponsavel !== filtroEquipa) {
+      return false;
+    }
+
+    const [dia, mes, ano] = u.ultimaVisita.split('-').map(Number);
+    const dataVisita = new Date(ano, mes - 1, dia);
+
+    if (filtroDataDe && dataVisita < new Date(filtroDataDe)) {
+      return false;
+    }
+    if (filtroDataAte && dataVisita > new Date(filtroDataAte)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const abrirVisualizacao = (utente: Utente) => {
+    setUtenteEmFoco(utente);
+    setModalVerAberto(true);
+  };
+
+  const abrirEdicao = (utente: Utente) => {
+    setUtenteEmFoco(utente);
+    setModalEditarAberto(true);
+  };
+
+  const passarDeVerParaEditar = () => {
+    setModalVerAberto(false);
+    setModalEditarAberto(true);
+  };
+
+  const guardarEdicao = async (utenteAtualizado: Utente) => {
+    const resultado = await updateUtente(utenteAtualizado);
+
+    setUtentes(utentes.map(u => u.id === resultado.id ? resultado : u));
+    setUtenteEmFoco(resultado);
+    setModalEditarAberto(false);
+  };
+
   return (
     <div className="h-100 d-flex flex-column">
-      
+
       {/* Cabeçalho da Página */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Lista de Utentes</h1>
           <p className="text-muted mb-0 small">Gestão e consulta do diretório de pacientes</p>
         </div>
-        <button 
+        <button
           className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
           onClick={() => navigate('/utentes/novo')}
         >
@@ -53,40 +119,172 @@ const UtentesPage: React.FC = () => {
       </div>
 
       {/* Cartão Branco Principal */}
-      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden">
-        
+      <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
+
         {/* Barra de Ferramentas (Filtros) */}
-        <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
-          <div className="input-group w-auto" style={{ minWidth: '300px' }}>
+        <div className="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div className="input-group flex-grow-1" style={{ minWidth: '220px', maxWidth: '420px' }}>
             <span className="input-group-text bg-light border-end-0 text-muted">
               <i className="bi bi-search"></i>
             </span>
-            <input 
-              type="text" 
-              className="form-control bg-light border-start-0" 
-              placeholder="Pesquisar por nome ou número..." 
+            <input
+              type="text"
+              className="form-control bg-light border-start-0"
+              placeholder="Pesquisar por nome ou número..."
               value={termoPesquisa}
               onChange={(e) => setTermoPesquisa(e.target.value)}
             />
           </div>
-          
+
           <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={() => setFiltrosAbertos(!filtrosAbertos)}>
               <i className="bi bi-funnel"></i> Filtros
-            </button>
-            <button className="btn btn-outline-secondary d-flex align-items-center gap-2">
-              <i className="bi bi-download"></i> Exportar
             </button>
           </div>
         </div>
 
-        {/* Tabela de Dados */}
-        <div className="table-responsive flex-grow-1">
+        {filtrosAbertos && (
+          <div className="card-header bg-white border-bottom p-3">
+            <div className="d-flex gap-3 flex-wrap align-items-end">
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Prioridade</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroPrioridade ?? ''}
+                  onChange={(e) => setFiltroPrioridade(e.target.value || null)}
+                >
+                  <option value="">Todas</option>
+                  {NIVEIS_PRIORIDADE.map((n) => (
+                    <option key={n.valor} value={n.valor}>{n.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Complexidade</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroComplexidade ?? ''}
+                  onChange={(e) => setFiltroComplexidade(e.target.value || null)}
+                >
+                  <option value="">Todas</option>
+                  {NIVEIS_COMPLEXIDADE.map((n) => (
+                    <option key={n.valor} value={n.valor}>{n.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Estado</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroEstado ?? ''}
+                  onChange={(e) => setFiltroEstado(e.target.value || null)}
+                >
+                  <option value="">Todos</option>
+                  <option value="Ativo">Ativo</option>
+                  <option value="Inativo">Inativo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Equipa</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={filtroEquipa ?? ''}
+                  onChange={(e) => setFiltroEquipa(e.target.value || null)}
+                >
+                  <option value="">Todas</option>
+                  {[...new Set(utentesFiltrados.map((u) => u.equipaResponsavel))].map((eq) => (
+                    <option key={eq} value={eq}>{eq}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Última visita (de)</label>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={filtroDataDe}
+                  onChange={(e) => setFiltroDataDe(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-muted small fw-medium mb-1">Última visita (até)</label>
+                <input
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={filtroDataAte}
+                  onChange={(e) => setFiltroDataAte(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => {
+                  setFiltroPrioridade(null);
+                  setFiltroComplexidade(null);
+                  setFiltroEstado(null);
+                  setFiltroEquipa(null);
+                  setFiltroDataDe('');
+                  setFiltroDataAte('');
+                }}
+              >
+                Limpar filtros
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista em cartões — só em mobile (<md), cabe sempre sem scroll horizontal */}
+        <div className="d-md-none">
+          {utentesFiltrados.map((utente) => (
+            <div key={utente.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
+              <div
+                className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                style={{ width: '38px', height: '38px' }}
+              >
+                <i className="bi bi-person-fill"></i>
+              </div>
+
+              <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                <div className="fw-medium text-dark text-truncate">{utente.nome}</div>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {getBadgePrioridade(utente.prioridade)}
+                  {getBadgeEstado(utente.estado)}
+                </div>
+              </div>
+
+              <div className="d-flex gap-1 flex-shrink-0">
+                <button
+                  className="btn btn-sm btn-light text-primary shadow-sm border"
+                  onClick={() => abrirVisualizacao(utente)}
+                  title="Ver"
+                >
+                  <i className="bi bi-eye"></i>
+                </button>
+                <button
+                  className="btn btn-sm btn-light text-secondary shadow-sm border"
+                  onClick={() => abrirEdicao(utente)}
+                  title="Editar"
+                >
+                  <i className="bi bi-pencil"></i>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabela de Dados — a partir de md */}
+        <div className="table-responsive flex-grow-1 d-none d-md-block">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
                 <th className="fw-medium border-bottom-0 ps-4 py-3">N.º Utente</th>
                 <th className="fw-medium border-bottom-0 py-3">Nome</th>
+                <th className="fw-medium border-bottom-0 py-3">Equipa Responsável</th>
                 <th className="fw-medium border-bottom-0 py-3">Contacto</th>
                 <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
@@ -95,26 +293,35 @@ const UtentesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {mockUtentesList.map((utente) => (
+              {utentesFiltrados.map((utente) => (
                 <tr key={utente.id}>
-                  <td className="ps-4 py-3 text-muted">{utente.num}</td>
-                  <td className="py-3 fw-medium text-dark">
+                  <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
+                  <td className="py-3 fw-medium text-dark text-nowrap">
                     <div className="d-flex align-items-center gap-3">
-                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                      <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
                         <i className="bi bi-person-fill"></i>
                       </div>
                       {utente.nome}
                     </div>
                   </td>
-                  <td className="py-3 text-muted">{utente.contacto}</td>
+                  <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
+                  <td className="py-3 text-muted">{utente.telefone}</td>
                   <td className="py-3 text-muted">{utente.ultimaVisita}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
                   <td className="pe-4 py-3 text-end">
-                    <button className="btn btn-sm btn-light text-primary me-2 shadow-sm border">
+                    <button
+                      className="btn btn-sm btn-light text-primary me-2 shadow-sm border"
+                      onClick={() => abrirVisualizacao(utente)}
+                      title="Ver"
+                    >
                       <i className="bi bi-eye"></i>
                     </button>
-                    <button className="btn btn-sm btn-light text-secondary shadow-sm border">
+                    <button
+                      className="btn btn-sm btn-light text-secondary shadow-sm border"
+                      onClick={() => abrirEdicao(utente)}
+                      title="Editar"
+                    >
                       <i className="bi bi-pencil"></i>
                     </button>
                   </td>
@@ -123,9 +330,9 @@ const UtentesPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-        
+
         {/* Rodapé da Tabela com Paginação */}
-        <div className="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center text-muted small">
+        <div className="card-footer bg-white border-top p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 text-muted small">
           <span>A mostrar 1 a 5 de 24 utentes</span>
           <nav>
             <ul className="pagination pagination-sm mb-0">
@@ -139,6 +346,21 @@ const UtentesPage: React.FC = () => {
         </div>
 
       </div>
+
+      <VerUtenteModal
+        utente={utenteEmFoco}
+        show={modalVerAberto}
+        onHide={() => setModalVerAberto(false)}
+        onEditar={passarDeVerParaEditar}
+      />
+
+      <EditarUtenteModal
+        key={utenteEmFoco?.id}
+        utente={utenteEmFoco}
+        show={modalEditarAberto}
+        onHide={() => setModalEditarAberto(false)}
+        onGuardar={guardarEdicao}
+      />
     </div>
   );
 };

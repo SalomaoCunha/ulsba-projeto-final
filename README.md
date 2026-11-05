@@ -13,7 +13,10 @@ Este repositório reúne todo o projeto (monorepo):
 ├── frontend/              # Aplicação web (React + TypeScript + Vite + Bootstrap)
 ├── backend/               # API (FastAPI)
 ├── db/
-│   └── init/              # Scripts de inicialização da BD (ativação do PostGIS)
+│   ├── init/              # Ativação de PostGIS no primeiro arranque
+│   ├── migrations/        # Migrações SQL sequenciais do modelo relacional
+│   ├── tests/             # Testes de verificação SQL
+│   └── README.md          # Instruções de aplicação das migrações
 ├── docs/                  # Documentação: requisitos, arquitetura, relatórios
 ├── .github/workflows/     # CI (lint, build e verificação do backend em cada PR)
 ├── docker-compose.yml     # Orquestração de frontend + backend + base de dados
@@ -26,7 +29,7 @@ Este repositório reúne todo o projeto (monorepo):
 | ----------- | --------------------------------------------------------------- | ---------------------------------------- |
 | `frontend/` | Interface da aplicação                                          | [frontend/README.md](frontend/README.md) |
 | `backend/`  | API (FastAPI)                                                   | [backend/README.md](backend/README.md)   |
-| `db/`       | Base de dados (PostgreSQL + PostGIS), scripts de inicialização  | —                                         |
+| `db/`       | PostgreSQL + PostGIS, migrações e testes | [db/README.md](db/README.md)                                         |
 | `docs/`     | Documentos do projeto                                           | [docs/README.md](docs/README.md)         |
 
 ## Como arrancar
@@ -47,8 +50,10 @@ A forma recomendada de arrancar o projeto completo (frontend + backend + base de
 2. `docker compose up --build`
 3. Frontend: http://localhost:5173 · API: http://localhost:8000/docs · Health: http://localhost:8000/health
 
+**Importante — migrações:** `docker compose up` ativa o PostGIS num volume novo, mas **não cria automaticamente as tabelas da aplicação**. Depois do arranque, aplica `db/migrations/0001...` a `0003...` conforme os comandos em [db/README.md](db/README.md). Não uses `docker compose down -v` sem saberes que isso apaga o volume da base de dados.
+
 ### Problemas comuns
-- `/health` falha por causa do PostGIS: o volume da BD é antigo. Corre `docker compose down -v` e depois `docker compose up --build`.
+- `/health` falha por causa do PostGIS: confirma a extensão na BD indicada por `POSTGRES_DB` e a variável `DATABASE_URL`. Num volume antigo, o script `db/init/` não é executado novamente; **não apagues o volume como primeiro passo**.
 - "Module not found" no frontend depois de um `git pull` com dependências novas: `docker compose up --build -V`.
 - Porta 5432 ocupada: parar o Postgres local ou mudar a porta no `docker-compose.yml`.
 
