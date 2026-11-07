@@ -149,6 +149,26 @@ class BaselineDetectionTests(unittest.TestCase):
     def test_legacy_version_three_is_detected(self):
         self.assertEqual(3, self.runner.detect_existing_version(self.db(v4=False)))
 
+    def test_history_skips_structural_detection(self):
+        """Com histórico, catálogo alterado não pode bloquear o migrador (RF11)."""
+        class NoQueries:
+            def execute(self, *args, **kwargs):
+                raise AssertionError("não devia consultar a BD")
+        self.assertIsNone(self.runner.structural_version(NoQueries(), True))
+
+    def test_legacy_schema_with_edited_catalog_is_still_rejected(self):
+        conn = self.db()
+        original = conn.execute
+
+        def edited(query, args=()):
+            result = original(query, args)
+            if 'FROM public.nivel_urgencia' in query:
+                result.data = result.data + [('U3', True, 7)]
+            return result
+        conn.execute = edited
+        with self.assertRaises(self.runner.MigrationError):
+            self.runner.structural_version(conn, False)
+
 
 if __name__ == "__main__":
     unittest.main()
