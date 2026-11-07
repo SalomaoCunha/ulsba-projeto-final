@@ -239,6 +239,10 @@ def detect_existing_version(conn) -> int:
         version = 4
     return version
 
+def structural_version(conn, has_history: bool) -> int | None:
+    """Deteção estrutural só para esquemas legados (sem histórico)."""
+    return None if has_history else detect_existing_version(conn)
+
 
 def read_history(conn) -> dict[int, tuple[str, str, str]]:
     if not relation_exists(conn, HISTORY_TABLE):
