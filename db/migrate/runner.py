@@ -239,8 +239,14 @@ def detect_existing_version(conn) -> int:
         version = 4
     return version
 
+
 def structural_version(conn, has_history: bool) -> int | None:
-    """Deteção estrutural só para esquemas legados (sem histórico)."""
+    """Deteção estrutural só para esquemas legados (sem histórico).
+
+    Com histórico, a fonte de verdade é schema_migrations. Os dados de
+    catálogo (por exemplo, os níveis de urgência) são configuráveis (RF11) e
+    não podem bloquear o arranque.
+    """
     return None if has_history else detect_existing_version(conn)
 
 
@@ -321,16 +327,18 @@ def run(command: str, baseline_version: int | None = None) -> None:
         try:
             has_history = relation_exists(conn, HISTORY_TABLE)
             history = read_history(conn)
-            schema_version = detect_existing_version(conn)
+            schema_version = structural_version(conn, has_history)
             if has_history:
                 validate_history(history, migrations)
 
             if command == "status":
-                print(f"Estado do esquema ULSBA (verificação estrutural): v{schema_version}")
-                if not has_history:
+                if has_history:
+                    print(f"Histórico: {len(history)} migrações registadas em schema_migrations")
+                else:
+                    print(f"Estado do esquema ULSBA (verificação estrutural): v{schema_version}")
                     print("Ainda não existe public.schema_migrations")
-                if not has_history and schema_version > 0:
-                    print("ATENÇÃO: esquema legado sem histórico; baseline manual necessária.")
+                    if schema_version > 0:
+                        print("ATENÇÃO: esquema legado sem histórico; baseline manual necessária.")
                 for mig in migrations:
                     if mig.version in history:
                         status = history[mig.version][2]
@@ -383,11 +391,6 @@ def run(command: str, baseline_version: int | None = None) -> None:
                     "Faz backup, confirma a versão e executa uma única vez "
                     f"'docker compose run --rm db-migrate baseline {schema_version}'. "
                     "Não foi aplicada qualquer migração."
-                )
-            if has_history and schema_version != min(4, max(history, default=0)):
-                raise MigrationError(
-                    "Histórico e esquema não correspondem: alterações SQL podem ter sido "
-                    "aplicadas fora do migrador. Parar, comparar as versões e investigar."
                 )
             validate_history(history, migrations)
             pending = [m for m in migrations if m.version not in history]
