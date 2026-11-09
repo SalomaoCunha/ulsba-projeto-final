@@ -3,6 +3,7 @@ import os
 import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import utentes
 
 app = FastAPI(title="Plataforma Cuidados Paliativos ULSBA")
 
@@ -24,3 +25,6 @@ def health():
     with psycopg.connect(DATABASE_URL) as conn:
         postgis = conn.execute("SELECT PostGIS_Version()").fetchone()[0]
     return {"status": "ok", "postgis": postgis}
+
+
+app.include_router(utentes.router, prefix="/api/v1")
