@@ -342,7 +342,7 @@ def run(command: str, baseline_version: int | None = None) -> None:
                 for mig in migrations:
                     if mig.version in history:
                         status = history[mig.version][2]
-                    elif not has_history and mig.version <= schema_version:
+                    elif not has_history and schema_version > 0:
                         status = "detetada no esquema (sem histórico)"
                     else:
                         status = "pendente"
@@ -385,7 +385,7 @@ def run(command: str, baseline_version: int | None = None) -> None:
                         f"({', '.join(row[0] for row in unrelated_tables[:8])}). "
                         "Confirma POSTGRES_DB antes de aplicar migrações."
                     )
-            if schema_version > 0 and not has_history:
+            if not has_history and schema_version > 0:
                 raise MigrationError(
                     f"Esquema ULSBA já existe (v{schema_version}), sem histórico. "
                     "Faz backup, confirma a versão e executa uma única vez "
