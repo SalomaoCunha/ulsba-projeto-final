@@ -195,7 +195,7 @@ const UtentesPage: React.FC = () => {
                   onChange={(e) => setFiltroEquipa(e.target.value || null)}
                 >
                   <option value="">Todas</option>
-                  {[...new Set(utentesFiltrados.map((u) => u.equipaResponsavel))].map((eq) => (
+                  {[...new Set(utentes.map((u) => u.equipaResponsavel))].map((eq) => (
                     <option key={eq} value={eq}>{eq}</option>
                   ))}
                 </select>
