@@ -9,8 +9,8 @@ Uso:
   python runner.py status
   python runner.py baseline 4    # APENAS após conferir esquema existente
 """
-
 from __future__ import annotations
+
 
 import argparse
 import hashlib
@@ -19,6 +19,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 MIGRATIONS_DIR = Path(os.environ.get("MIGRATIONS_DIR", "/migrations"))
 FILE_RE = re.compile(r"^(\d{4})_[a-z0-9_]+\.sql$")
@@ -250,16 +251,22 @@ def structural_version(conn, has_history: bool) -> int | None:
     return None if has_history else detect_existing_version(conn)
 
 
-def read_history(conn) -> dict[int, tuple[str, str, str]]:
+class HistoryEntry(NamedTuple):
+    filename: str
+    checksum: str
+    origin: str
+
+
+def read_history(conn) -> dict[int, HistoryEntry]:
     if not relation_exists(conn, HISTORY_TABLE):
         return {}
     rows = conn.execute(
         "SELECT version, filename, checksum_sha256, origem FROM public.schema_migrations ORDER BY version"
     ).fetchall()
-    return {v: (name, checksum.strip(), origin) for v, name, checksum, origin in rows}
+    return {v: HistoryEntry(name, checksum.strip(), origin) for v, name, checksum, origin in rows}
 
 
-def validate_history(history: dict[int, tuple[str, str, str]], migrations: list[Migration]):
+def validate_history(history: dict[int, HistoryEntry], migrations: list[Migration]):
     versions = sorted(history)
     if versions != list(range(1, len(versions) + 1)):
         raise MigrationError(f"Histórico de migrações não consecutivo: {versions}")
@@ -268,8 +275,8 @@ def validate_history(history: dict[int, tuple[str, str, str]], migrations: list[
     for m in migrations:
         if m.version not in history:
             continue
-        stored_name, stored_checksum, _ = history[m.version]
-        if stored_name != m.filename or stored_checksum != m.checksum:
+        entry = history[m.version]
+        if entry.filename != m.filename or entry.checksum != m.checksum:
             raise MigrationError(
                 f"Migração {m.version:04d} alterada após aplicação: "
                 "nome/checksum não correspondem. Não edites migrações antigas; "
@@ -341,8 +348,8 @@ def run(command: str, baseline_version: int | None = None) -> None:
                         print("ATENÇÃO: esquema legado sem histórico; baseline manual necessária.")
                 for mig in migrations:
                     if mig.version in history:
-                        status = history[mig.version][2]
-                    elif not has_history and schema_version > 0:
+                        status = history[mig.version].origin
+                    elif not has_history and mig.version <= schema_version:
                         status = "detetada no esquema (sem histórico)"
                     else:
                         status = "pendente"
