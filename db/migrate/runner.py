@@ -385,7 +385,7 @@ def run(command: str, baseline_version: int | None = None) -> None:
                         f"({', '.join(row[0] for row in unrelated_tables[:8])}). "
                         "Confirma POSTGRES_DB antes de aplicar migrações."
                     )
-            if schema_version > 0 and not has_history:
+            if not has_history and schema_version > 0:
                 raise MigrationError(
                     f"Esquema ULSBA já existe (v{schema_version}), sem histórico. "
                     "Faz backup, confirma a versão e executa uma única vez "
