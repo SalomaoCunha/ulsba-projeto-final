@@ -1,3 +1,4 @@
+from app.schemas import PrioridadeAlterar
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
@@ -96,4 +97,49 @@ def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn)):
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
     return obter(utente_id, conn)    
+
+@router.post("/{utente_id}/prioridade", response_model=UtenteResumo, status_code=201)
+def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(get_conn)):
+    query = """
+    INSERT INTO avaliacao_triagem (utente_id, nivel_urgencia_id, motivo, avaliada_por)
+    VALUES (%s, %s, %s, %s)
+    RETURNING id
+    """
+
+    exist = conn.execute("SELECT 1 FROM utente WHERE id = %s", (utente_id,)).fetchone()
+
+    if exist is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(query, (utente_id, dados.nivel_urgencia_id, dados.motivo, UTILIZADOR_SISTEMA_ID,)).fetchone()["id"]
+
+    return obter(utente_id, conn)       
+
+@router.get("/{utente_id}/historico-prioridade")
+def historico_prioridade(utente_id: int, conn=Depends(get_conn)):
+    query = """
+        SELECT
+            t.id,
+            t.nivel_urgencia_id,
+            n.codigo       AS urgencia_codigo,
+            n.designacao   AS urgencia_designacao,
+            n.cor_hex      AS urgencia_cor,
+            t.motivo,
+            t.avaliada_em,
+            u.nome         AS avaliada_por_nome,
+            t.retifica_id
+        FROM avaliacao_triagem t
+        JOIN nivel_urgencia n ON n.id = t.nivel_urgencia_id
+        JOIN utilizador u      ON u.id = t.avaliada_por
+        WHERE t.utente_id = %s
+        ORDER BY t.avaliada_em DESC
+    """
+
+    result = conn.execute(query, (utente_id,)).fetchall()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
+    
+    return result 
+
 

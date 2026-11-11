@@ -33,4 +33,11 @@ class UtenteEditar(BaseModel):
     situacao_clinica: Optional[str] = None
     notas: Optional[str] = None
 
+# Historico prioridades
+
+class PrioridadeAlterar(BaseModel):
+    nivel_urgencia_id: int
+    motivo: str   # obrigatório — RF10
+
+
 
