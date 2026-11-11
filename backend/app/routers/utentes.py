@@ -1,9 +1,15 @@
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
-from app.schemas import UtenteResumo
+from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
 
 
 from app.db import get_conn
+
+
+
+UTILIZADOR_SISTEMA_ID = 2  # TODO: substituir por auth real quando existir
+
+
 
 router = APIRouter(prefix="/utentes", tags=["utentes"])
 
@@ -62,3 +68,32 @@ def obter(utente_id: int, conn=Depends(get_conn)):
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
     return result
+
+@router.post("", response_model=UtenteResumo, status_code=201)
+def criar(dados: UtenteCriar, conn=Depends(get_conn)):
+    novo_id = conn.execute(
+        """
+           INSERT INTO utente (numero_utente, nome, genero, data_nascimento, local_id,
+                                contacto_telefonico, situacao_clinica, notas, criado_por)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING id
+        """,
+        (dados.numero_utente, dados.nome, dados.genero, dados.data_nascimento,
+         dados.local_id, dados.contacto_telefonico, dados.situacao_clinica,
+         dados.notas, UTILIZADOR_SISTEMA_ID),
+    ).fetchone()["id"]
+
+    return obter(novo_id, conn)
+
+@router.put("/{utente_id}", response_model=UtenteResumo)
+def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn)):
+    cursor =  conn.execute(
+        "UPDATE utente SET nome = %s, contacto_telefonico = %s, situacao_clinica = %s, notas = %s WHERE id = %s",
+        (dados.nome, dados.contacto_telefonico, dados.situacao_clinica, dados.notas, utente_id),
+    )
+    
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    return obter(utente_id, conn)    
+

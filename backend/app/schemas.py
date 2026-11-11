@@ -16,3 +16,21 @@ class UtenteResumo(BaseModel):
     complexidade_designacao: Optional[str]
     equipa_responsavel_codigo: Optional[str]
     ultima_visita: Optional[datetime]
+
+class UtenteCriar(BaseModel):
+    numero_utente: str
+    nome: str
+    genero: str
+    data_nascimento: date
+    local_id: int
+    contacto_telefonico: Optional[str] = None
+    situacao_clinica: Optional[str] = None
+    notas: Optional[str] = None
+
+class UtenteEditar(BaseModel):
+    nome: str
+    contacto_telefonico: Optional[str] = None
+    situacao_clinica: Optional[str] = None
+    notas: Optional[str] = None
+
+
