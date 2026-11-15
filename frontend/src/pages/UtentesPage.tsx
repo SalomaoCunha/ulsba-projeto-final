@@ -2,20 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUtentesFicticios, updateUtente } from '../services/utenteService'
 import type { Utente } from '../types/utente'
-import { getNivelPrioridade, NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
+import { getNivelPrioridade } from '@/config/niveis';
 import VerUtenteModal from '../components/VerUtenteModal';
 import EditarUtenteModal from '../components/EditarUtenteModal';
+import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
+import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
   const [utentes, setUtentes] = useState<Utente[]>([]);
 
-  const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
-  const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
-  const [filtroComplexidade, setFiltroComplexidade] = useState<string | null>(null);
-  const [filtroEquipa, setFiltroEquipa] = useState<string | null>(null);
-  const [filtroDataDe, setFiltroDataDe] = useState('');
-  const [filtroDataAte, setFiltroDataAte] = useState('');
+  const [filtros, setFiltros] = useState<FiltrosUtentes>(filtrosVazios);
 
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
@@ -50,32 +47,7 @@ const UtentesPage: React.FC = () => {
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 
-  const utentesFiltrados = utentes.filter((u) => {
-    if (filtroPrioridade && u.prioridade !== filtroPrioridade) {
-      return false;
-    }
-    if (filtroComplexidade && u.complexidade !== filtroComplexidade) {
-      return false;
-    }
-    if (filtroEstado && u.estado !== filtroEstado) {
-      return false;
-    }
-    if (filtroEquipa && u.equipaResponsavel !== filtroEquipa) {
-      return false;
-    }
-
-    const [dia, mes, ano] = u.ultimaVisita.split('-').map(Number);
-    const dataVisita = new Date(ano, mes - 1, dia);
-
-    if (filtroDataDe && dataVisita < new Date(filtroDataDe)) {
-      return false;
-    }
-    if (filtroDataAte && dataVisita > new Date(filtroDataAte)) {
-      return false;
-    }
-
-    return true;
-  });
+  const utentesFiltrados = filtrarUtentes(utentes, filtros);
 
   const abrirVisualizacao = (utente: Utente) => {
     setUtenteEmFoco(utente);
@@ -144,98 +116,7 @@ const UtentesPage: React.FC = () => {
         </div>
 
         {filtrosAbertos && (
-          <div className="card-header bg-white border-bottom p-3">
-            <div className="d-flex gap-3 flex-wrap align-items-end">
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Prioridade</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroPrioridade ?? ''}
-                  onChange={(e) => setFiltroPrioridade(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {NIVEIS_PRIORIDADE.map((n) => (
-                    <option key={n.valor} value={n.valor}>{n.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Complexidade</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroComplexidade ?? ''}
-                  onChange={(e) => setFiltroComplexidade(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {NIVEIS_COMPLEXIDADE.map((n) => (
-                    <option key={n.valor} value={n.valor}>{n.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Estado</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroEstado ?? ''}
-                  onChange={(e) => setFiltroEstado(e.target.value || null)}
-                >
-                  <option value="">Todos</option>
-                  <option value="Ativo">Ativo</option>
-                  <option value="Inativo">Inativo</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Equipa</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroEquipa ?? ''}
-                  onChange={(e) => setFiltroEquipa(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {[...new Set(utentesFiltrados.map((u) => u.equipaResponsavel))].map((eq) => (
-                    <option key={eq} value={eq}>{eq}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Última visita (de)</label>
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  value={filtroDataDe}
-                  onChange={(e) => setFiltroDataDe(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Última visita (até)</label>
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  value={filtroDataAte}
-                  onChange={(e) => setFiltroDataAte(e.target.value)}
-                />
-              </div>
-
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => {
-                  setFiltroPrioridade(null);
-                  setFiltroComplexidade(null);
-                  setFiltroEstado(null);
-                  setFiltroEquipa(null);
-                  setFiltroDataDe('');
-                  setFiltroDataAte('');
-                }}
-              >
-                Limpar filtros
-              </button>
-            </div>
-          </div>
+          <FiltrosUtentesPainel utentes={utentes} filtros={filtros} onChange={setFiltros} />
         )}
 
         {/* Lista em cartões — só em mobile (<md), cabe sempre sem scroll horizontal */}
