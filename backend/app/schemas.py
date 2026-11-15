@@ -39,5 +39,15 @@ class PrioridadeAlterar(BaseModel):
     nivel_urgencia_id: int
     motivo: str   # obrigatório — RF10
 
+#Login
+class LoginDados(BaseModel):
+    email: str
+    password: str
+
+class TokenResposta(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
 
 
