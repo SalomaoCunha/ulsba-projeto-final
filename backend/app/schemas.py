@@ -48,6 +48,19 @@ class TokenResposta(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+#Equipas
+class MembroEquipa(BaseModel):
+    id: int
+    nome: str
+    funcao: str
+
+class EquipaResumo(BaseModel):
+    id: int
+    codigo: str
+    designacao: Optional[str]
+    ativa: bool
+    membros: list[MembroEquipa]
+
 
 
 
