@@ -5,18 +5,14 @@ from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
 
 
 from app.db import get_conn
-
-
-
-UTILIZADOR_SISTEMA_ID = 2  # TODO: substituir por auth real quando existir
-
+from app.routers.auth import get_current_user
 
 
 router = APIRouter(prefix="/utentes", tags=["utentes"])
 
 # LISTAR PACIENTES 
 @router.get("", response_model=list[UtenteResumo])
-def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_conn)):
+def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     condicoes = []
     parametros = []
 
@@ -49,7 +45,7 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
 #FICHA INDIVIDUAL DE CADA PACIENTE
 
 @router.get("/{utente_id}", response_model=UtenteResumo)
-def obter(utente_id: int, conn=Depends(get_conn)):
+def obter(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
 
     query = f"""
         SELECT utente_id, numero_utente, nome, idade, estado, genero,
@@ -71,7 +67,7 @@ def obter(utente_id: int, conn=Depends(get_conn)):
     return result
 
 @router.post("", response_model=UtenteResumo, status_code=201)
-def criar(dados: UtenteCriar, conn=Depends(get_conn)):
+def criar(dados: UtenteCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     novo_id = conn.execute(
         """
            INSERT INTO utente (numero_utente, nome, genero, data_nascimento, local_id,
@@ -81,25 +77,25 @@ def criar(dados: UtenteCriar, conn=Depends(get_conn)):
         """,
         (dados.numero_utente, dados.nome, dados.genero, dados.data_nascimento,
          dados.local_id, dados.contacto_telefonico, dados.situacao_clinica,
-         dados.notas, UTILIZADOR_SISTEMA_ID),
+         dados.notas, utilizador["id"]),
     ).fetchone()["id"]
 
-    return obter(novo_id, conn)
+    return obter(novo_id, conn, utilizador)
 
 @router.put("/{utente_id}", response_model=UtenteResumo)
-def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn)):
+def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     cursor =  conn.execute(
         "UPDATE utente SET nome = %s, contacto_telefonico = %s, situacao_clinica = %s, notas = %s WHERE id = %s",
         (dados.nome, dados.contacto_telefonico, dados.situacao_clinica, dados.notas, utente_id),
     )
-    
+
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
-    return obter(utente_id, conn)    
+    return obter(utente_id, conn, utilizador)
 
 @router.post("/{utente_id}/prioridade", response_model=UtenteResumo, status_code=201)
-def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(get_conn)):
+def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     query = """
     INSERT INTO avaliacao_triagem (utente_id, nivel_urgencia_id, motivo, avaliada_por)
     VALUES (%s, %s, %s, %s)
@@ -111,12 +107,12 @@ def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(ge
     if exist is None:
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
-    conn.execute(query, (utente_id, dados.nivel_urgencia_id, dados.motivo, UTILIZADOR_SISTEMA_ID,)).fetchone()["id"]
+    conn.execute(query, (utente_id, dados.nivel_urgencia_id, dados.motivo, utilizador["id"],)).fetchone()["id"]
 
-    return obter(utente_id, conn)       
+    return obter(utente_id, conn, utilizador)
 
 @router.get("/{utente_id}/historico-prioridade")
-def historico_prioridade(utente_id: int, conn=Depends(get_conn)):
+def historico_prioridade(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     query = """
         SELECT
             t.id,
