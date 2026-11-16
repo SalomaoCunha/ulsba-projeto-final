@@ -16,6 +16,13 @@ class UtenteResumo(BaseModel):
     complexidade_designacao: Optional[str]
     equipa_responsavel_codigo: Optional[str]
     ultima_visita: Optional[datetime]
+    morada: Optional[str]
+    codigo_postal: Optional[str]
+    localidade: Optional[str]
+    concelho: Optional[str]
+    cuidador_principal_nome: Optional[str]
+    lat: Optional[float]
+    lng: Optional[float]
 
 class UtenteCriar(BaseModel):
     numero_utente: str

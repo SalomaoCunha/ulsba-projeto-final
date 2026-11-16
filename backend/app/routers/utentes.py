@@ -34,12 +34,16 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
             data_nascimento, contacto_telefonico,
             urgencia_designacao, urgencia_cor,
             complexidade_designacao, equipa_responsavel_codigo,
-            ultima_visita
+            ultima_visita,
+            morada, codigo_postal, localidade, concelho,
+            cuidador_principal_nome,
+            ST_Y(geom::geometry) AS lat,
+            ST_X(geom::geometry) AS lng
         FROM vw_utente_ficha
         {where}
         ORDER BY nome
     """
-    
+
     return conn.execute(query, parametros).fetchall()
 
 #FICHA INDIVIDUAL DE CADA PACIENTE
@@ -52,7 +56,11 @@ def obter(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get
             data_nascimento, contacto_telefonico,
             urgencia_designacao, urgencia_cor,
             complexidade_designacao, equipa_responsavel_codigo,
-            ultima_visita
+            ultima_visita,
+            morada, codigo_postal, localidade, concelho,
+            cuidador_principal_nome,
+            ST_Y(geom::geometry) AS lat,
+            ST_X(geom::geometry) AS lng
         FROM vw_utente_ficha
         WHERE utente_id = %s
         ORDER BY nome
