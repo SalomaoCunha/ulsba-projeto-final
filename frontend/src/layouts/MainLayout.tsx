@@ -1,5 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { getUtilizadorAtual, logout } from '../services/authService';
+import type { UtilizadorAtual } from '../services/authService';
+
+const LABEL_PERFIL: Record<string, string> = {
+  COORDENADOR: 'Coordenador(a)',
+  PROFISSIONAL_SAUDE: 'Profissional de saúde',
+  ADMINISTRADOR: 'Administrador(a)',
+};
+
+const iniciais = (nome: string) => {
+  const partes = nome.trim().split(/\s+/);
+  const primeiras = partes[0]?.[0] ?? '';
+  const ultimas = partes.length > 1 ? partes[partes.length - 1][0] : '';
+  return (primeiras + ultimas).toUpperCase();
+};
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: 'bi-grid-1x2-fill' },
@@ -18,6 +33,11 @@ const NAV_ITEMS = [
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [utilizador, setUtilizador] = useState<UtilizadorAtual | null>(null);
+
+  useEffect(() => {
+    getUtilizadorAtual().then(setUtilizador).catch((erro) => console.error('Falha ao carregar utilizador autenticado:', erro));
+  }, []);
 
   const getMenuClass = (path: string) => {
     return location.pathname === path ? "side-link side-link-active" : "side-link";
@@ -53,7 +73,7 @@ const MainLayout: React.FC = () => {
 
         {/* Botão Sair */}
         <div className="side-bottom">
-          <button className="side-link border-0 bg-transparent w-100">
+          <button className="side-link border-0 bg-transparent w-100" onClick={logout}>
             <i className="bi bi-box-arrow-left"></i> Sair
           </button>
         </div>
@@ -97,11 +117,11 @@ const MainLayout: React.FC = () => {
                 className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
                 style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-claro)', color: 'var(--ulsba-verde-claro-texto)', fontSize: '0.8rem' }}
               >
-                AS
+                {utilizador ? iniciais(utilizador.nome) : '…'}
               </div>
               <div className="text-end d-none d-sm-block">
-                <p className="mb-0 fw-bold small text-dark lh-1 mt-1">Enf. Ana Silva</p>
-                <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Coordenadora</p>
+                <p className="mb-0 fw-bold small text-dark lh-1 mt-1">{utilizador?.nome ?? 'A carregar…'}</p>
+                <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>{utilizador ? LABEL_PERFIL[utilizador.perfil] ?? utilizador.perfil : ''}</p>
               </div>
               <i className="bi bi-chevron-down text-muted small d-none d-sm-inline"></i>
             </div>

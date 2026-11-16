@@ -48,6 +48,12 @@ class TokenResposta(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class UtilizadorAtual(BaseModel):
+    id: int
+    nome: str
+    perfil: str
+    vista_geral: bool
+
 #Equipas
 class MembroEquipa(BaseModel):
     id: int

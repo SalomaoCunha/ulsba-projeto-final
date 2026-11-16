@@ -6,7 +6,7 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
-from app.schemas import LoginDados, TokenResposta
+from app.schemas import LoginDados, TokenResposta, UtilizadorAtual
 
 from fastapi.security import OAuth2PasswordBearer
 
@@ -61,10 +61,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), conn=Depends(get_conn)
 
     utilizador_check = conn.execute(query, (utilizador_id,)).fetchone()
 
-    # TODO 4: se não encontrar OU não estiver ativo -> HTTPException(401, "Utilizador inválido ou inativo")
     if not utilizador_check or not utilizador_check["ativo"]:
-        raise HTTPException(status_code=401, detail="Utilizador inválido ou inativo")     
+        raise HTTPException(status_code=401, detail="Utilizador inválido ou inativo")
 
     return utilizador_check
+
+
+@router.get("/me", response_model=UtilizadorAtual)
+def eu(utilizador: dict = Depends(get_current_user)):
+    return utilizador
 
 
