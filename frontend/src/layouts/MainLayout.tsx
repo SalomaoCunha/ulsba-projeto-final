@@ -33,6 +33,7 @@ const NAV_ITEMS = [
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
+  const [perfilAberto, setPerfilAberto] = useState(false);
   const [utilizador, setUtilizador] = useState<UtilizadorAtual | null>(null);
 
   useEffect(() => {
@@ -112,18 +113,44 @@ const MainLayout: React.FC = () => {
             <div className="d-none d-sm-block vr"></div>
 
             {/* Perfil + seletor de acesso */}
-            <div className="d-flex align-items-center gap-2 cursor-pointer">
+            <div className="position-relative">
               <div
-                className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-claro)', color: 'var(--ulsba-verde-claro-texto)', fontSize: '0.8rem' }}
+                className="d-flex align-items-center gap-2 cursor-pointer"
+                onClick={() => setPerfilAberto((aberto) => !aberto)}
               >
-                {utilizador ? iniciais(utilizador.nome) : '…'}
+                <div
+                  className="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                  style={{ width: '36px', height: '36px', backgroundColor: 'var(--ulsba-verde-claro)', color: 'var(--ulsba-verde-claro-texto)', fontSize: '0.8rem' }}
+                >
+                  {utilizador ? iniciais(utilizador.nome) : '…'}
+                </div>
+                <div className="text-end d-none d-sm-block">
+                  <p className="mb-0 fw-bold small text-dark lh-1 mt-1">{utilizador?.nome ?? 'A carregar…'}</p>
+                  <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>{utilizador ? LABEL_PERFIL[utilizador.perfil] ?? utilizador.perfil : ''}</p>
+                </div>
+                <i className="bi bi-chevron-down text-muted small d-none d-sm-inline"></i>
               </div>
-              <div className="text-end d-none d-sm-block">
-                <p className="mb-0 fw-bold small text-dark lh-1 mt-1">{utilizador?.nome ?? 'A carregar…'}</p>
-                <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>{utilizador ? LABEL_PERFIL[utilizador.perfil] ?? utilizador.perfil : ''}</p>
-              </div>
-              <i className="bi bi-chevron-down text-muted small d-none d-sm-inline"></i>
+
+              {perfilAberto && (
+                <>
+                  <div
+                    className="position-fixed top-0 start-0 w-100 h-100"
+                    style={{ zIndex: 1040 }}
+                    onClick={() => setPerfilAberto(false)}
+                  />
+                  <div
+                    className="position-absolute end-0 mt-2 bg-white border rounded shadow-sm py-1"
+                    style={{ top: '100%', minWidth: '160px', zIndex: 1050 }}
+                  >
+                    <button
+                      className="dropdown-item d-flex align-items-center gap-2 px-3 py-2 w-100 border-0 bg-transparent text-danger"
+                      onClick={logout}
+                    >
+                      <i className="bi bi-box-arrow-left"></i> Sair
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
