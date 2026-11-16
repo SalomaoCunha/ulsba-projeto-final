@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getViaturasFicticias } from '../services/viaturaService';
-import { getEquipasFicticias } from '../services/equipaService';
+import { getEquipas } from '../services/equipaService';
 import type { Viatura, EstadoViatura } from '../types/viatura';
 import type { Equipa } from '../types/equipa';
 
@@ -10,12 +10,13 @@ const ViaturasPage: React.FC = () => {
 
   useEffect(() => {
     getViaturasFicticias().then(setViaturas);
-    getEquipasFicticias().then(setEquipas);
+    getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
   }, []);
 
   const nomeDaEquipa = (equipaId: string | null) => {
     if (!equipaId) return 'Sem equipa atribuída';
-    return equipas.find(e => e.id === equipaId)?.nome ?? 'Sem equipa atribuída';
+    const equipa = equipas.find(e => String(e.id) === equipaId);
+    return equipa ? `Equipa ${equipa.codigo}` : 'Sem equipa atribuída';
   };
 
   const getBadgeEstado = (estado: EstadoViatura) => {
