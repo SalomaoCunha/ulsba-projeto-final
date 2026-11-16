@@ -61,6 +61,20 @@ class EquipaResumo(BaseModel):
     ativa: bool
     membros: list[MembroEquipa]
 
+#Viaturas
+class ViaturaResumo(BaseModel):
+    id: int
+    matricula: str
+    designacao: Optional[str]
+    tipo_motorizacao: str
+    lugares: int
+    autonomia: Optional[float]
+    unidade_autonomia: Optional[str]
+    estado: str
+    data_ultima_revisao: Optional[date]
+    periodicidade_revisao_meses: Optional[int]
+    equipa_codigo: Optional[str]
+
 
 
 

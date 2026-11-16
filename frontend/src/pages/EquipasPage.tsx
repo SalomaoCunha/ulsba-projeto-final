@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getEquipas } from '../services/equipaService';
-import { getViaturasFicticias } from '../services/viaturaService';
+import { getViaturas } from '../services/viaturaService';
 import type { Equipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 
@@ -11,17 +11,15 @@ const EquipasPage: React.FC = () => {
 
   useEffect(() => {
     getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
-    getViaturasFicticias().then(setViaturas);
+    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro));
   }, [])
 
   const viaturasDaEquipa = (equipa: Equipa) => {
-    // TODO: viaturaService ainda devolve dados mock com equipaId em formato antigo
-    // ('equipa-a'); isto fica por resolver até ligarmos Viaturas à API real.
-    return viaturas.filter(e => e.equipaId === String(equipa.id));
+    return viaturas.filter(v => v.equipa_codigo === equipa.codigo);
   }
 
   const viaturasSemEquipa = () => {
-    return viaturas.filter(e => e.equipaId === null);
+    return viaturas.filter(v => v.equipa_codigo === null);
   }
 
   return (
@@ -72,7 +70,7 @@ const EquipasPage: React.FC = () => {
                 <p className="text-muted small fw-medium mb-1">Viaturas</p>
                 {viaturasDaEquipa(equipa).map((viatura) => (
                   <div key={viatura.id} className="small mb-1">
-                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.modelo} ({viatura.estado})
+                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
                   </div>
                 ))}
               </div>
@@ -89,7 +87,7 @@ const EquipasPage: React.FC = () => {
             <p className="text-muted small fw-medium mb-1">Sem equipa atribuída</p>
             {viaturasSemEquipa().map((viatura) => (
               <div key={viatura.id} className="small mb-1">
-                <span className="fw-medium">{viatura.matricula}</span> — {viatura.modelo} ({viatura.estado})
+                <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
               </div>
             ))}
           </div>
