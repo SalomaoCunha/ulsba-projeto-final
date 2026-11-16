@@ -3,15 +3,16 @@ import os
 import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import utentes, auth
+from app.routers import utentes, auth, equipas, viaturas
 
 app = FastAPI(title="Plataforma Cuidados Paliativos ULSBA")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_private_network=True,
 )
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -29,3 +30,5 @@ def health():
 
 app.include_router(utentes.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(equipas.router, prefix="/api/v1")
+app.include_router(viaturas.router, prefix="/api/v1")

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getEquipasFicticias } from '../services/equipaService';
-import { getViaturasFicticias } from '../services/viaturaService';
+import { getEquipas } from '../services/equipaService';
+import { getViaturas } from '../services/viaturaService';
 import type { Equipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 
@@ -10,16 +10,16 @@ const EquipasPage: React.FC = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
 
   useEffect(() => {
-    getEquipasFicticias().then(setEquipas);
-    getViaturasFicticias().then(setViaturas);
+    getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
+    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro));
   }, [])
 
   const viaturasDaEquipa = (equipa: Equipa) => {
-    return viaturas.filter(e => e.equipaId === equipa.id);
+    return viaturas.filter(v => v.equipa_codigo === equipa.codigo);
   }
 
   const viaturasSemEquipa = () => {
-    return viaturas.filter(e => e.equipaId === null);
+    return viaturas.filter(v => v.equipa_codigo === null);
   }
 
   return (
@@ -49,8 +49,8 @@ const EquipasPage: React.FC = () => {
 
               <div className="d-flex justify-content-between align-items-start">
                 <div>
-                  <h6 className="fw-bold mb-1">{equipa.nome}</h6>
-                  <p className="text-muted small mb-2">{equipa.zona}</p>
+                  <h6 className="fw-bold mb-1">Equipa {equipa.codigo}</h6>
+                  <p className="text-muted small mb-2">{equipa.designacao}</p>
                 </div>
                 <button className="btn btn-sm btn-outline-secondary" disabled title="Em breve">
                   <i className="bi bi-pencil"></i>
@@ -59,9 +59,9 @@ const EquipasPage: React.FC = () => {
 
               <div>
                 <p className="text-muted small fw-medium mb-1">Profissionais</p>
-                {equipa.profissionais.map((profissional, idx) => (
-                  <div key={idx}>
-                    {profissional.nome + " " + profissional.funcao}
+                {equipa.membros.map((membro) => (
+                  <div key={membro.id}>
+                    {membro.nome + " — " + membro.funcao}
                   </div>
                 ))}
               </div>
@@ -70,7 +70,7 @@ const EquipasPage: React.FC = () => {
                 <p className="text-muted small fw-medium mb-1">Viaturas</p>
                 {viaturasDaEquipa(equipa).map((viatura) => (
                   <div key={viatura.id} className="small mb-1">
-                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.modelo} ({viatura.estado})
+                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
                   </div>
                 ))}
               </div>
@@ -87,7 +87,7 @@ const EquipasPage: React.FC = () => {
             <p className="text-muted small fw-medium mb-1">Sem equipa atribuída</p>
             {viaturasSemEquipa().map((viatura) => (
               <div key={viatura.id} className="small mb-1">
-                <span className="fw-medium">{viatura.matricula}</span> — {viatura.modelo} ({viatura.estado})
+                <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
               </div>
             ))}
           </div>

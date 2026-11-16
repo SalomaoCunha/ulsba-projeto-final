@@ -56,7 +56,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), conn=Depends(get_conn)
     utilizador_id = int(payload["sub"])
 
     query = """
-        SELECT id, nome, perfil, ativo FROM utilizador WHERE id = %s
+        SELECT id, nome, perfil, ativo, vista_geral FROM utilizador WHERE id = %s
     """
 
     utilizador_check = conn.execute(query, (utilizador_id,)).fetchone()
