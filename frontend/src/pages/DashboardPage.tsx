@@ -4,7 +4,7 @@ import MapaLeaflet from '../components/MapaLeaflet';
 import PesquisaUtente from '../components/PesquisaUtente';
 import PainelPrioridades from '../components/PainelPrioridades';
 import BarraAcoesDashboard from '../components/BarraAcoesDashboard';
-import { getUtentesFicticios, updateUtente } from '../services/utenteService';
+import { getUtentes, updateUtente } from '../services/utenteService';
 import EditarUtenteModal from '../components/EditarUtenteModal';
 import type { Utente } from '../types/utente';
 
@@ -16,7 +16,7 @@ const DashboardPage: React.FC = () => {
   const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
-    getUtentesFicticios().then((lista) => {
+    getUtentes().then((lista) => {
       setUtentes(lista);
       setUtenteSelecionado(lista[0] ?? null);
     });

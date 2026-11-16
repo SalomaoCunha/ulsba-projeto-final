@@ -1,7 +1,7 @@
 import React from 'react';
 import MapaLeaflet from '../components/MapaLeaflet';
 import { useEffect, useState } from 'react'
-import { getUtentesFicticios } from '../services/utenteService'
+import { getUtentes } from '../services/utenteService'
 import type { Utente } from '../types/utente'
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
@@ -11,7 +11,7 @@ const MapaPage: React.FC = () => {
   const [filtros, setFiltros] = useState<FiltrosUtentes>(filtrosVazios);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
-  useEffect(() => { getUtentesFicticios().then(setUtentes);}, []);
+  useEffect(() => { getUtentes().then(setUtentes);}, []);
 
   const utentesFiltrados = filtrarUtentes(utentes, filtros);
 

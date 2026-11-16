@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUtentesFicticios, updateUtente } from '../services/utenteService'
+import { getUtentes, updateUtente } from '../services/utenteService'
 import type { Utente } from '../types/utente'
 import { getNivelPrioridade } from '@/config/niveis';
 import VerUtenteModal from '../components/VerUtenteModal';
@@ -23,7 +23,7 @@ const UtentesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUtentesFicticios().then(setUtentes);
+    getUtentes().then(setUtentes);
   }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
