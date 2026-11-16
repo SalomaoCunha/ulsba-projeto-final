@@ -1,141 +1,24 @@
-import type { Utente } from '@/types/utente';
+import type { Utente } from '../types/utente';
+import { apiFetch } from './apiClient';
 
-const utentes: Utente[] = [
-  {
-    id: '12569',
-    numeroUtente: '12569',
-    nome: 'Maria Teresa Almeida',
-    dataNascimento: '12-03-1942',
-    ultimaVisita: '02-10-2026',
-    telefone: '912 345 678',
-    equipaResponsavel: 'Equipa A',
-    cuidadorPrincipal: 'Ana Almeida',
-    situacaoClinica: ['Insuficiência cardíaca', 'Diabetes tipo II', 'Hipertensão arterial'],
-    tipoLocal: 'Domicílio',
-    ruaNumero: 'Rua de São João, 12',
-    codigoPostal: '7800-310',
-    localidade: 'Beja',
-    concelho: 'Beja',
-    lat: 38.015,
-    lng: -7.863,
-    notas: 'Utente autónoma. Vive com o filho.',
-    prioridade: 'Urgente 0 dias',
-    historicoPrioridade: [],
-    complexidade: 'Altamente complexo',
-    historicoComplexidade: [],
-    estado: 'Ativo',
-  },
-  {
-    id: '12560',
-    numeroUtente: '12560',
-    nome: 'Maria Teresa Godinho',
-    dataNascimento: '15-05-1950',
-    ultimaVisita: '01-10-2026',
-    telefone: '911 222 333',
-    equipaResponsavel: 'Equipa B',
-    cuidadorPrincipal: 'Carlos Godinho',
-    situacaoClinica: ['Asma', 'Osteoporose'],
-    tipoLocal: 'Domicílio',
-    ruaNumero: 'Rua do Touro, 5',
-    codigoPostal: '7800-440',
-    localidade: 'Beja',
-    concelho: 'Beja',
-    lat: 38.012,
-    lng: -7.867,
-    notas: 'Precisa de ajuda para subir escadas.',
-    prioridade: 'Urgente 1 dia',
-    historicoPrioridade: [],
-    complexidade: 'Complexo',
-    historicoComplexidade: [],
-    estado: 'Ativo',
-  },
-  {
-    id: '12570',
-    numeroUtente: '12570',
-    nome: 'Maria Teresa Silva',
-    dataNascimento: '03-08-1945',
-    ultimaVisita: '05-10-2026',
-    telefone: '912 345 674',
-    equipaResponsavel: 'Equipa A',
-    cuidadorPrincipal: 'José Silva',
-    situacaoClinica: ['Pressão arterial elevada'],
-    tipoLocal: 'Domicílio',
-    ruaNumero: 'Rua Serpa Pinto, 20',
-    codigoPostal: '7800-213',
-    localidade: 'Beja',
-    concelho: 'Beja',
-    lat: 38.018,
-    lng: -7.859,
-    notas: 'Segue acompanhamento ambulatorial.',
-    prioridade: 'Urgente 2 dias',
-    historicoPrioridade: [],
-    complexidade: 'Não complexo',
-    historicoComplexidade: [],
-    estado: 'Ativo',
-  },
-  {
-    id: '12561',
-    numeroUtente: '12561',
-    nome: 'Maria Teresa Sousa',
-    dataNascimento: '22-11-1938',
-    ultimaVisita: '28-09-2026',
-    telefone: '966 555 444',
-    equipaResponsavel: 'Equipa B',
-    cuidadorPrincipal: 'Lar Doce Idade',
-    situacaoClinica: ['Alzheimer'],
-    tipoLocal: 'Lar',
-    nomeInstituicao: 'Lar Doce Idade',
-    ruaNumero: 'Largo dos Duques de Beja, 8',
-    codigoPostal: '7800-427',
-    localidade: 'Beja',
-    concelho: 'Beja',
-    lat: 38.009,
-    lng: -7.861,
-    notas: 'Visitas apenas da parte da tarde.',
-    prioridade: 'Não urgente 1',
-    historicoPrioridade: [],
-    complexidade: 'Complexo',
-    historicoComplexidade: [],
-    estado: 'Ativo',
-  },
-  {
-    id: '12562',
-    numeroUtente: '12562',
-    nome: 'Maria Isabel Ferreira',
-    dataNascimento: '10-02-1935',
-    ultimaVisita: '15-09-2026',
-    telefone: '912 345 673',
-    equipaResponsavel: 'Equipa A',
-    cuidadorPrincipal: 'Filha (não residente)',
-    situacaoClinica: ['Mobilidade reduzida'],
-    tipoLocal: 'Domicílio',
-    ruaNumero: 'Praça da República, 3',
-    codigoPostal: '7800-427',
-    localidade: 'Beja',
-    concelho: 'Beja',
-    lat: 38.021,
-    lng: -7.865,
-    notas: 'Processo encerrado; sem visitas agendadas.',
-    prioridade: 'Não urgente 2',
-    historicoPrioridade: [],
-    complexidade: 'Não complexo',
-    historicoComplexidade: [],
-    estado: 'Inativo',
-  },
-];
+export async function getUtentes(): Promise<Utente[]> {
+  return apiFetch<Utente[]>('/utentes');
+}
 
-export async function getUtentesFicticios(): Promise<Utente[]> {
-  return new Promise((resolve) => setTimeout(() => resolve(utentes), 300));
+export async function getUtenteById(id: string): Promise<Utente> {
+  return apiFetch<Utente>(`/utentes/${id}`);
+}
+
+export async function createUtente(novoUtente: Omit<Utente, 'id'>): Promise<Utente> {
+  return apiFetch<Utente>('/utentes', {
+    method: 'POST',
+    body: JSON.stringify(novoUtente),
+  });
 }
 
 export async function updateUtente(utenteAtualizado: Utente): Promise<Utente> {
-  const indice = utentes.findIndex(u => u.id === utenteAtualizado.id)
-
-  if (indice === -1) {
-    throw new Error('Utente não encontrado');
-  }
-
-  utentes[indice] = utenteAtualizado;
-
-  return new Promise((resolve) => setTimeout(() => resolve(utenteAtualizado), 300));
+  return apiFetch<Utente>(`/utentes/${utenteAtualizado.id}`, {
+    method: 'PUT',
+    body: JSON.stringify(utenteAtualizado),
+  });
 }
