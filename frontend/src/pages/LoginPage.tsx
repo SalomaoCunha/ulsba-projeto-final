@@ -24,8 +24,9 @@ export default function LoginPage() {
         localStorage.setItem('token', data.access_token);
         navigate('/');
       }
-    } catch (err: any) {
-      setErro(err.message || 'Erro ao efetuar login. Verifique as credenciais.');
+    } catch (err) {
+      const mensagem = err instanceof Error ? err.message : 'Erro ao efetuar login. Verifique as credenciais.';
+      setErro(mensagem);
     } finally {
       setLoading(false);
     }

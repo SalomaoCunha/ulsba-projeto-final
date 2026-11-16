@@ -16,7 +16,7 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
     });
   } catch (erro) {
     if (erro instanceof TypeError) {
-      throw new Error(`Não foi possível contactar a API em ${API_ORIGIN}. Confirme se o backend está ativo e se a URL está correta.`);
+      throw new Error(`Não foi possível contactar a API em ${API_ORIGIN}. Confirme se o backend está ativo e se a URL está correta.`, { cause: erro });
     }
     throw erro;
   }
