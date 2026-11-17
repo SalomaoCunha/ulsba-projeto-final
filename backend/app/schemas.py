@@ -132,6 +132,11 @@ class LocalCriar(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
 
+#UtenteInativar
+class UtenteInativar(BaseModel):
+    motivo: str
+    data_transicao: Optional[date] = None
+
 
 
 

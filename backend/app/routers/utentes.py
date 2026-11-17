@@ -1,4 +1,5 @@
-from app.schemas import PrioridadeAlterar, ComplexidadeAlterar, EquipaResponsavelAlterar
+from datetime import date
+from app.schemas import PrioridadeAlterar, ComplexidadeAlterar, EquipaResponsavelAlterar, UtenteInativar
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
@@ -13,10 +14,11 @@ router = APIRouter(prefix="/utentes", tags=["utentes"])
 # LISTAR PACIENTES 
 @router.get("", response_model=list[UtenteResumo])
 def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
-    condicoes = []
+    # RF03/RF07: um utente inativado sai do planeamento por omissão.
+    condicoes = ["estado != 'INATIVO'"]
     parametros = []
 
-    if nome: 
+    if nome:
         condicoes.append("nome ILIKE %s")
         parametros.append(f"%{nome}%")
     
@@ -240,4 +242,29 @@ def historico_equipa(utente_id: int, conn=Depends(get_conn), utilizador: dict = 
         raise HTTPException(status_code=404, detail="Utente sem histórico de equipa responsável")
 
     return result
+
+
+@router.put("/{utente_id}/inativar", response_model=UtenteResumo)
+def inativar(utente_id: int, dados: UtenteInativar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    utente = conn.execute("SELECT estado FROM utente WHERE id = %s", (utente_id,)).fetchone()
+    if utente is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    if utente["estado"] == "INATIVO":
+        raise HTTPException(status_code=400, detail="Utente já está inativo")
+
+    data_transicao = dados.data_transicao or date.today()
+
+    conn.execute("UPDATE utente SET estado = 'INATIVO' WHERE id = %s", (utente_id,))
+
+    conn.execute(
+        """
+        INSERT INTO utente_transicao_estado
+            (utente_id, estado_anterior, estado_novo, data_transicao, motivo, registada_por)
+        VALUES (%s, %s, 'INATIVO', %s, %s, %s)
+        """,
+        (utente_id, utente["estado"], data_transicao, dados.motivo, utilizador["id"]),
+    )
+
+    return obter(utente_id, conn, utilizador)
 
