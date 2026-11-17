@@ -109,4 +109,12 @@ class VoltaCriar(BaseModel):
     utente_ids: list[int]
 
 
+#complexidadeAlterar
+
+class ComplexidadeAlterar(BaseModel):
+    nivel_complexidade_id: int
+    observacao: Optional[str] = None
+
+
+
 

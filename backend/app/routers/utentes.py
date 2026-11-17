@@ -1,4 +1,4 @@
-from app.schemas import PrioridadeAlterar
+from app.schemas import PrioridadeAlterar, ComplexidadeAlterar
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
@@ -147,3 +147,44 @@ def historico_prioridade(utente_id: int, conn=Depends(get_conn), utilizador: dic
     return result 
 
 
+@router.post("/{utente_id}/complexidade", response_model=UtenteResumo, status_code=201)
+def alterar_complexidade(utente_id: int, dados: ComplexidadeAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+    INSERT INTO avaliacao_complexidade (utente_id, nivel_complexidade_id, observacao, avaliada_por)
+    VALUES (%s, %s, %s, %s)
+    RETURNING id
+    """
+
+    exist = conn.execute("SELECT 1 FROM utente WHERE id = %s", (utente_id,)).fetchone()
+
+    if exist is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(query, (utente_id, dados.nivel_complexidade_id, dados.observacao, utilizador["id"],)).fetchone()["id"]
+
+    return obter(utente_id, conn, utilizador)
+
+@router.get("/{utente_id}/historico-complexidade")
+def historico_complexidade(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+        SELECT
+            t.id,
+            t.nivel_complexidade_id,
+            n.codigo       AS complexidade_codigo,
+            n.designacao   AS complexidade_designacao,
+            t.observacao,
+            t.avaliada_em,
+            u.nome         AS avaliada_por_nome
+        FROM avaliacao_complexidade t
+        JOIN nivel_complexidade n ON n.id = t.nivel_complexidade_id
+        JOIN utilizador u      ON u.id = t.avaliada_por
+        WHERE t.utente_id = %s
+        ORDER BY t.avaliada_em DESC
+    """
+
+    result = conn.execute(query, (utente_id,)).fetchall()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
+    
+    return result 
