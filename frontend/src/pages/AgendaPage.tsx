@@ -8,12 +8,15 @@ import { useNavigate } from 'react-router-dom';
 import { getVoltas } from '../services/voltaService';
 import { getEquipas } from '../services/equipaService';
 import { getViaturas } from '../services/viaturaService';
+import { getUtentes } from '../services/utenteService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import type { Volta, EstadoVolta } from '../types/volta';
 import type { Equipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
+import type { Utente } from '../types/utente';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
+import PainelConstrucaoRota from '../components/PainelConstrucaoRota';
 
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales: { 'pt-PT': pt } });
 
@@ -73,8 +76,10 @@ function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoVolta>) {
 
 const AgendaPage = () => {
   const [voltas, setVoltas] = useState<Volta[]>([]);
+  const [voltasDoMes, setVoltasDoMes] = useState<Volta[]>([]);
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [utentes, setUtentes] = useState<Utente[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   const [equipaId, setEquipaId] = useState<number | undefined>();
@@ -95,14 +100,32 @@ const AgendaPage = () => {
     comAtrasoMinimo(Promise.allSettled([
       getEquipas().then(setEquipas),
       getViaturas().then(setViaturas),
+      getUtentes().then(setUtentes),
     ])).finally(() => setCarregando(false));
   }, []);
 
-  useEffect(() => {
-    getVoltas({ ...intervalo, equipaId, viaturaId, estado })
+  const recarregarVoltas = useCallback(() => {
+    return getVoltas({ ...intervalo, equipaId, viaturaId, estado })
       .then(setVoltas)
       .catch((erro) => console.error('Falha ao carregar voltas:', erro));
   }, [intervalo, equipaId, viaturaId, estado]);
+
+  // Sem os filtros da UI de propósito: usada só para saber que equipa/viatura
+  // já está ocupada num dia, independentemente do que está selecionado nos
+  // selects de filtro (senão uma equipa "escondida" pelo filtro parecia livre).
+  const recarregarVoltasDoMes = useCallback(() => {
+    return getVoltas(intervalo)
+      .then(setVoltasDoMes)
+      .catch((erro) => console.error('Falha ao carregar voltas do mês:', erro));
+  }, [intervalo]);
+
+  useEffect(() => {
+    recarregarVoltas();
+  }, [recarregarVoltas]);
+
+  useEffect(() => {
+    recarregarVoltasDoMes();
+  }, [recarregarVoltasDoMes]);
 
   const eventos = useMemo<EventoVolta[]>(() => {
     return voltas.map((volta) => ({
@@ -226,7 +249,20 @@ const AgendaPage = () => {
         </Modal.Header>
         <Modal.Body>
           {voltasDoDia.length === 0 ? (
-            <p className="text-muted small mb-0">Não há voltas neste dia.</p>
+            diaSelecionado && (
+              <PainelConstrucaoRota
+                data={diaSelecionado}
+                equipas={equipas}
+                viaturas={viaturas}
+                utentes={utentes}
+                voltasDoMes={voltasDoMes}
+                onCriada={() => {
+                  setDiaSelecionado(null);
+                  recarregarVoltas();
+                  recarregarVoltasDoMes();
+                }}
+              />
+            )
           ) : (
             voltasDoDia.map((volta) => (
               <button
