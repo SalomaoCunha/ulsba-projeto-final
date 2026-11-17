@@ -4,7 +4,7 @@ import { Calendar, dateFnsLocalizer, type EventProps, type ToolbarProps, type Sl
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getVoltas } from '../services/voltaService';
 import { getEquipas } from '../services/equipaService';
 import { getViaturas } from '../services/viaturaService';
@@ -82,8 +82,13 @@ const AgendaPage = () => {
   const [utentes, setUtentes] = useState<Utente[]>([]);
   const [carregando, setCarregando] = useState(true);
 
+  const [searchParams] = useSearchParams();
+  const viaturaIdInicial = searchParams.get('viaturaId');
+
   const [equipaId, setEquipaId] = useState<number | undefined>();
-  const [viaturaId, setViaturaId] = useState<number | undefined>();
+  const [viaturaId, setViaturaId] = useState<number | undefined>(
+    viaturaIdInicial ? Number(viaturaIdInicial) : undefined,
+  );
   const [estado, setEstado] = useState<EstadoVolta | undefined>();
 
   const [dataAtual, setDataAtual] = useState(new Date());

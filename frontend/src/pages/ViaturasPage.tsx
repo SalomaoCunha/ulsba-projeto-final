@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getViaturas } from '../services/viaturaService';
 import type { Viatura, EstadoViatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
@@ -30,6 +31,7 @@ const calcularProximaRevisao = (viatura: Viatura) => {
 const ViaturasPage: React.FC = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     comAtrasoMinimo(getViaturas()).then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)).finally(() => setCarregando(false));
@@ -90,6 +92,13 @@ const ViaturasPage: React.FC = () => {
                   {getBadgeEstado(viatura.estado)}
                 </div>
               </div>
+              <button
+                className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
+                title="Ver no calendário"
+                onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
+              >
+                <i className="bi bi-calendar3"></i>
+              </button>
               <button className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0" disabled title="Em breve">
                 <i className="bi bi-pencil"></i>
               </button>
@@ -125,6 +134,13 @@ const ViaturasPage: React.FC = () => {
                   <td className="py-3 text-muted">{calcularProximaRevisao(viatura)}</td>
                   <td className="py-3">{getBadgeEstado(viatura.estado)}</td>
                   <td className="pe-4 py-3 text-end">
+                    <button
+                      className="btn btn-sm btn-light text-secondary shadow-sm border me-1"
+                      title="Ver no calendário"
+                      onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
+                    >
+                      <i className="bi bi-calendar3"></i>
+                    </button>
                     <button className="btn btn-sm btn-light text-secondary shadow-sm border" disabled title="Em breve">
                       <i className="bi bi-pencil"></i>
                     </button>
