@@ -76,6 +76,7 @@ function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoVolta>) {
 
 const AgendaPage = () => {
   const [voltas, setVoltas] = useState<Volta[]>([]);
+  const [voltasDoMes, setVoltasDoMes] = useState<Volta[]>([]);
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [utentes, setUtentes] = useState<Utente[]>([]);
@@ -109,9 +110,22 @@ const AgendaPage = () => {
       .catch((erro) => console.error('Falha ao carregar voltas:', erro));
   }, [intervalo, equipaId, viaturaId, estado]);
 
+  // Sem os filtros da UI de propósito: usada só para saber que equipa/viatura
+  // já está ocupada num dia, independentemente do que está selecionado nos
+  // selects de filtro (senão uma equipa "escondida" pelo filtro parecia livre).
+  const recarregarVoltasDoMes = useCallback(() => {
+    return getVoltas(intervalo)
+      .then(setVoltasDoMes)
+      .catch((erro) => console.error('Falha ao carregar voltas do mês:', erro));
+  }, [intervalo]);
+
   useEffect(() => {
     recarregarVoltas();
   }, [recarregarVoltas]);
+
+  useEffect(() => {
+    recarregarVoltasDoMes();
+  }, [recarregarVoltasDoMes]);
 
   const eventos = useMemo<EventoVolta[]>(() => {
     return voltas.map((volta) => ({
@@ -241,10 +255,11 @@ const AgendaPage = () => {
                 equipas={equipas}
                 viaturas={viaturas}
                 utentes={utentes}
-                voltasDoMes={voltas}
+                voltasDoMes={voltasDoMes}
                 onCriada={() => {
                   setDiaSelecionado(null);
                   recarregarVoltas();
+                  recarregarVoltasDoMes();
                 }}
               />
             )
