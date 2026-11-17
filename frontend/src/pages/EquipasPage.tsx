@@ -3,15 +3,19 @@ import { getEquipas } from '../services/equipaService';
 import { getViaturas } from '../services/viaturaService';
 import type { Equipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
+import EcraCarregamento from '../components/EcraCarregamento';
 
 
 const EquipasPage: React.FC = () => {
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
-    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro));
+    Promise.allSettled([
+      getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro)),
+      getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)),
+    ]).finally(() => setCarregando(false));
   }, [])
 
   const viaturasDaEquipa = (equipa: Equipa) => {
@@ -20,6 +24,12 @@ const EquipasPage: React.FC = () => {
 
   const viaturasSemEquipa = () => {
     return viaturas.filter(v => v.equipa_codigo === null);
+  }
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
   }
 
   return (

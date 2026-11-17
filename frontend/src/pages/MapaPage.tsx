@@ -4,16 +4,24 @@ import { useEffect, useState } from 'react'
 import { getUtentes } from '../services/utenteService'
 import type { Utente } from '../types/utente'
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
+import EcraCarregamento from '../components/EcraCarregamento';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 const MapaPage: React.FC = () => {
   const [utentes, setUtentes] = useState<Utente[]>([]);
   const [filtros, setFiltros] = useState<FiltrosUtentes>(filtrosVazios);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
-  useEffect(() => { getUtentes().then(setUtentes);}, []);
+  useEffect(() => { getUtentes().then(setUtentes).finally(() => setCarregando(false)); }, []);
 
   const utentesFiltrados = filtrarUtentes(utentes, filtros);
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
+  }
 
   return (
     <div className="h-100 d-flex flex-column">

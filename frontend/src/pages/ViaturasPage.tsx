@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getViaturas } from '../services/viaturaService';
 import type { Viatura, EstadoViatura } from '../types/viatura';
+import EcraCarregamento from '../components/EcraCarregamento';
 
 const LABEL_MOTORIZACAO: Record<string, string> = {
   GASOLINA: 'Gasolina',
@@ -27,9 +28,10 @@ const calcularProximaRevisao = (viatura: Viatura) => {
 
 const ViaturasPage: React.FC = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro));
+    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)).finally(() => setCarregando(false));
   }, []);
 
   const nomeDaEquipa = (equipaCodigo: string | null) => {
@@ -48,6 +50,12 @@ const ViaturasPage: React.FC = () => {
       </span>
     );
   };
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
+  }
 
   return (
     <div className="h-100 d-flex flex-column">
