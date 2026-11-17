@@ -111,12 +111,17 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         ).fetchone()["id"]
 
         for utente_id in utente_ids:
+            # PROVISÓRIO: cada visita fica com o horário da volta toda (partida/regresso),
+            # porque ainda não existe seleção de hora por paragem (RF39/RF21 ficaram de fora
+            # do âmbito essencial). ck_visita_planeada_completa exige inicio_previsto/
+            # fim_previsto não nulos para estado='PLANEADA'. Corrigir quando houver
+            # hora por paragem — ver cartão Trello.
             conn.execute(
                 """
-                INSERT INTO visita (utente_id, paragem_id, equipa_executante_id, estado, criada_por)
-                VALUES (%s, %s, %s, 'PLANEADA', %s)
+                INSERT INTO visita (utente_id, paragem_id, equipa_executante_id, estado, inicio_previsto, fim_previsto, criada_por)
+                VALUES (%s, %s, %s, 'PLANEADA', %s, %s, %s)
                 """,
-                (utente_id, paragem_id, dados.equipa_id, utilizador["id"]),
+                (utente_id, paragem_id, dados.equipa_id, partida, regresso, utilizador["id"]),
             )
 
 

@@ -20,3 +20,10 @@ export interface FiltrosVoltas {
   viaturaId?: number;
   estado?: EstadoVolta;
 }
+
+export interface VoltaCriar {
+  data: string;
+  equipaId: number;
+  viaturaId: number;
+  utenteIds: number[];
+}

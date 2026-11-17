@@ -1,4 +1,4 @@
-import type { Volta, FiltrosVoltas, EstadoVolta } from '../types/volta';
+import type { Volta, FiltrosVoltas, EstadoVolta, VoltaCriar } from '../types/volta';
 import { apiFetch } from './apiClient';
 
 interface VoltaDTO {
@@ -48,4 +48,16 @@ export async function getVoltas(filtros: FiltrosVoltas): Promise<Volta[]> {
 
     const dtos = await apiFetch<VoltaDTO[]>(`/voltas?${parametros.toString()}`);
     return dtos.map(mapearVolta);
+}
+
+export async function criarVolta(dados: VoltaCriar): Promise<{ id: number }> {
+  return apiFetch<{ id: number }>('/voltas', {
+    method: 'POST',
+    body: JSON.stringify({
+      data: dados.data,
+      equipa_id: dados.equipaId,
+      viatura_id: dados.viaturaId,
+      utente_ids: dados.utenteIds,
+    }),
+  });
 }
