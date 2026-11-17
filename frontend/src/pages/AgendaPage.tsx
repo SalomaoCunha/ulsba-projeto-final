@@ -1,33 +1,199 @@
-import React from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Calendar, dateFnsLocalizer, type EventProps, type ToolbarProps } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useNavigate } from 'react-router-dom';
+import { getVoltas } from '../services/voltaService';
+import { getEquipas } from '../services/equipaService';
+import { getViaturas } from '../services/viaturaService';
+import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
+import type { Volta, EstadoVolta } from '../types/volta';
+import type { Equipa } from '../types/equipa';
+import type { Viatura } from '../types/viatura';
+import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
-const AgendaPage: React.FC = () => {
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales: { 'pt-PT': pt } });
+
+interface EventoVolta {
+  id: number;
+  title: string;
+  start: Date;
+  end: Date;
+  resource: Volta;
+}
+
+function EventoCalendario({ event }: EventProps<EventoVolta>) {
+  const formatarHora = (hora: string | null) =>
+    hora ? new Date(hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
+
+  return (
+    <div>
+      <div>{formatarHora(event.resource.partidaPrevista)} → {formatarHora(event.resource.regressoPrevisto)}</div>
+      <div className="small text-muted">{event.resource.equipaCodigo}</div>
+    </div>  
+  );
+}
+
+function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoVolta>) {
+  return (
+    <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
+      <button className="btn btn-sm btn-outline-secondary" onClick={() => onNavigate('PREV')}>
+        <i className="bi bi-chevron-left"></i>
+      </button>
+      <span className="fw-medium text-capitalize">{label}</span>
+      <button className="btn btn-sm btn-outline-secondary" onClick={() => onNavigate('NEXT')}>
+        <i className="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  );
+}
+
+const AgendaPage = () => {
+  const [voltas, setVoltas] = useState<Volta[]>([]);
+  const [equipas, setEquipas] = useState<Equipa[]>([]);
+  const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  const [equipaId, setEquipaId] = useState<number | undefined>();
+  const [viaturaId, setViaturaId] = useState<number | undefined>();
+  const [estado, setEstado] = useState<EstadoVolta | undefined>();
+
+  const [intervalo, setIntervalo] = useState(() => ({
+    dataInicio: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    dataFim: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+  }));
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    comAtrasoMinimo(Promise.allSettled([
+      getEquipas().then(setEquipas),
+      getViaturas().then(setViaturas),
+    ])).finally(() => setCarregando(false));
+  }, []);
+
+  useEffect(() => {
+    getVoltas({ ...intervalo, equipaId, viaturaId, estado })
+      .then(setVoltas)
+      .catch((erro) => console.error('Falha ao carregar voltas:', erro));
+  }, [intervalo, equipaId, viaturaId, estado]);
+
+  const eventos = useMemo<EventoVolta[]>(() => {
+    return voltas.map((volta) => ({
+    id: volta.id,
+    title: volta.designacao ?? `Volta ${volta.id}`,
+    start: new Date(volta.partidaPrevista ?? volta.data),
+    end: new Date(volta.regressoPrevisto ?? volta.data),
+    resource: volta,
+  }));
+  }, [voltas]);
+
+  const aoEstilizarEvento = useCallback((evento: EventoVolta) => ({
+    style: { backgroundColor: COR_ESTADO_VOLTA[evento.resource.estado], border: 'none' },
+  }), []);
+
+  const aoMudarIntervaloVisivel = useCallback((range: Date[] | { start: Date; end: Date }) => {
+    if(Array.isArray(range)){
+      setIntervalo({
+        dataInicio: format(range[0], 'yyyy-MM-dd'),
+        dataFim: format(range[range.length - 1], 'yyyy-MM-dd'),
+      });
+    }else{
+      setIntervalo({
+        dataInicio: format(range.start, 'yyyy-MM-dd'),
+        dataFim: format(range.end, 'yyyy-MM-dd'),
+      });  
+    }
+  }, []);
+
+  if (carregando) {
+    return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
+  }
+
   return (
     <div className="h-100 d-flex flex-column">
-      {/* Cabeçalho da Página */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-          <h1 className="h4 fw-bold text-dark mb-1">Agenda e Roteiros</h1>
-          <p className="text-muted mb-0 small">Planeamento diário de visitas ao domicílio</p>
+          <h1 className="h4 fw-bold text-dark mb-1">Calendário de Voltas</h1>
+          <p className="text-muted mb-0 small">Gestão e consulta de voltas</p>
         </div>
-        <button className="btn btn-success d-flex align-items-center gap-2 shadow-sm">
-          <i className="bi bi-calendar-plus"></i>
-          Nova Visita
-        </button>
       </div>
 
-      {/* Área Central (Empty State para desenvolvimento futuro) */}
-      <div className="card shadow-sm border-0 flex-grow-1 d-flex align-items-center justify-content-center bg-white">
-        <div className="text-center text-muted p-5">
-          <div className="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style={{ width: '100px', height: '100px' }}>
-            <i className="bi bi-calendar3" style={{ fontSize: '3rem' }}></i>
-          </div>
-          <h5 className="fw-bold text-dark mb-2">Módulo de Agenda em Construção</h5>
-          <p className="mb-0 mx-auto" style={{ maxWidth: '400px' }}>
-            Esta área será responsável pela visualização do calendário interativo, marcação de visitas e distribuição de rotas pelas equipas de enfermagem.
-          </p>
-          <button className="btn btn-outline-secondary mt-4 px-4 rounded-pill">
-            <i className="bi bi-arrow-left me-2"></i> Voltar ao Dashboard
-          </button>
+      <ul className="nav nav-pills mb-3">
+        <li className="nav-item">
+          <button className="nav-link active" disabled>Unidade</button>
+        </li>
+        <li className="nav-item">
+          <button className="nav-link" disabled title="Em breve">Profissional</button>
+        </li>
+        <li className="nav-item">
+          <button className="nav-link" disabled title="Em breve">Utente</button>
+        </li>
+      </ul>
+
+      <div className="d-flex flex-wrap gap-2 mb-3">
+        <select
+          className="form-select form-select-sm"
+          value={equipaId ?? ''}
+          onChange={(e) => setEquipaId(e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Todas as equipas</option>
+          {equipas.map((equipa) => (
+            <option key={equipa.id} value={equipa.id}>{equipa.designacao}</option>
+          ))}
+        </select>
+
+        <select
+          className="form-select form-select-sm"
+          value={viaturaId ?? ''}
+          onChange={(e) => setViaturaId(e.target.value === '' ? undefined : Number(e.target.value))}
+        >
+          <option value="">Todas as viaturas</option>
+          {viaturas.map((viatura) => (
+            <option key={viatura.id} value={viatura.id}>{viatura.matricula}</option>
+          ))}
+        </select>
+
+        <select
+          className="form-select form-select-sm"
+          value={estado ?? ''}
+          onChange={(e) => setEstado(e.target.value === '' ? undefined : (e.target.value as EstadoVolta))}
+        >
+          <option value="">Todos os estados</option>
+          {Object.entries(LABEL_ESTADO_VOLTA).map(([chave, rotulo]) => (
+            <option key={chave} value={chave}>{rotulo}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card shadow-sm border-0 flex-grow-1 bg-white p-3">
+        <Calendar
+          localizer={localizer}
+          culture="pt-PT"
+          events={eventos}
+          startAccessor="start"
+          endAccessor="end"
+          components={{ event: EventoCalendario, toolbar: BarraCalendario }}
+          eventPropGetter={aoEstilizarEvento}
+          onRangeChange={aoMudarIntervaloVisivel}
+          onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.id}`)}
+          views={['month']}
+          defaultView="month"
+          style={{ height: '100%' }}
+        />
+
+        <div className="d-flex gap-3 mt-3 small text-muted">
+          {Object.keys(LABEL_ESTADO_VOLTA).map((chave) => (
+            <span key={chave} className="d-flex align-items-center gap-1">
+              <span
+                className="rounded-circle d-inline-block"
+                style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VOLTA[chave as EstadoVolta] }}
+              />
+              {LABEL_ESTADO_VOLTA[chave as EstadoVolta]}
+            </span>
+          ))}
         </div>
       </div>
     </div>
