@@ -101,6 +101,12 @@ class VoltaResumo(BaseModel):
     regresso_previsto: Optional[datetime]
 
 
+#VoltaCriar 
+class VoltaCriar(BaseModel):
+    data: date
+    equipa_id: int
+    viatura_id: int
+    utente_ids: list[int]
 
 
 
