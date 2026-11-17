@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Calendar, dateFnsLocalizer, type EventProps, type ToolbarProps } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
+import { Modal } from 'react-bootstrap';
+import { Calendar, dateFnsLocalizer, type EventProps, type ToolbarProps, type SlotInfo } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +17,25 @@ import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales: { 'pt-PT': pt } });
 
+const MENSAGENS_PT = {
+  date: 'Data',
+  time: 'Hora',
+  event: 'Volta',
+  allDay: 'Dia inteiro',
+  week: 'Semana',
+  work_week: 'Semana útil',
+  day: 'Dia',
+  month: 'Mês',
+  previous: 'Anterior',
+  next: 'Seguinte',
+  yesterday: 'Ontem',
+  tomorrow: 'Amanhã',
+  today: 'Hoje',
+  agenda: 'Agenda',
+  noEventsInRange: 'Não há voltas neste período.',
+  showMore: (total: number) => `+${total} mais`,
+};
+
 interface EventoVolta {
   id: number;
   title: string;
@@ -24,10 +44,11 @@ interface EventoVolta {
   resource: Volta;
 }
 
-function EventoCalendario({ event }: EventProps<EventoVolta>) {
-  const formatarHora = (hora: string | null) =>
-    hora ? new Date(hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
+function formatarHora(hora: string | null) {
+  return hora ? new Date(hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
+}
 
+function EventoCalendario({ event }: EventProps<EventoVolta>) {
   return (
     <div className="agenda-evento">
       <div>{formatarHora(event.resource.partidaPrevista)} → {formatarHora(event.resource.regressoPrevisto)}</div>
@@ -61,6 +82,7 @@ const AgendaPage = () => {
   const [estado, setEstado] = useState<EstadoVolta | undefined>();
 
   const [dataAtual, setDataAtual] = useState(new Date());
+  const [diaSelecionado, setDiaSelecionado] = useState<Date | null>(null);
 
   const intervalo = useMemo(() => ({
     dataInicio: format(startOfMonth(dataAtual), 'yyyy-MM-dd'),
@@ -95,6 +117,11 @@ const AgendaPage = () => {
   const aoEstilizarEvento = useCallback((evento: EventoVolta) => ({
     style: { backgroundColor: COR_ESTADO_VOLTA[evento.resource.estado], border: 'none' },
   }), []);
+
+  const voltasDoDia = useMemo(() => {
+    if (!diaSelecionado) return [];
+    return voltas.filter((volta) => isSameDay(new Date(volta.partidaPrevista ?? volta.data), diaSelecionado));
+  }, [diaSelecionado, voltas]);
 
   if (carregando) {
     return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
@@ -169,8 +196,11 @@ const AgendaPage = () => {
             date={dataAtual}
             onNavigate={setDataAtual}
             onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.id}`)}
+            selectable
+            onSelectSlot={(slot: SlotInfo) => setDiaSelecionado(slot.start)}
             views={['month']}
             defaultView="month"
+            messages={MENSAGENS_PT}
             style={{ height: '75vh', minHeight: '600px' }}
           />
         </div>
@@ -187,6 +217,36 @@ const AgendaPage = () => {
           ))}
         </div>
       </div>
+
+      <Modal show={diaSelecionado !== null} onHide={() => setDiaSelecionado(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-capitalize fs-6">
+            {diaSelecionado && format(diaSelecionado, "d 'de' MMMM", { locale: pt })}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {voltasDoDia.length === 0 ? (
+            <p className="text-muted small mb-0">Não há voltas neste dia.</p>
+          ) : (
+            voltasDoDia.map((volta) => (
+              <button
+                key={volta.id}
+                className="d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start py-2 border-bottom"
+                onClick={() => navigate(`/agenda/voltas/${volta.id}`)}
+              >
+                <div>
+                  <div className="fw-medium">{formatarHora(volta.partidaPrevista)} → {formatarHora(volta.regressoPrevisto)}</div>
+                  <div className="small text-muted">{volta.equipaCodigo} · {volta.viaturaMatricula ?? 'Sem viatura'}</div>
+                </div>
+                <span
+                  className="rounded-circle d-inline-block flex-shrink-0"
+                  style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VOLTA[volta.estado] }}
+                />
+              </button>
+            ))
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

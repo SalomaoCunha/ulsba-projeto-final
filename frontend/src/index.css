@@ -419,32 +419,36 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* O react-big-calendar desenha uma grelha fixa de 7 colunas que, em
-   ecrãs estreitos, não encolhe de forma legível — o texto dos eventos
-   (hora + equipa) começa a cortar/sobrepor-se. Em vez de espremer a
-   grelha, aplicamos a mesma solução já usada nas tabelas
-   (.table-responsive): o cartão ganha scroll horizontal próprio e a
-   grelha mantém uma largura mínima legível.
+/* O react-big-calendar desenha uma grelha fixa de 7 colunas: em ecrãs
+   estreitos não há espaço para mostrar hora+equipa dentro de cada
+   evento sem obrigar a scroll horizontal (pouco prático em mobile).
+   Em vez disso, cada evento passa a ser só um pontinho colorido — a
+   cor (definida pelo eventPropGetter, inline, por estado) mantém-se,
+   só o tamanho e o texto interno mudam.
    O !important é necessário para sobrepor o style inline do componente
-   Calendar (altura normal em ecrã grande) — uma regra !important numa
-   folha de estilos tem prioridade sobre um style inline sem !important. */
-.agenda-calendar-scroll {
-  overflow-x: auto;
-}
-
+   Calendar/evento — uma regra !important numa folha de estilos tem
+   prioridade sobre um style inline sem !important. */
 @media (max-width: 767.98px) {
-  .agenda-calendar-scroll .rbc-month-view {
-    min-width: 700px;
-  }
-
   .agenda-calendar-scroll .rbc-calendar {
     height: 65vh !important;
     min-height: 420px !important;
   }
 
+  .agenda-calendar-scroll .rbc-event {
+    width: 70% !important;
+    height: 4px !important;
+    min-height: 4px !important;
+    padding: 0 !important;
+    margin: 1px auto !important;
+    border-radius: 2px;
+  }
+
+  .agenda-calendar-scroll .rbc-event-content {
+    overflow: visible;
+  }
+
   .agenda-evento {
-    font-size: 0.7rem;
-    line-height: 1.15;
+    display: none;
   }
 }
 
