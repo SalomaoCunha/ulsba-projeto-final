@@ -41,7 +41,6 @@ class UtenteEditar(BaseModel):
     notas: Optional[str] = None
 
 # Historico prioridades
-
 class PrioridadeAlterar(BaseModel):
     nivel_urgencia_id: int
     motivo: str   # obrigatório — RF10
@@ -87,6 +86,20 @@ class ViaturaResumo(BaseModel):
     data_ultima_revisao: Optional[date]
     periodicidade_revisao_meses: Optional[int]
     equipa_codigo: Optional[str]
+
+#Volta
+class VoltaResumo(BaseModel):
+    id: int
+    data: date
+    designacao: Optional[str]
+    estado: str
+    equipa_id: Optional[int]
+    equipa_codigo: Optional[str]
+    viatura_id: Optional[int]
+    viatura_matricula: Optional[str]
+    partida_prevista: Optional[datetime]
+    regresso_previsto: Optional[datetime]
+
 
 
 
