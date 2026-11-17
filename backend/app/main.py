@@ -8,7 +8,7 @@ from app.routers import utentes, auth, equipas, viaturas
 app = FastAPI(title="Plataforma Cuidados Paliativos ULSBA")
 
 ORIGENS_LOCAIS = ["http://localhost:5173", "http://localhost:5174"]
-ORIGENS_EXTRA = [o.strip() for o in os.getenv("FRONTEND_ORIGINS", "").split(",") if o.strip()]
+ORIGENS_EXTRA = [o.strip().rstrip("/") for o in os.getenv("FRONTEND_ORIGINS", "").split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
