@@ -29,10 +29,10 @@ function EventoCalendario({ event }: EventProps<EventoVolta>) {
     hora ? new Date(hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
 
   return (
-    <div>
+    <div className="agenda-evento">
       <div>{formatarHora(event.resource.partidaPrevista)} → {formatarHora(event.resource.regressoPrevisto)}</div>
       <div className="small text-muted">{event.resource.equipaCodigo}</div>
-    </div>  
+    </div>
   );
 }
 
@@ -121,9 +121,9 @@ const AgendaPage = () => {
         </li>
       </ul>
 
-      <div className="d-flex flex-wrap gap-2 mb-3">
+      <div className="d-flex flex-wrap gap-2 mb-3 agenda-filtros">
         <select
-          className="form-select form-select-sm"
+          className="form-select form-select-sm agenda-filtro-select"
           value={equipaId ?? ''}
           onChange={(e) => setEquipaId(e.target.value === '' ? undefined : Number(e.target.value))}
         >
@@ -134,7 +134,7 @@ const AgendaPage = () => {
         </select>
 
         <select
-          className="form-select form-select-sm"
+          className="form-select form-select-sm agenda-filtro-select"
           value={viaturaId ?? ''}
           onChange={(e) => setViaturaId(e.target.value === '' ? undefined : Number(e.target.value))}
         >
@@ -145,7 +145,7 @@ const AgendaPage = () => {
         </select>
 
         <select
-          className="form-select form-select-sm"
+          className="form-select form-select-sm agenda-filtro-select"
           value={estado ?? ''}
           onChange={(e) => setEstado(e.target.value === '' ? undefined : (e.target.value as EstadoVolta))}
         >
@@ -157,23 +157,25 @@ const AgendaPage = () => {
       </div>
 
       <div className="card shadow-sm border-0 flex-grow-1 bg-white p-3">
-        <Calendar
-          localizer={localizer}
-          culture="pt-PT"
-          events={eventos}
-          startAccessor="start"
-          endAccessor="end"
-          components={{ event: EventoCalendario, toolbar: BarraCalendario }}
-          eventPropGetter={aoEstilizarEvento}
-          date={dataAtual}
-          onNavigate={setDataAtual}
-          onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.id}`)}
-          views={['month']}
-          defaultView="month"
-          style={{ height: '75vh', minHeight: '600px' }}
-        />
+        <div className="agenda-calendar-scroll">
+          <Calendar
+            localizer={localizer}
+            culture="pt-PT"
+            events={eventos}
+            startAccessor="start"
+            endAccessor="end"
+            components={{ event: EventoCalendario, toolbar: BarraCalendario }}
+            eventPropGetter={aoEstilizarEvento}
+            date={dataAtual}
+            onNavigate={setDataAtual}
+            onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.id}`)}
+            views={['month']}
+            defaultView="month"
+            style={{ height: '75vh', minHeight: '600px' }}
+          />
+        </div>
 
-        <div className="d-flex gap-3 mt-3 small text-muted">
+        <div className="d-flex flex-wrap gap-3 mt-3 small text-muted">
           {Object.keys(LABEL_ESTADO_VOLTA).map((chave) => (
             <span key={chave} className="d-flex align-items-center gap-1">
               <span
