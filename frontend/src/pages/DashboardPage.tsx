@@ -6,6 +6,7 @@ import PainelPrioridades from '../components/PainelPrioridades';
 import BarraAcoesDashboard from '../components/BarraAcoesDashboard';
 import { getUtentes, updateUtente } from '../services/utenteService';
 import EditarUtenteModal from '../components/EditarUtenteModal';
+import EcraCarregamento from '../components/EcraCarregamento';
 import type { Utente } from '../types/utente';
 
 
@@ -14,12 +15,15 @@ const DashboardPage: React.FC = () => {
   const [utenteSelecionado, setUtenteSelecionado] = useState<Utente | null>(null);
   const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    getUtentes().then((lista) => {
-      setUtentes(lista);
-      setUtenteSelecionado(lista[0] ?? null);
-    });
+    getUtentes()
+      .then((lista) => {
+        setUtentes(lista);
+        setUtenteSelecionado(lista[0] ?? null);
+      })
+      .finally(() => setCarregando(false));
   }, []);
 
   const executarPesquisa = (termo: string) => {
@@ -47,6 +51,12 @@ const DashboardPage: React.FC = () => {
     setUtenteSelecionado(resultado);
     setUtentes(utentes.map(u => u.id === resultado.id ? resultado : u));
     setModalAberto(false);
+  }
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
   }
 
   return (

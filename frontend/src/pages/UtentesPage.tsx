@@ -6,6 +6,7 @@ import { getNivelPrioridade } from '@/config/niveis';
 import VerUtenteModal from '../components/VerUtenteModal';
 import EditarUtenteModal from '../components/EditarUtenteModal';
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
+import EcraCarregamento from '../components/EcraCarregamento';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 const UtentesPage: React.FC = () => {
@@ -19,11 +20,12 @@ const UtentesPage: React.FC = () => {
   const [utenteEmFoco, setUtenteEmFoco] = useState<Utente | null>(null);
   const [modalVerAberto, setModalVerAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUtentes().then(setUtentes);
+    getUtentes().then(setUtentes).finally(() => setCarregando(false));
   }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
@@ -71,6 +73,12 @@ const UtentesPage: React.FC = () => {
     setUtenteEmFoco(resultado);
     setModalEditarAberto(false);
   };
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
+  }
 
   return (
     <div className="h-100 d-flex flex-column">
