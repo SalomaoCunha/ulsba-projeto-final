@@ -1,4 +1,4 @@
-from app.schemas import PrioridadeAlterar, ComplexidadeAlterar
+from app.schemas import PrioridadeAlterar, ComplexidadeAlterar, EquipaResponsavelAlterar
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
@@ -188,3 +188,56 @@ def historico_complexidade(utente_id: int, conn=Depends(get_conn), utilizador: d
         raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
     
     return result 
+
+@router.post("/{utente_id}/equipa", response_model=UtenteResumo, status_code=201)
+def alterar_equipa_responsavel(utente_id: int, dados: EquipaResponsavelAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    exist = conn.execute("SELECT 1 FROM utente WHERE id = %s", (utente_id,)).fetchone()
+    if exist is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(
+        """
+        UPDATE atribuicao_equipa_responsavel
+        SET valido_ate = now()
+        WHERE utente_id = %s AND valido_ate IS NULL
+        """,
+        (utente_id,),
+    )
+
+
+    query = """
+            INSERT INTO atribuicao_equipa_responsavel (utente_id, equipa_id, motivo, registada_por)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            """
+
+    conn.execute(query, (utente_id, dados.equipa_id, dados.motivo, utilizador["id"],)).fetchone()["id"]
+
+    return obter(utente_id, conn, utilizador)
+
+
+@router.get("/{utente_id}/historico-equipa")
+def historico_equipa(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+        SELECT
+            a.id,
+            a.equipa_id,
+            e.codigo       AS equipa_codigo,
+            a.valido_desde,
+            a.valido_ate,
+            a.motivo,
+            u.nome         AS registada_por_nome
+        FROM atribuicao_equipa_responsavel a
+        JOIN equipa e      ON e.id = a.equipa_id
+        JOIN utilizador u  ON u.id = a.registada_por
+        WHERE a.utente_id = %s
+        ORDER BY a.valido_desde DESC
+    """
+
+    result = conn.execute(query, (utente_id,)).fetchall()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Utente sem histórico de equipa responsável")
+
+    return result
+

@@ -115,6 +115,12 @@ class ComplexidadeAlterar(BaseModel):
     nivel_complexidade_id: int
     observacao: Optional[str] = None
 
+#AlterarEquipaResponsavel
+class EquipaResponsavelAlterar(BaseModel):
+    equipa_id: int
+    motivo: Optional[str] = None
+
+
 
 
 
