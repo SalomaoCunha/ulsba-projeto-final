@@ -120,6 +120,19 @@ class EquipaResponsavelAlterar(BaseModel):
     equipa_id: int
     motivo: Optional[str] = None
 
+#LocalCriar
+class LocalCriar(BaseModel):
+    tipo: str
+    nome: Optional[str] = None
+    morada: str
+    codigo_postal: Optional[str] = None
+    localidade: str
+    concelho_id: int
+    contacto_telefonico: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+
 
 
 
