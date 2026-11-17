@@ -4,6 +4,7 @@ import { getViaturas } from '../services/viaturaService';
 import type { Equipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 
 const EquipasPage: React.FC = () => {
@@ -12,10 +13,10 @@ const EquipasPage: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    Promise.allSettled([
+    comAtrasoMinimo(Promise.allSettled([
       getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro)),
       getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)),
-    ]).finally(() => setCarregando(false));
+    ])).finally(() => setCarregando(false));
   }, [])
 
   const viaturasDaEquipa = (equipa: Equipa) => {

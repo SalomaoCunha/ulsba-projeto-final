@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getViaturas } from '../services/viaturaService';
 import type { Viatura, EstadoViatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 const LABEL_MOTORIZACAO: Record<string, string> = {
   GASOLINA: 'Gasolina',
@@ -31,7 +32,7 @@ const ViaturasPage: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)).finally(() => setCarregando(false));
+    comAtrasoMinimo(getViaturas()).then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)).finally(() => setCarregando(false));
   }, []);
 
   const nomeDaEquipa = (equipaCodigo: string | null) => {

@@ -5,6 +5,7 @@ import { getUtentes } from '../services/utenteService'
 import type { Utente } from '../types/utente'
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
 import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 const MapaPage: React.FC = () => {
@@ -13,7 +14,7 @@ const MapaPage: React.FC = () => {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
-  useEffect(() => { getUtentes().then(setUtentes).finally(() => setCarregando(false)); }, []);
+  useEffect(() => { comAtrasoMinimo(getUtentes()).then(setUtentes).finally(() => setCarregando(false)); }, []);
 
   const utentesFiltrados = filtrarUtentes(utentes, filtros);
 

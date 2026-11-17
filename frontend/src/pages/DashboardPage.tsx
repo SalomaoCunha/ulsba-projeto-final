@@ -7,6 +7,7 @@ import BarraAcoesDashboard from '../components/BarraAcoesDashboard';
 import { getUtentes, updateUtente } from '../services/utenteService';
 import EditarUtenteModal from '../components/EditarUtenteModal';
 import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import type { Utente } from '../types/utente';
 
 
@@ -18,7 +19,7 @@ const DashboardPage: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    getUtentes()
+    comAtrasoMinimo(getUtentes())
       .then((lista) => {
         setUtentes(lista);
         setUtenteSelecionado(lista[0] ?? null);

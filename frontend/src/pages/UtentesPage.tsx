@@ -7,6 +7,7 @@ import VerUtenteModal from '../components/VerUtenteModal';
 import EditarUtenteModal from '../components/EditarUtenteModal';
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
 import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 const UtentesPage: React.FC = () => {
@@ -25,7 +26,7 @@ const UtentesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUtentes().then(setUtentes).finally(() => setCarregando(false));
+    comAtrasoMinimo(getUtentes()).then(setUtentes).finally(() => setCarregando(false));
   }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
