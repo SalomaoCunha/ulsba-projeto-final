@@ -109,4 +109,36 @@ class VoltaCriar(BaseModel):
     utente_ids: list[int]
 
 
+#complexidadeAlterar
+
+class ComplexidadeAlterar(BaseModel):
+    nivel_complexidade_id: int
+    observacao: Optional[str] = None
+
+#AlterarEquipaResponsavel
+class EquipaResponsavelAlterar(BaseModel):
+    equipa_id: int
+    motivo: Optional[str] = None
+
+#LocalCriar
+class LocalCriar(BaseModel):
+    tipo: str
+    nome: Optional[str] = None
+    morada: str
+    codigo_postal: Optional[str] = None
+    localidade: str
+    concelho_id: int
+    contacto_telefonico: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+#UtenteInativar
+class UtenteInativar(BaseModel):
+    motivo: str
+    data_transicao: Optional[date] = None
+
+
+
+
+
 

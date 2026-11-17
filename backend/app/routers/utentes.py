@@ -1,4 +1,5 @@
-from app.schemas import PrioridadeAlterar
+from datetime import date
+from app.schemas import PrioridadeAlterar, ComplexidadeAlterar, EquipaResponsavelAlterar, UtenteInativar
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
@@ -13,10 +14,11 @@ router = APIRouter(prefix="/utentes", tags=["utentes"])
 # LISTAR PACIENTES 
 @router.get("", response_model=list[UtenteResumo])
 def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
-    condicoes = []
+    # RF03/RF07: um utente inativado sai do planeamento por omissão.
+    condicoes = ["estado != 'INATIVO'"]
     parametros = []
 
-    if nome: 
+    if nome:
         condicoes.append("nome ILIKE %s")
         parametros.append(f"%{nome}%")
     
@@ -146,4 +148,123 @@ def historico_prioridade(utente_id: int, conn=Depends(get_conn), utilizador: dic
     
     return result 
 
+
+@router.post("/{utente_id}/complexidade", response_model=UtenteResumo, status_code=201)
+def alterar_complexidade(utente_id: int, dados: ComplexidadeAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+    INSERT INTO avaliacao_complexidade (utente_id, nivel_complexidade_id, observacao, avaliada_por)
+    VALUES (%s, %s, %s, %s)
+    RETURNING id
+    """
+
+    exist = conn.execute("SELECT 1 FROM utente WHERE id = %s", (utente_id,)).fetchone()
+
+    if exist is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(query, (utente_id, dados.nivel_complexidade_id, dados.observacao, utilizador["id"],)).fetchone()["id"]
+
+    return obter(utente_id, conn, utilizador)
+
+@router.get("/{utente_id}/historico-complexidade")
+def historico_complexidade(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+        SELECT
+            t.id,
+            t.nivel_complexidade_id,
+            n.codigo       AS complexidade_codigo,
+            n.designacao   AS complexidade_designacao,
+            t.observacao,
+            t.avaliada_em,
+            u.nome         AS avaliada_por_nome
+        FROM avaliacao_complexidade t
+        JOIN nivel_complexidade n ON n.id = t.nivel_complexidade_id
+        JOIN utilizador u      ON u.id = t.avaliada_por
+        WHERE t.utente_id = %s
+        ORDER BY t.avaliada_em DESC
+    """
+
+    result = conn.execute(query, (utente_id,)).fetchall()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
+    
+    return result 
+
+@router.post("/{utente_id}/equipa", response_model=UtenteResumo, status_code=201)
+def alterar_equipa_responsavel(utente_id: int, dados: EquipaResponsavelAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    exist = conn.execute("SELECT 1 FROM utente WHERE id = %s", (utente_id,)).fetchone()
+    if exist is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(
+        """
+        UPDATE atribuicao_equipa_responsavel
+        SET valido_ate = now()
+        WHERE utente_id = %s AND valido_ate IS NULL
+        """,
+        (utente_id,),
+    )
+
+
+    query = """
+            INSERT INTO atribuicao_equipa_responsavel (utente_id, equipa_id, motivo, registada_por)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+            """
+
+    conn.execute(query, (utente_id, dados.equipa_id, dados.motivo, utilizador["id"],)).fetchone()["id"]
+
+    return obter(utente_id, conn, utilizador)
+
+
+@router.get("/{utente_id}/historico-equipa")
+def historico_equipa(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+        SELECT
+            a.id,
+            a.equipa_id,
+            e.codigo       AS equipa_codigo,
+            a.valido_desde,
+            a.valido_ate,
+            a.motivo,
+            u.nome         AS registada_por_nome
+        FROM atribuicao_equipa_responsavel a
+        JOIN equipa e      ON e.id = a.equipa_id
+        JOIN utilizador u  ON u.id = a.registada_por
+        WHERE a.utente_id = %s
+        ORDER BY a.valido_desde DESC
+    """
+
+    result = conn.execute(query, (utente_id,)).fetchall()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Utente sem histórico de equipa responsável")
+
+    return result
+
+
+@router.put("/{utente_id}/inativar", response_model=UtenteResumo)
+def inativar(utente_id: int, dados: UtenteInativar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    utente = conn.execute("SELECT estado FROM utente WHERE id = %s", (utente_id,)).fetchone()
+    if utente is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    if utente["estado"] == "INATIVO":
+        raise HTTPException(status_code=400, detail="Utente já está inativo")
+
+    data_transicao = dados.data_transicao or date.today()
+
+    conn.execute("UPDATE utente SET estado = 'INATIVO' WHERE id = %s", (utente_id,))
+
+    conn.execute(
+        """
+        INSERT INTO utente_transicao_estado
+            (utente_id, estado_anterior, estado_novo, data_transicao, motivo, registada_por)
+        VALUES (%s, %s, 'INATIVO', %s, %s, %s)
+        """,
+        (utente_id, utente["estado"], data_transicao, dados.motivo, utilizador["id"]),
+    )
+
+    return obter(utente_id, conn, utilizador)
 
