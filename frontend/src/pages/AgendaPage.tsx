@@ -60,10 +60,12 @@ const AgendaPage = () => {
   const [viaturaId, setViaturaId] = useState<number | undefined>();
   const [estado, setEstado] = useState<EstadoVolta | undefined>();
 
-  const [intervalo, setIntervalo] = useState(() => ({
-    dataInicio: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    dataFim: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
-  }));
+  const [dataAtual, setDataAtual] = useState(new Date());
+
+  const intervalo = useMemo(() => ({
+    dataInicio: format(startOfMonth(dataAtual), 'yyyy-MM-dd'),
+    dataFim: format(endOfMonth(dataAtual), 'yyyy-MM-dd'),
+  }), [dataAtual]);
 
   const navigate = useNavigate();
 
@@ -93,20 +95,6 @@ const AgendaPage = () => {
   const aoEstilizarEvento = useCallback((evento: EventoVolta) => ({
     style: { backgroundColor: COR_ESTADO_VOLTA[evento.resource.estado], border: 'none' },
   }), []);
-
-  const aoMudarIntervaloVisivel = useCallback((range: Date[] | { start: Date; end: Date }) => {
-    if(Array.isArray(range)){
-      setIntervalo({
-        dataInicio: format(range[0], 'yyyy-MM-dd'),
-        dataFim: format(range[range.length - 1], 'yyyy-MM-dd'),
-      });
-    }else{
-      setIntervalo({
-        dataInicio: format(range.start, 'yyyy-MM-dd'),
-        dataFim: format(range.end, 'yyyy-MM-dd'),
-      });  
-    }
-  }, []);
 
   if (carregando) {
     return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
@@ -177,11 +165,12 @@ const AgendaPage = () => {
           endAccessor="end"
           components={{ event: EventoCalendario, toolbar: BarraCalendario }}
           eventPropGetter={aoEstilizarEvento}
-          onRangeChange={aoMudarIntervaloVisivel}
+          date={dataAtual}
+          onNavigate={setDataAtual}
           onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.id}`)}
           views={['month']}
           defaultView="month"
-          style={{ height: '100%' }}
+          style={{ height: '75vh', minHeight: '600px' }}
         />
 
         <div className="d-flex gap-3 mt-3 small text-muted">
