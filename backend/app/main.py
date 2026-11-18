@@ -3,7 +3,7 @@ import os
 import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import utentes, auth, equipas, viaturas, voltas, locais
+from app.routers import utentes, auth, equipas, viaturas, voltas, locais, ocorrencias
 
 app = FastAPI(title="Plataforma Cuidados Paliativos ULSBA")
 
@@ -37,3 +37,4 @@ app.include_router(equipas.router, prefix="/api/v1")
 app.include_router(viaturas.router, prefix="/api/v1")
 app.include_router(voltas.router, prefix="/api/v1")
 app.include_router(locais.router, prefix="/api/v1")
+app.include_router(ocorrencias.router, prefix="/api/v1")

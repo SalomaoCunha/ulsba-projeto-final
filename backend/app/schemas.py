@@ -137,6 +137,16 @@ class UtenteInativar(BaseModel):
     motivo: str
     data_transicao: Optional[date] = None
 
+#ocorrencia
+class OcorrenciaCriar(BaseModel):
+    volta_id: Optional[int] = None
+    visita_id: Optional[int] = None
+    tipo_ocorrencia_id: int
+    visibilidade: str
+    texto: str
+    minutos_atraso: Optional[int] = None
+
+
 
 
 
