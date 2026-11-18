@@ -27,3 +27,32 @@ export interface VoltaCriar {
   viaturaId: number;
   utenteIds: number[];
 }
+
+export interface VisitaDetalhe {
+  visitaId: number;
+  utenteId: number;
+  utenteNome: string;
+  visitaEstado: string;
+  inicioPrevisto: string | null;
+  fimPrevisto: string | null;
+  inicioReal: string | null;
+  fimReal: string | null;
+  urgenciaDesignacao: string | null;
+  urgenciaCor: string | null;
+}
+
+export interface ParagemDetalhe {
+  ordem: number;
+  localNome: string | null;
+  localMorada: string;
+  lat: number | null;
+  lng: number | null;
+  visitas: VisitaDetalhe[];
+}
+
+export interface VoltaDetalhe extends Volta {
+  distanciaEstimadaKm: number | null;
+  distanciaRealKm: number | null;
+  paragens: ParagemDetalhe[];
+}
+

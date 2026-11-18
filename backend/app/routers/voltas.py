@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_conn
 from app.routers.auth import get_current_user
 from app.schemas import VoltaResumo, VoltaCriar
@@ -91,14 +91,6 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         (dados.data, dados.equipa_id, dados.viatura_id, partida, regresso, utilizador["id"]),
     ).fetchone()["id"]
 
-    # TODO 2: para cada (local_id, lista_utente_ids) em agrupado.items(),
-    # usa enumerate(..., start=1) para teres a ordem (1, 2, 3...):
-    #   a) INSERT INTO paragem (volta_id, ordem, local_id) VALUES (%s,%s,%s) RETURNING id
-    #   b) para cada utente_id da lista_utente_ids:
-    #        INSERT INTO visita (utente_id, paragem_id, equipa_executante_id, estado, criada_por)
-    #        VALUES (%s, %s, %s, 'PLANEADA', %s)
-    # ... o teu código aqui ...
-
 
     for ordem, (local_id, utente_ids) in enumerate(agrupado.items(), start=1):
         paragem_id = conn.execute(
@@ -126,4 +118,77 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
 
 
     return {"id": volta_id}
+
+@router.get("/{volta_id}")
+def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    volta = conn.execute(
+        """
+        SELECT v.id, v.data, v.designacao, v.estado,
+               v.equipa_id, e.codigo AS equipa_codigo,
+               v.viatura_id, vi.matricula AS viatura_matricula,
+               v.partida_prevista, v.regresso_previsto,
+               v.distancia_estimada_km, v.distancia_real_km
+        FROM volta v
+        LEFT JOIN equipa e ON e.id = v.equipa_id
+        LEFT JOIN viatura vi ON vi.id = v.viatura_id
+        WHERE v.id = %s
+        """,
+        (volta_id,),
+    ).fetchone()
+
+    if volta is None:
+        raise HTTPException(status_code=404, detail="Volta não encontrada")
+
+    linhas = conn.execute(
+        """
+        SELECT p.id AS paragem_id, p.ordem, p.local_id,
+               l.nome AS local_nome, l.morada AS local_morada,
+               ST_Y(l.geom::geometry) AS lat, ST_X(l.geom::geometry) AS lng,
+               vis.id AS visita_id, vis.utente_id, u.nome AS utente_nome,
+               vis.estado AS visita_estado,
+               vis.inicio_previsto, vis.fim_previsto,
+               vis.inicio_real, vis.fim_real,
+               ficha.urgencia_designacao, ficha.urgencia_cor
+        FROM paragem p
+        JOIN local l ON l.id = p.local_id
+        LEFT JOIN visita vis ON vis.paragem_id = p.id
+        LEFT JOIN utente u ON u.id = vis.utente_id
+        LEFT JOIN vw_utente_ficha ficha ON ficha.utente_id = vis.utente_id
+        WHERE p.volta_id = %s
+        ORDER BY p.ordem
+        """,
+        (volta_id,),
+    ).fetchall()
+
+    paragens = {}
+
+    for linha in linhas:
+        paragem_id = linha["paragem_id"]
+
+        if paragem_id not in paragens:
+            paragens[paragem_id] = {
+                "ordem": linha["ordem"],
+                "local_nome": linha["local_nome"],
+                "local_morada": linha["local_morada"],
+                "lat": linha["lat"],
+                "lng": linha["lng"],
+                "visitas": [],
+            }
+        
+        paragens[paragem_id]["visitas"].append({
+            "visita_id": linha["visita_id"],
+            "utente_id": linha["utente_id"],
+            "utente_nome": linha["utente_nome"],
+            "visita_estado": linha["visita_estado"],
+            "inicio_previsto": linha["inicio_previsto"],
+            "fim_previsto": linha["fim_previsto"],
+            "inicio_real": linha["inicio_real"],
+            "fim_real": linha["fim_real"],
+            "urgencia_designacao": linha["urgencia_designacao"],
+            "urgencia_cor": linha["urgencia_cor"],
+        })
+
+    volta["paragens"] = list(paragens.values())
+    return volta
+    
 

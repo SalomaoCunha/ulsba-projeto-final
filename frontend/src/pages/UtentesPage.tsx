@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUtentes, updateUtente } from '../services/utenteService'
 import type { Utente } from '../types/utente'
-import { getNivelPrioridade } from '@/config/niveis';
+import { getNivelPrioridade, getNivelComplexidade } from '@/config/niveis';
 import VerUtenteModal from '../components/VerUtenteModal';
 import EditarUtenteModal from '../components/EditarUtenteModal';
 import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
+import { formatarData } from '../utils/formatarData';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
@@ -22,6 +23,8 @@ const UtentesPage: React.FC = () => {
   const [modalVerAberto, setModalVerAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [carregando, setCarregando] = useState(true);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const ITENS_POR_PAGINA = 10;
 
   const navigate = useNavigate();
 
@@ -50,7 +53,30 @@ const UtentesPage: React.FC = () => {
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 
-  const utentesFiltrados = filtrarUtentes(utentes, filtros);
+  // Função auxiliar para renderizar a cor certa da complexidade
+  const getBadgeComplexidade = (complexidade: string) => {
+    const nivel = getNivelComplexidade(complexidade);
+    if (!nivel) {
+      return <span className="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">—</span>;
+    }
+    return (
+      <span className="badge fw-normal px-2 py-1" style={{ backgroundColor: nivel.corBg, color: nivel.corTexto }}>
+        {nivel.label}
+      </span>
+    );
+  };
+
+  const termo = termoPesquisa.trim().toLowerCase();
+  const utentesFiltrados = filtrarUtentes(utentes, filtros).filter((u) =>
+    !termo || u.nome.toLowerCase().includes(termo) || u.numeroUtente.toLowerCase().includes(termo),
+  );
+
+  const totalPaginas = Math.max(1, Math.ceil(utentesFiltrados.length / ITENS_POR_PAGINA));
+  const paginaValida = Math.min(paginaAtual, totalPaginas);
+  const utentesDaPagina = utentesFiltrados.slice(
+    (paginaValida - 1) * ITENS_POR_PAGINA,
+    paginaValida * ITENS_POR_PAGINA,
+  );
 
   const abrirVisualizacao = (utente: Utente) => {
     setUtenteEmFoco(utente);
@@ -130,7 +156,7 @@ const UtentesPage: React.FC = () => {
 
         {/* Lista em cartões — só em mobile (<md), cabe sempre sem scroll horizontal */}
         <div className="d-md-none">
-          {utentesFiltrados.map((utente) => (
+          {utentesDaPagina.map((utente) => (
             <div key={utente.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
               <div
                 className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
@@ -143,6 +169,7 @@ const UtentesPage: React.FC = () => {
                 <div className="fw-medium text-dark text-truncate">{utente.nome}</div>
                 <div className="d-flex flex-wrap gap-1 mt-1">
                   {getBadgePrioridade(utente.prioridade)}
+                  {getBadgeComplexidade(utente.complexidade)}
                   {getBadgeEstado(utente.estado)}
                 </div>
               </div>
@@ -178,12 +205,13 @@ const UtentesPage: React.FC = () => {
                 <th className="fw-medium border-bottom-0 py-3">Contacto</th>
                 <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
+                <th className="fw-medium border-bottom-0 py-3">Complexidade</th>
                 <th className="fw-medium border-bottom-0 py-3">Estado</th>
                 <th className="fw-medium border-bottom-0 pe-4 py-3 text-end">Ações</th>
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {utentesFiltrados.map((utente) => (
+              {utentesDaPagina.map((utente) => (
                 <tr key={utente.id}>
                   <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
                   <td className="py-3 fw-medium text-dark text-nowrap">
@@ -196,8 +224,9 @@ const UtentesPage: React.FC = () => {
                   </td>
                   <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
                   <td className="py-3 text-muted">{utente.telefone}</td>
-                  <td className="py-3 text-muted">{utente.ultimaVisita}</td>
+                  <td className="py-3 text-muted">{formatarData(utente.ultimaVisita)}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
+                  <td className="py-3">{getBadgeComplexidade(utente.complexidade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
                   <td className="pe-4 py-3 text-end">
                     <button
@@ -223,14 +252,29 @@ const UtentesPage: React.FC = () => {
 
         {/* Rodapé da Tabela com Paginação */}
         <div className="card-footer bg-white border-top p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 text-muted small">
-          <span>A mostrar 1 a 5 de 24 utentes</span>
+          <span>
+            {utentesFiltrados.length === 0
+              ? 'Sem utentes para mostrar'
+              : `A mostrar ${(paginaValida - 1) * ITENS_POR_PAGINA + 1} a ${Math.min(paginaValida * ITENS_POR_PAGINA, utentesFiltrados.length)} de ${utentesFiltrados.length} utentes`}
+          </span>
           <nav>
             <ul className="pagination pagination-sm mb-0">
-              <li className="page-item disabled"><a className="page-link" href="#">Anterior</a></li>
-              <li className="page-item active"><a className="page-link bg-success border-success" href="#">1</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">2</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">3</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">Próximo</a></li>
+              <li className={`page-item ${paginaValida === 1 ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setPaginaAtual(paginaValida - 1)}>Anterior</button>
+              </li>
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
+                <li key={pagina} className={`page-item ${pagina === paginaValida ? 'active' : ''}`}>
+                  <button
+                    className={`page-link ${pagina === paginaValida ? 'bg-success border-success' : 'text-success'}`}
+                    onClick={() => setPaginaAtual(pagina)}
+                  >
+                    {pagina}
+                  </button>
+                </li>
+              ))}
+              <li className={`page-item ${paginaValida === totalPaginas ? 'disabled' : ''}`}>
+                <button className="page-link text-success" onClick={() => setPaginaAtual(paginaValida + 1)}>Próximo</button>
+              </li>
             </ul>
           </nav>
         </div>

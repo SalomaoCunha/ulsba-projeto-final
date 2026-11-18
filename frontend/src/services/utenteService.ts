@@ -62,21 +62,73 @@ export async function getUtenteById(id: string): Promise<Utente> {
   return mapearUtente(dto);
 }
 
-// TODO: criar/editar ainda enviam o Utente do frontend tal como está — os nomes
-// dos campos não correspondem ao que o backend espera (UtenteCriar/UtenteEditar
-// usam numero_utente, data_nascimento, local_id, etc.). Fica por resolver.
-export async function createUtente(novoUtente: Omit<Utente, 'id'>): Promise<Utente> {
+// O que o formulário "Novo Utente" recolhe — não é um Utente (esse só existe
+// depois de a BD gerar o id e os dados derivados como idade/última visita).
+export interface NovoUtentePayload {
+  numeroUtente: string;
+  nome: string;
+  genero: string;
+  dataNascimento: string;
+  localId: number;
+  contactoTelefonico?: string;
+  situacaoClinica?: string;
+  notas?: string;
+}
+
+export async function createUtente(dados: NovoUtentePayload): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>('/utentes', {
     method: 'POST',
-    body: JSON.stringify(novoUtente),
+    body: JSON.stringify({
+      numero_utente: dados.numeroUtente,
+      nome: dados.nome,
+      genero: dados.genero,
+      data_nascimento: dados.dataNascimento,
+      local_id: dados.localId,
+      contacto_telefonico: dados.contactoTelefonico || null,
+      situacao_clinica: dados.situacaoClinica || null,
+      notas: dados.notas || null,
+    }),
   });
   return mapearUtente(dto);
 }
 
+// Só os campos que o PUT /utentes/{id} aceita de facto (UtenteEditar no
+// backend). Antes disto enviava o Utente inteiro com chaves erradas
+// (telefone/situacaoClinica em vez de contacto_telefonico/situacao_clinica)
+// — o backend recebia "null" nesses campos e APAGAVA os dados existentes
+// a cada edição, mesmo sem o utilizador ter mexido neles.
 export async function updateUtente(utenteAtualizado: Utente): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteAtualizado.id}`, {
     method: 'PUT',
-    body: JSON.stringify(utenteAtualizado),
+    body: JSON.stringify({
+      nome: utenteAtualizado.nome,
+      contacto_telefonico: utenteAtualizado.telefone || null,
+      situacao_clinica: utenteAtualizado.situacaoClinica.join('\n') || null,
+      notas: utenteAtualizado.notas || null,
+    }),
   });
   return mapearUtente(dto);
+}
+
+// Alterar prioridade/complexidade/equipa são endpoints próprios (não fazem
+// parte do PUT) porque cada um gera um registo de histórico auditável.
+export async function alterarPrioridade(utenteId: Utente['id'], nivelUrgenciaId: number, motivo: string): Promise<void> {
+  await apiFetch(`/utentes/${utenteId}/prioridade`, {
+    method: 'POST',
+    body: JSON.stringify({ nivel_urgencia_id: nivelUrgenciaId, motivo }),
+  });
+}
+
+export async function alterarComplexidade(utenteId: Utente['id'], nivelComplexidadeId: number, observacao?: string): Promise<void> {
+  await apiFetch(`/utentes/${utenteId}/complexidade`, {
+    method: 'POST',
+    body: JSON.stringify({ nivel_complexidade_id: nivelComplexidadeId, observacao: observacao || null }),
+  });
+}
+
+export async function alterarEquipaResponsavel(utenteId: Utente['id'], equipaId: number, motivo?: string): Promise<void> {
+  await apiFetch(`/utentes/${utenteId}/equipa`, {
+    method: 'POST',
+    body: JSON.stringify({ equipa_id: equipaId, motivo: motivo || null }),
+  });
 }

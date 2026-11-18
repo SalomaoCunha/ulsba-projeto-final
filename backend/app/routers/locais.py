@@ -7,6 +7,18 @@ from app.schemas import LocalCriar
 router = APIRouter(prefix="/locais", tags=["locais"])
 
 
+@router.get("")
+def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    query = """
+        SELECT l.id, l.tipo, l.nome, l.morada, l.localidade, c.nome AS concelho
+        FROM local l
+        JOIN concelho c ON c.id = l.concelho_id
+        WHERE l.ativo = true
+        ORDER BY l.localidade, l.morada
+    """
+    return conn.execute(query).fetchall()
+
+
 @router.post("", status_code=201)
 def criar(dados: LocalCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     # A tabela `local` não tem coluna criado_por, por isso não passamos

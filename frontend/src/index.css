@@ -460,3 +460,44 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
   color: var(--ulsba-texto-secundario);
 }
+
+/* ===== Impressão do relatório da volta ===== */
+/* Esconde o menu lateral e a barra do topo ao imprimir; os controlos
+   específicos da página (botões, mapa interativo) usam a classe utilitária
+   do Bootstrap "d-print-none" diretamente no JSX. */
+@media print {
+  .side-panel,
+  .ulsba-topbar {
+    display: none !important;
+  }
+}
+
+/* ===== Detalhe da volta ===== */
+/* Dá à página um ar de "caixa" fechável (como o mockup original), em vez de
+   esticar o conteúdo pela largura toda do ecrã. */
+.ulsba-volta-caixa {
+  max-width: 1300px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* A lista de visitas só ganha scroll próprio a partir do breakpoint "lg"
+   (quando as 3 colunas já estão lado a lado); em mobile, empilhada,
+   cada secção cresce com a página normalmente. */
+@media (min-width: 992px) {
+  .ulsba-volta-coluna-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+}
+
+/* Caixa de nota (ocorrência), estilo "post-it" claro — inspirado nas caixas
+   amarelas/azuis do mockup, sem depender só da cor para o significado
+   (o texto do tipo de ocorrência já identifica a natureza). */
+.ulsba-nota {
+  background-color: #fff8e6;
+  border: 1px solid #f5e6b8;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}

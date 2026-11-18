@@ -1,4 +1,4 @@
-import type { Volta, FiltrosVoltas, EstadoVolta, VoltaCriar } from '../types/volta';
+import type { Volta, FiltrosVoltas, EstadoVolta, VoltaCriar, VoltaDetalhe } from '../types/volta';
 import { apiFetch } from './apiClient';
 
 interface VoltaDTO {
@@ -61,3 +61,60 @@ export async function criarVolta(dados: VoltaCriar): Promise<{ id: number }> {
     }),
   });
 }
+
+interface VisitaDetalheDTO {
+  visita_id: number;
+  utente_id: number;
+  utente_nome: string;
+  visita_estado: string;
+  inicio_previsto: string | null;
+  fim_previsto: string | null;
+  inicio_real: string | null;
+  fim_real: string | null;
+  urgencia_designacao: string | null;
+  urgencia_cor: string | null;
+}
+
+interface ParagemDetalheDTO {
+  ordem: number;
+  local_nome: string | null;
+  local_morada: string;
+  lat: number | null;
+  lng: number | null;
+  visitas: VisitaDetalheDTO[];
+}
+
+interface VoltaDetalheDTO extends VoltaDTO {
+  distancia_estimada_km: number | null;
+  distancia_real_km: number | null;
+  paragens: ParagemDetalheDTO[];
+}
+
+export async function getVoltaDetalhe(id: number): Promise<VoltaDetalhe> {
+  const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${id}`);
+  return {
+    ...mapearVolta(dto),
+    distanciaEstimadaKm: dto.distancia_estimada_km,
+    distanciaRealKm: dto.distancia_real_km,
+    paragens: dto.paragens.map((p) => ({
+      ordem: p.ordem,
+      localNome: p.local_nome,
+      localMorada: p.local_morada,
+      lat: p.lat,
+      lng: p.lng,
+      visitas: p.visitas.map((v) => ({
+        visitaId: v.visita_id,
+        utenteId: v.utente_id,
+        utenteNome: v.utente_nome,
+        visitaEstado: v.visita_estado,
+        inicioPrevisto: v.inicio_previsto,
+        fimPrevisto: v.fim_previsto,
+        inicioReal: v.inicio_real,
+        fimReal: v.fim_real,
+        urgenciaDesignacao: v.urgencia_designacao,
+        urgenciaCor: v.urgencia_cor,
+      })),
+    })),
+  };
+}
+
