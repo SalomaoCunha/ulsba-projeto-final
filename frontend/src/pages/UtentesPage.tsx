@@ -9,6 +9,7 @@ import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
+import { formatarData } from '../utils/formatarData';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
@@ -223,7 +224,7 @@ const UtentesPage: React.FC = () => {
                   </td>
                   <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
                   <td className="py-3 text-muted">{utente.telefone}</td>
-                  <td className="py-3 text-muted">{utente.ultimaVisita}</td>
+                  <td className="py-3 text-muted">{formatarData(utente.ultimaVisita)}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
                   <td className="py-3">{getBadgeComplexidade(utente.complexidade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
