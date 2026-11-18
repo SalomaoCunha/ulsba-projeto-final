@@ -16,6 +16,7 @@ import type { Viatura } from '../types/viatura';
 import type { Utente } from '../types/utente';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
+import { formatarHora } from '../utils/formatarHora';
 import PainelConstrucaoRota from '../components/PainelConstrucaoRota';
 
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales: { 'pt-PT': pt } });
@@ -45,10 +46,6 @@ interface EventoVolta {
   start: Date;
   end: Date;
   resource: Volta;
-}
-
-function formatarHora(hora: string | null) {
-  return hora ? new Date(hora).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
 }
 
 function EventoCalendario({ event }: EventProps<EventoVolta>) {

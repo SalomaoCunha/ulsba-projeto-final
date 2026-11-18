@@ -156,11 +156,6 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
         (volta_id,),
     ).fetchall()
 
-    # TODO: "linhas" tem uma linha por visita, repetindo os dados da paragem
-    # em cada uma. Agrupa por paragem_id num dict (mesma ideia do "agrupado"
-    # do POST /voltas), onde cada entrada tem os dados da paragem + uma
-    # lista "visitas" com os dados de cada visita dessa paragem.
-
     paragens = {}
 
     for linha in linhas:

@@ -13,6 +13,7 @@ import RelatoriosPage from './pages/RelatoriosPage';
 import MensagensPage from './pages/MensagensPage';
 import ConfiguracoesPage from './pages/ConfiguracoesPage';
 import LoginPage from './pages/LoginPage';
+import VoltaDetalhePage from './pages/VoltaDetalhePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/equipas" element={<EquipasPage />} />
             <Route path="/viaturas" element={<ViaturasPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/agenda/voltas/:id" element={<VoltaDetalhePage />} />
             <Route path="/visitas" element={<VisitasPage />} />
             <Route path="/rotas" element={<RotasPage />} />
             <Route path="/relatorios" element={<RelatoriosPage />} />
