@@ -33,8 +33,13 @@ export function filtrarUtentes(utentes: Utente[], filtros: FiltrosUtentes): Uten
       return false;
     }
 
-    const [dia, mes, ano] = u.ultimaVisita.split('-').map(Number);
-    const dataVisita = new Date(ano, mes - 1, dia);
+    // ultimaVisita vem do backend em ISO (ex.: "2026-10-02T09:50:00Z"), não
+    // em "DD-MM-YYYY" — o Date já sabe interpretar ISO diretamente.
+    if (!u.ultimaVisita) {
+      return !filtros.dataDe && !filtros.dataAte;
+    }
+
+    const dataVisita = new Date(u.ultimaVisita);
 
     if (filtros.dataDe && dataVisita < new Date(filtros.dataDe)) {
       return false;

@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import type { AlteracaoComplexidade, AlteracaoPrioridade, TipoLocal, Utente } from '../types/utente';
+import type { TipoLocal, Utente } from '../types/utente';
 import { NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
 import type { PrioridadeValor, ComplexidadeValor } from '@/config/niveis';
-import { UTILIZADOR_ATUAL } from '@/config/sessao';
+import { alterarPrioridade, alterarComplexidade, alterarEquipaResponsavel, updateUtente, getUtenteById } from '../services/utenteService';
+import { getNiveisUrgencia, getNiveisComplexidade } from '../services/nivelService';
+import { getEquipas } from '../services/equipaService';
+import { getUtilizadorAtual } from '../services/authService';
+import type { NivelUrgenciaDTO, NivelComplexidadeDTO } from '../types/nivel';
+import type { Equipa } from '../types/equipa';
 
 interface Props {
   utente: Utente | null;
@@ -13,20 +18,35 @@ interface Props {
 }
 
 const TIPOS_LOCAL: TipoLocal[] = ['Domicílio', 'Lar', 'Unidade de Saúde'];
-const EQUIPAS: string[] = ['Equipa A', 'Equipa B'];
 
 const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar }) => {
   // Inicializa já com a prop `utente` — o componente é remontado (via `key`
-  // no DashboardPage) sempre que o utente a editar muda, por isso não
-  // precisamos de useEffect para "sincronizar" isto.
+  // no DashboardPage/UtentesPage) sempre que o utente a editar muda, por
+  // isso não precisamos de useEffect para "sincronizar" isto.
   const [rascunho, setRascunho] = useState<Utente | null>(utente);
   const [motivo, setMotivo] = useState('');
   const [erros, setErros] = useState<string[]>([]);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  const [equipas, setEquipas] = useState<Equipa[]>([]);
+  const [niveisUrgencia, setNiveisUrgencia] = useState<NivelUrgenciaDTO[]>([]);
+  const [niveisComplexidade, setNiveisComplexidade] = useState<NivelComplexidadeDTO[]>([]);
+  const [podeEditarEquipa, setPodeEditarEquipa] = useState(false);
+
+  useEffect(() => {
+    getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
+    getNiveisUrgencia().then(setNiveisUrgencia).catch((erro) => console.error('Falha ao carregar níveis de urgência:', erro));
+    getNiveisComplexidade().then(setNiveisComplexidade).catch((erro) => console.error('Falha ao carregar níveis de complexidade:', erro));
+    getUtilizadorAtual()
+      .then((u) => setPodeEditarEquipa(u.perfil === 'COORDENADOR'))
+      .catch((erro) => console.error('Falha ao carregar utilizador autenticado:', erro));
+  }, []);
 
   if (!rascunho || !utente) return null;
 
   const prioridadeMudou = rascunho.prioridade !== utente.prioridade;
-  const podeEditarEquipa = UTILIZADOR_ATUAL.papel === 'Coordenador';
+  const complexidadeMudou = rascunho.complexidade !== utente.complexidade;
+  const equipaMudou = rascunho.equipaResponsavel !== utente.equipaResponsavel;
 
   const validar = (): string[] => {
     const lista: string[] = [];
@@ -42,38 +62,56 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
     return lista;
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
     const errosEncontrados = validar();
     if (errosEncontrados.length > 0) {
       setErros(errosEncontrados);
       return;
     }
 
-    const agora = new Date().toISOString();
-    let utenteFinal = rascunho;
+    setAGuardar(true);
+    try {
+      // Dados base (nome, contacto, notas...) vão sempre pelo PUT normal.
+      let utenteFinal = await updateUtente(rascunho);
 
-    if (prioridadeMudou) {
-      const alteracao: AlteracaoPrioridade = {
-        prioridadeAnterior: utente.prioridade,
-        prioridadeNova: rascunho.prioridade,
-        motivo,
-        data: agora,
-        autor: UTILIZADOR_ATUAL.nome,
-      };
-      utenteFinal = { ...utenteFinal, historicoPrioridade: [...utenteFinal.historicoPrioridade, alteracao] };
+      // Prioridade, complexidade e equipa têm endpoints próprios, porque
+      // cada um gera o seu próprio histórico auditável — só se chamam
+      // quando o valor realmente mudou.
+      if (prioridadeMudou) {
+        const nivel = niveisUrgencia.find((n) => n.designacao === rascunho.prioridade);
+        if (nivel) {
+          await alterarPrioridade(utente.id, nivel.id, motivo);
+        }
+      }
+
+      if (complexidadeMudou) {
+        const nivel = niveisComplexidade.find((n) => n.designacao === rascunho.complexidade);
+        if (nivel) {
+          await alterarComplexidade(utente.id, nivel.id);
+        }
+      }
+
+      if (equipaMudou && podeEditarEquipa) {
+        const equipa = equipas.find((e) => `Equipa ${e.codigo}` === rascunho.equipaResponsavel);
+        if (equipa) {
+          await alterarEquipaResponsavel(utente.id, equipa.id);
+        }
+      }
+
+      // Depois de todas as alterações gravadas, relê o utente para o ecrã
+      // mostrar o estado real e atualizado da BD (prioridade/complexidade/
+      // equipa só se refletem aqui depois dos POSTs acima).
+      if (prioridadeMudou || complexidadeMudou || equipaMudou) {
+        utenteFinal = await getUtenteById(String(utente.id));
+      }
+
+      onGuardar(utenteFinal);
+    } catch (erro) {
+      console.error('Falha ao guardar utente:', erro);
+      setErros(['Não foi possível guardar as alterações. Tenta novamente.']);
+    } finally {
+      setAGuardar(false);
     }
-
-    if (rascunho.complexidade !== utente.complexidade) {
-      const alteracao: AlteracaoComplexidade = {
-        complexidadeAnterior: utente.complexidade,
-        complexidadeNova: rascunho.complexidade,
-        data: agora,
-        autor: UTILIZADOR_ATUAL.nome,
-      };
-      utenteFinal = { ...utenteFinal, historicoComplexidade: [...utenteFinal.historicoComplexidade, alteracao] };
-    }
-
-    onGuardar(utenteFinal);
   };
 
   return (
@@ -187,8 +225,8 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
                 value={rascunho.equipaResponsavel}
                 onChange={(e) => setRascunho({ ...rascunho, equipaResponsavel: e.target.value })}
               >
-                {EQUIPAS.map((eq) => (
-                  <option key={eq} value={eq}>{eq}</option>
+                {equipas.map((eq) => (
+                  <option key={eq.id} value={`Equipa ${eq.codigo}`}>{`Equipa ${eq.codigo}`}</option>
                 ))}
               </Form.Select>
             ) : (
@@ -239,8 +277,10 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="light" onClick={onHide}>Cancelar</Button>
-        <Button variant="success" onClick={handleGuardar}>Guardar</Button>
+        <Button variant="light" onClick={onHide} disabled={aGuardar}>Cancelar</Button>
+        <Button variant="success" onClick={handleGuardar} disabled={aGuardar}>
+          {aGuardar ? 'A guardar...' : 'Guardar'}
+        </Button>
       </Modal.Footer>
     </Modal>
   );
