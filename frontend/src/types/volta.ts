@@ -35,6 +35,10 @@ export interface VisitaDetalhe {
   visitaEstado: string;
   inicioPrevisto: string | null;
   fimPrevisto: string | null;
+  inicioReal: string | null;
+  fimReal: string | null;
+  urgenciaDesignacao: string | null;
+  urgenciaCor: string | null;
 }
 
 export interface ParagemDetalhe {

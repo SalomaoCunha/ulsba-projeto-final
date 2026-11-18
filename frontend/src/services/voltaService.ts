@@ -69,6 +69,10 @@ interface VisitaDetalheDTO {
   visita_estado: string;
   inicio_previsto: string | null;
   fim_previsto: string | null;
+  inicio_real: string | null;
+  fim_real: string | null;
+  urgencia_designacao: string | null;
+  urgencia_cor: string | null;
 }
 
 interface ParagemDetalheDTO {
@@ -105,6 +109,10 @@ export async function getVoltaDetalhe(id: number): Promise<VoltaDetalhe> {
         visitaEstado: v.visita_estado,
         inicioPrevisto: v.inicio_previsto,
         fimPrevisto: v.fim_previsto,
+        inicioReal: v.inicio_real,
+        fimReal: v.fim_real,
+        urgenciaDesignacao: v.urgencia_designacao,
+        urgenciaCor: v.urgencia_cor,
       })),
     })),
   };

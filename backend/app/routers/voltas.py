@@ -145,11 +145,15 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
                l.nome AS local_nome, l.morada AS local_morada,
                ST_Y(l.geom::geometry) AS lat, ST_X(l.geom::geometry) AS lng,
                vis.id AS visita_id, vis.utente_id, u.nome AS utente_nome,
-               vis.estado AS visita_estado, vis.inicio_previsto, vis.fim_previsto
+               vis.estado AS visita_estado,
+               vis.inicio_previsto, vis.fim_previsto,
+               vis.inicio_real, vis.fim_real,
+               ficha.urgencia_designacao, ficha.urgencia_cor
         FROM paragem p
         JOIN local l ON l.id = p.local_id
         LEFT JOIN visita vis ON vis.paragem_id = p.id
         LEFT JOIN utente u ON u.id = vis.utente_id
+        LEFT JOIN vw_utente_ficha ficha ON ficha.utente_id = vis.utente_id
         WHERE p.volta_id = %s
         ORDER BY p.ordem
         """,
@@ -178,6 +182,10 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
             "visita_estado": linha["visita_estado"],
             "inicio_previsto": linha["inicio_previsto"],
             "fim_previsto": linha["fim_previsto"],
+            "inicio_real": linha["inicio_real"],
+            "fim_real": linha["fim_real"],
+            "urgencia_designacao": linha["urgencia_designacao"],
+            "urgencia_cor": linha["urgencia_cor"],
         })
 
     volta["paragens"] = list(paragens.values())
