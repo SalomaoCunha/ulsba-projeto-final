@@ -460,3 +460,14 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
   color: var(--ulsba-texto-secundario);
 }
+
+/* ===== Impressão do relatório da volta ===== */
+/* Esconde o menu lateral e a barra do topo ao imprimir; os controlos
+   específicos da página (botões, mapa interativo) usam a classe utilitária
+   do Bootstrap "d-print-none" diretamente no JSX. */
+@media print {
+  .side-panel,
+  .ulsba-topbar {
+    display: none !important;
+  }
+}
