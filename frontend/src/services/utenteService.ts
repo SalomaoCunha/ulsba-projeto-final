@@ -110,6 +110,29 @@ export async function updateUtente(utenteAtualizado: Utente): Promise<Utente> {
   return mapearUtente(dto);
 }
 
+export async function atualizarCoordenadasUtente(
+  utenteId: Utente['id'],
+  lat: number,
+  lng: number,
+): Promise<Utente> {
+  const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteId}/coordenadas`, {
+    method: 'PUT',
+    body: JSON.stringify({ lat, lng }),
+  });
+  return mapearUtente(dto);
+}
+
+export async function atualizarCoordenadasLocal(
+  localId: number,
+  lat: number,
+  lng: number,
+): Promise<{ id: number; lat: number; lng: number }> {
+  return apiFetch<{ id: number; lat: number; lng: number }>(`/locais/${localId}/coordenadas`, {
+    method: 'PUT',
+    body: JSON.stringify({ lat, lng }),
+  });
+}
+
 // Alterar prioridade/complexidade/equipa são endpoints próprios (não fazem
 // parte do PUT) porque cada um gera um registo de histórico auditável.
 export async function alterarPrioridade(utenteId: Utente['id'], nivelUrgenciaId: number, motivo: string): Promise<void> {

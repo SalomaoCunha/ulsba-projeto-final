@@ -81,7 +81,7 @@ const EquipasPage: React.FC = () => {
                 <p className="text-muted small fw-medium mb-1">Viaturas</p>
                 {viaturasDaEquipa(equipa).map((viatura) => (
                   <div key={viatura.id} className="small mb-1">
-                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
+                    <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao ?? 'Sem designação'} ({viatura.estado})
                   </div>
                 ))}
               </div>
@@ -98,7 +98,7 @@ const EquipasPage: React.FC = () => {
             <p className="text-muted small fw-medium mb-1">Sem equipa atribuída</p>
             {viaturasSemEquipa().map((viatura) => (
               <div key={viatura.id} className="small mb-1">
-                <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao} ({viatura.estado})
+                <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao ?? 'Sem designação'} ({viatura.estado})
               </div>
             ))}
           </div>
