@@ -81,9 +81,13 @@ desde que fundamentadas nos requisitos, nos conhecimentos da equipa e no prazo.
 | Algoritmo de rotas | Ecossistema forte de otimização (OR-Tools, NetworkX) | Existe, menos comum |
 | Tipagem | Type hints (opcional) | Forte, em compilação |
 
-Decisão: **FastAPI**. Justificação: [PREENCHER com a razão real da equipa:
-conhecimentos, prazo até fevereiro, linguagem do algoritmo da docente de
-Matemática].
+Decisão: **FastAPI**. Justificação: a razão decisiva foi o conhecimento
+prévio da equipa — quem ficou responsável pelo backend já tinha experiência
+em Python e nenhuma em C#/.NET, e o prazo entre outubro de 2026 e fevereiro
+de 2027, com a equipa a trabalhar em part-time, não comportava o tempo de
+aprendizagem de uma linguagem e framework novas. A documentação automática
+(`/docs`) revelou-se também útil na prática para validar o contrato dos
+endpoints com o frontend antes de cada integração.
 
 ### PostgreSQL + PostGIS vs MySQL / SQL Server
 
@@ -93,6 +97,17 @@ Matemática].
 - A imagem Docker `postgis/postgis` já vem pronta.
 - O SQL Server implica licenciamento e imagem mais pesada. O MySQL tem
   funções espaciais mais limitadas.
+
+Decisão: **PostgreSQL + PostGIS**.
+
+### Frontend: React, TypeScript e Vite
+
+React e TypeScript por serem o par mais comum para interfaces web
+interativas com tipagem estática. Vite como ferramenta de desenvolvimento
+pelo servidor de desenvolvimento rápido (arranque e recarregamento quase
+instantâneos) e por ser hoje a opção por omissão para projetos React novos.
+Leaflet + OpenStreetMap para o mapa, por serem as opções abertas mais usadas
+para mapas interativos na web, sem custos de licenciamento.
 
 Decisão: **PostgreSQL + PostGIS**.
 
