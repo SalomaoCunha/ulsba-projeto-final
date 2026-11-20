@@ -44,7 +44,19 @@ todas as equipas em vez de só às suas.
 
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
+| GET | /locais | Lista locais ativos (id, tipo, nome, morada, localidade, concelho) | todos |
 | POST | /locais | Criar local (morada + concelho; coordenadas opcionais, fornecidas pelo cliente, sem geocoding externo) | coordenador, admin |
+
+## Níveis (referência)
+
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| GET | /niveis/urgencia | Lista níveis de urgência ativos (id, codigo, designacao, cor_hex, ordem) | todos |
+| GET | /niveis/complexidade | Lista níveis de complexidade ativos (id, codigo, designacao, ordem) | todos |
+
+Servem para o frontend converter o texto mostrado ao utilizador (ex.: "Urgente
+0 dias") no `id` real que `POST /utentes/{id}/prioridade` e
+`.../complexidade` exigem.
 
 ## Equipas e viaturas
 
@@ -61,11 +73,11 @@ Criar/editar viaturas ainda não está implementado (botões "Em breve" no front
 |---|---|---|---|
 | GET | /voltas | Voltas num intervalo `data_inicio`/`data_fim`, filtros opcionais `equipa_id`, `viatura_id`, `estado`. Sem `vista_geral`, mostra só voltas das equipas do utilizador (RF49) | todos |
 | POST | /voltas | Cria uma volta (data + equipa + viatura + lista de `utente_ids`): agrupa os utentes por local em paragens e cria uma visita por utente, já com estado `PLANEADA` | coordenador |
+| GET | /voltas/{id} | Detalhe completo: dados da volta + paragens aninhadas, cada uma com a sua lista de visitas (horários previstos/reais, estado, prioridade do utente) | todos |
 
 Não existe um recurso "visita" isolado — visitas nascem sempre dentro de uma
-volta, através de `POST /voltas`. Não existe ainda `GET /voltas/{id}` com o
-detalhe completo (paragens, visitas, ocorrências) nem edição de uma volta
-depois de criada — isso é o âmbito do cartão "Detalhe da volta" (por fazer).
+volta, através de `POST /voltas`. Não existe ainda edição de uma volta depois
+de criada (ex.: mudar equipa/viatura, remover uma visita).
 
 ## Ocorrências
 
@@ -97,7 +109,7 @@ Ainda não implementado (gestão de contas/perfis por um admin).
 
 - Autorização por perfil nos endpoints (hoje qualquer utilizador autenticado acede a tudo).
 - Paginação em `GET /utentes` e `GET /voltas`.
-- `GET /voltas/{id}` com detalhe completo, mapa do percurso e distância (cartão "Detalhe da volta").
+- Editar uma volta depois de criada; cálculo real de distância da volta (hoje fica a `NULL`).
 - Recálculo de horários quando há atraso (cartão "Atrasos: recálculo de horários").
 - CRUD de viaturas (criar/editar).
 - Rotas (algoritmo), relatórios e gestão de utilizadores: por implementar.

@@ -16,6 +16,7 @@
 | `migrate/Dockerfile` e `migrate/runner.py` | Serviço Docker `db-migrate` que aplica apenas as migrações pendentes e mantém o histórico de versões. |
 | `migrate/test_runner.py` | Testes do mecanismo de migrações. |
 | `tests/0001_verificacao_postgis.sql` | Verificação SQL do modelo e do PostGIS; reverte os dados temporários com `ROLLBACK`. |
+| `tests/0002_verificacao_seed_rf40.sql` | Verificação SQL dos dados fictícios semeados (RF40); reverte os dados temporários com `ROLLBACK`. |
 
 
 **Após as quatro migrações:** 32 tabelas de domínio, 252 atributos, 18 ENUM e cinco níveis de urgência ativos. O migrador acrescenta a tabela técnica `public.schema_migrations`, que não pertence às 32 tabelas de domínio.

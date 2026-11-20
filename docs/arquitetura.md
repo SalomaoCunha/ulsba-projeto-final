@@ -43,11 +43,11 @@ sequenceDiagram
     B->>A: POST /auth/login
     A->>D: validar utilizador
     A-->>B: token JWT
-    B->>A: GET /utentes/geo (Bearer token)
-    A->>A: validar token e perfil
+    B->>A: GET /utentes (Bearer token)
+    A->>A: validar token
     A->>D: consulta com PostGIS
-    D-->>A: utentes com coordenadas
-    A-->>B: GeoJSON
+    D-->>A: utentes com coordenadas (lat/lng)
+    A-->>B: JSON (lat/lng por utente, não GeoJSON)
     B->>B: Leaflet desenha os marcadores
 ```
 
@@ -100,9 +100,12 @@ Decisão: **PostgreSQL + PostGIS**.
 
 - **Autenticação:** JWT com expiração curta. Palavras-passe guardadas com
   hash (argon2 ou bcrypt), nunca em texto simples.
-- **Perfis:** `admin`, `coordenador`, `enfermeiro` (a validar com a equipa de
-  cuidados paliativos). As permissões por rota estão em `docs/endpoints.md`
-  e são verificadas **no backend**, não só no frontend.
+- **Perfis:** `COORDENADOR`, `PROFISSIONAL_SAUDE`, `ADMINISTRADOR` (enum
+  `perfil_utilizador` na BD). As permissões por rota pretendidas estão em
+  `docs/endpoints.md`, mas a autorização por perfil **ainda não está
+  implementada nos endpoints** — hoje qualquer utilizador autenticado acede a
+  qualquer rota, independentemente do perfil (ver "Em aberto" em
+  `docs/endpoints.md`).
 - **Validação de entradas:** modelos Pydantic e queries parametrizadas,
   contra injeção SQL.
 - **CORS** restrito à origem do frontend.
@@ -114,5 +117,6 @@ Decisão: **PostgreSQL + PostGIS**.
 ## Evolução futura
 
 Integração do algoritmo de otimização de rotas (conceção pela docente de
-Matemática). Nesta fase o backend apenas expõe a extração dos dados
-necessários (`GET /rotas/dados`).
+Matemática). Está planeado o backend expor a extração dos dados necessários
+(`GET /rotas/dados`), mas este endpoint ainda não existe — ver "Rotas
+(preparação para o algoritmo)" em `docs/endpoints.md`.

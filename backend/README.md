@@ -25,5 +25,6 @@ A API fica disponível em http://localhost:8000, com documentação interativa e
 | Variável       | Descrição                                    |
 | -------------- | --------------------------------------------- |
 | `DATABASE_URL` | String de ligação PostgreSQL (definida pelo `docker-compose.yml` a partir das variáveis em `.env`) |
+| `JWT_SECRET`   | Chave usada para assinar e validar os tokens JWT de autenticação (definida em `.env`) |
 
 Os requisitos que a API deve cumprir estão em [docs/requisitos.md](../docs/requisitos.md).
