@@ -1,35 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { getViaturasFicticias } from '../services/viaturaService';
-import { getEquipasFicticias } from '../services/equipaService';
+import { useNavigate } from 'react-router-dom';
+import { getViaturas } from '../services/viaturaService';
 import type { Viatura, EstadoViatura } from '../types/viatura';
-import type { Equipa } from '../types/equipa';
+import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
+
+const LABEL_MOTORIZACAO: Record<string, string> = {
+  GASOLINA: 'Gasolina',
+  GASOLEO: 'Gasóleo',
+  HIBRIDO: 'Híbrido',
+  ELETRICO: 'Elétrico',
+  OUTRO: 'Outro',
+};
+
+const LABEL_ESTADO: Record<EstadoViatura, string> = {
+  OPERACIONAL: 'Ativa',
+  EM_MANUTENCAO: 'Em manutenção',
+  INATIVA: 'Inativa',
+};
+
+const calcularProximaRevisao = (viatura: Viatura) => {
+  if (!viatura.data_ultima_revisao || !viatura.periodicidade_revisao_meses) {
+    return '—';
+  }
+  const data = new Date(viatura.data_ultima_revisao);
+  data.setMonth(data.getMonth() + viatura.periodicidade_revisao_meses);
+  return data.toLocaleDateString('pt-PT');
+};
 
 const ViaturasPage: React.FC = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
-  const [equipas, setEquipas] = useState<Equipa[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    getViaturasFicticias().then(setViaturas);
-    getEquipasFicticias().then(setEquipas);
+    comAtrasoMinimo(getViaturas()).then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)).finally(() => setCarregando(false));
   }, []);
 
-  const nomeDaEquipa = (equipaId: string | null) => {
-    if (!equipaId) return 'Sem equipa atribuída';
-    return equipas.find(e => e.id === equipaId)?.nome ?? 'Sem equipa atribuída';
+  const nomeDaEquipa = (equipaCodigo: string | null) => {
+    return equipaCodigo ? `Equipa ${equipaCodigo}` : 'Sem equipa atribuída';
   };
 
   const getBadgeEstado = (estado: EstadoViatura) => {
     const estilos: Record<EstadoViatura, string> = {
-      'Ativa': 'bg-success-subtle text-success border-success-subtle',
-      'Inativa': 'bg-secondary-subtle text-secondary border-secondary-subtle',
-      'Em manutenção': 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
+      'OPERACIONAL': 'bg-success-subtle text-success border-success-subtle',
+      'INATIVA': 'bg-secondary-subtle text-secondary border-secondary-subtle',
+      'EM_MANUTENCAO': 'bg-warning-subtle text-warning-emphasis border-warning-subtle',
     };
     return (
       <span className={`badge border px-2 py-1 rounded-pill ${estilos[estado]}`}>
-        {estado}
+        {LABEL_ESTADO[estado]}
       </span>
     );
   };
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
+  }
 
   return (
     <div className="h-100 d-flex flex-column">
@@ -58,11 +87,18 @@ const ViaturasPage: React.FC = () => {
           {viaturas.map((viatura) => (
             <div key={viatura.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
               <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                <div className="fw-medium text-dark text-truncate">{viatura.matricula} — {viatura.modelo}</div>
+                <div className="fw-medium text-dark text-truncate">{viatura.matricula} — {viatura.designacao}</div>
                 <div className="d-flex flex-wrap gap-1 mt-1">
                   {getBadgeEstado(viatura.estado)}
                 </div>
               </div>
+              <button
+                className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
+                title="Ver no calendário"
+                onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
+              >
+                <i className="bi bi-calendar3"></i>
+              </button>
               <button className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0" disabled title="Em breve">
                 <i className="bi bi-pencil"></i>
               </button>
@@ -90,14 +126,21 @@ const ViaturasPage: React.FC = () => {
               {viaturas.map((viatura) => (
                 <tr key={viatura.id}>
                   <td className="ps-4 py-3 fw-medium text-dark">{viatura.matricula}</td>
-                  <td className="py-3 text-muted">{viatura.modelo}</td>
-                  <td className="py-3 text-muted">{viatura.combustivel}</td>
-                  <td className="py-3 text-muted">{viatura.autonomiaKm} km</td>
+                  <td className="py-3 text-muted">{viatura.designacao}</td>
+                  <td className="py-3 text-muted">{LABEL_MOTORIZACAO[viatura.tipo_motorizacao] ?? viatura.tipo_motorizacao}</td>
+                  <td className="py-3 text-muted">{viatura.autonomia ?? '—'} {viatura.unidade_autonomia === 'KM' ? 'km' : viatura.unidade_autonomia === 'PERCENTAGEM' ? '%' : ''}</td>
                   <td className="py-3 text-muted">{viatura.lugares}</td>
-                  <td className="py-3 text-muted">{nomeDaEquipa(viatura.equipaId)}</td>
-                  <td className="py-3 text-muted">{viatura.proximaRevisao}</td>
+                  <td className="py-3 text-muted">{nomeDaEquipa(viatura.equipa_codigo)}</td>
+                  <td className="py-3 text-muted">{calcularProximaRevisao(viatura)}</td>
                   <td className="py-3">{getBadgeEstado(viatura.estado)}</td>
                   <td className="pe-4 py-3 text-end">
+                    <button
+                      className="btn btn-sm btn-light text-secondary shadow-sm border me-1"
+                      title="Ver no calendário"
+                      onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
+                    >
+                      <i className="bi bi-calendar3"></i>
+                    </button>
                     <button className="btn btn-sm btn-light text-secondary shadow-sm border" disabled title="Em breve">
                       <i className="bi bi-pencil"></i>
                     </button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Utente } from '../types/utente';
 import { getNivelComplexidade } from '@/config/niveis';
+import { formatarData } from '../utils/formatarData';
 
 interface Props {
   utente: Utente | null;
@@ -61,7 +62,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
         <div className="row g-2">
           {/* Coluna Esquerda */}
           <div className="col-12 col-md-6 d-flex flex-column gap-1">
-            <DetailItem icon="bi-calendar3" label="Data de Nascimento:" value={utente.dataNascimento} />
+            <DetailItem icon="bi-calendar3" label="Data de Nascimento:" value={formatarData(utente.dataNascimento)} />
             <DetailItem icon="bi-telephone" label="Telefone:" value={utente.telefone} />
             <DetailItem icon="bi-person-heart" label="Cuidador Principal:" value={utente.cuidadorPrincipal} />
             <DetailItem icon="bi-signpost" label="Tipo de Local:" value={utente.tipoLocal} />
@@ -73,7 +74,7 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
 
           {/* Coluna Direita */}
           <div className="col-12 col-md-6 d-flex flex-column gap-1">
-            <DetailItem icon="bi-clock" label="Última Visita:" value={utente.ultimaVisita} />
+            <DetailItem icon="bi-clock" label="Última Visita:" value={formatarData(utente.ultimaVisita)} />
             <DetailItem icon="bi-people" label="Equipa Responsável:" value={utente.equipaResponsavel} />
 
             {/* Situação Clínica (Lista) */}

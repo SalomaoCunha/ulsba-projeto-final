@@ -1,32 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUtentesFicticios, updateUtente } from '../services/utenteService'
+import { getUtentes, updateUtente } from '../services/utenteService'
 import type { Utente } from '../types/utente'
-import { getNivelPrioridade, NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
+import { getNivelPrioridade, getNivelComplexidade } from '@/config/niveis';
 import VerUtenteModal from '../components/VerUtenteModal';
 import EditarUtenteModal from '../components/EditarUtenteModal';
+import FiltrosUtentesPainel from '../components/FiltrosUtentesPainel';
+import EcraCarregamento from '../components/EcraCarregamento';
+import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
+import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
+import { formatarData } from '../utils/formatarData';
 
 const UtentesPage: React.FC = () => {
   const [termoPesquisa, setTermoPesquisa] = useState('');
   const [utentes, setUtentes] = useState<Utente[]>([]);
 
-  const [filtroPrioridade, setFiltroPrioridade] = useState<string | null>(null);
-  const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
-  const [filtroComplexidade, setFiltroComplexidade] = useState<string | null>(null);
-  const [filtroEquipa, setFiltroEquipa] = useState<string | null>(null);
-  const [filtroDataDe, setFiltroDataDe] = useState('');
-  const [filtroDataAte, setFiltroDataAte] = useState('');
+  const [filtros, setFiltros] = useState<FiltrosUtentes>(filtrosVazios);
 
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
 
   const [utenteEmFoco, setUtenteEmFoco] = useState<Utente | null>(null);
   const [modalVerAberto, setModalVerAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const ITENS_POR_PAGINA = 10;
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    getUtentesFicticios().then(setUtentes);
+    comAtrasoMinimo(getUtentes()).then(setUtentes).finally(() => setCarregando(false));
   }, []);
 
   // Função auxiliar para renderizar a cor certa da prioridade
@@ -50,32 +53,30 @@ const UtentesPage: React.FC = () => {
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 
-  const utentesFiltrados = utentes.filter((u) => {
-    if (filtroPrioridade && u.prioridade !== filtroPrioridade) {
-      return false;
+  // Função auxiliar para renderizar a cor certa da complexidade
+  const getBadgeComplexidade = (complexidade: string) => {
+    const nivel = getNivelComplexidade(complexidade);
+    if (!nivel) {
+      return <span className="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">—</span>;
     }
-    if (filtroComplexidade && u.complexidade !== filtroComplexidade) {
-      return false;
-    }
-    if (filtroEstado && u.estado !== filtroEstado) {
-      return false;
-    }
-    if (filtroEquipa && u.equipaResponsavel !== filtroEquipa) {
-      return false;
-    }
+    return (
+      <span className="badge fw-normal px-2 py-1" style={{ backgroundColor: nivel.corBg, color: nivel.corTexto }}>
+        {nivel.label}
+      </span>
+    );
+  };
 
-    const [dia, mes, ano] = u.ultimaVisita.split('-').map(Number);
-    const dataVisita = new Date(ano, mes - 1, dia);
+  const termo = termoPesquisa.trim().toLowerCase();
+  const utentesFiltrados = filtrarUtentes(utentes, filtros).filter((u) =>
+    !termo || u.nome.toLowerCase().includes(termo) || u.numeroUtente.toLowerCase().includes(termo),
+  );
 
-    if (filtroDataDe && dataVisita < new Date(filtroDataDe)) {
-      return false;
-    }
-    if (filtroDataAte && dataVisita > new Date(filtroDataAte)) {
-      return false;
-    }
-
-    return true;
-  });
+  const totalPaginas = Math.max(1, Math.ceil(utentesFiltrados.length / ITENS_POR_PAGINA));
+  const paginaValida = Math.min(paginaAtual, totalPaginas);
+  const utentesDaPagina = utentesFiltrados.slice(
+    (paginaValida - 1) * ITENS_POR_PAGINA,
+    paginaValida * ITENS_POR_PAGINA,
+  );
 
   const abrirVisualizacao = (utente: Utente) => {
     setUtenteEmFoco(utente);
@@ -99,6 +100,12 @@ const UtentesPage: React.FC = () => {
     setUtenteEmFoco(resultado);
     setModalEditarAberto(false);
   };
+
+  if (carregando) {
+    return (
+      <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />
+    );
+  }
 
   return (
     <div className="h-100 d-flex flex-column">
@@ -144,103 +151,12 @@ const UtentesPage: React.FC = () => {
         </div>
 
         {filtrosAbertos && (
-          <div className="card-header bg-white border-bottom p-3">
-            <div className="d-flex gap-3 flex-wrap align-items-end">
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Prioridade</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroPrioridade ?? ''}
-                  onChange={(e) => setFiltroPrioridade(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {NIVEIS_PRIORIDADE.map((n) => (
-                    <option key={n.valor} value={n.valor}>{n.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Complexidade</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroComplexidade ?? ''}
-                  onChange={(e) => setFiltroComplexidade(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {NIVEIS_COMPLEXIDADE.map((n) => (
-                    <option key={n.valor} value={n.valor}>{n.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Estado</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroEstado ?? ''}
-                  onChange={(e) => setFiltroEstado(e.target.value || null)}
-                >
-                  <option value="">Todos</option>
-                  <option value="Ativo">Ativo</option>
-                  <option value="Inativo">Inativo</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Equipa</label>
-                <select
-                  className="form-select form-select-sm"
-                  value={filtroEquipa ?? ''}
-                  onChange={(e) => setFiltroEquipa(e.target.value || null)}
-                >
-                  <option value="">Todas</option>
-                  {[...new Set(utentesFiltrados.map((u) => u.equipaResponsavel))].map((eq) => (
-                    <option key={eq} value={eq}>{eq}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Última visita (de)</label>
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  value={filtroDataDe}
-                  onChange={(e) => setFiltroDataDe(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="form-label text-muted small fw-medium mb-1">Última visita (até)</label>
-                <input
-                  type="date"
-                  className="form-control form-control-sm"
-                  value={filtroDataAte}
-                  onChange={(e) => setFiltroDataAte(e.target.value)}
-                />
-              </div>
-
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => {
-                  setFiltroPrioridade(null);
-                  setFiltroComplexidade(null);
-                  setFiltroEstado(null);
-                  setFiltroEquipa(null);
-                  setFiltroDataDe('');
-                  setFiltroDataAte('');
-                }}
-              >
-                Limpar filtros
-              </button>
-            </div>
-          </div>
+          <FiltrosUtentesPainel utentes={utentes} filtros={filtros} onChange={setFiltros} />
         )}
 
         {/* Lista em cartões — só em mobile (<md), cabe sempre sem scroll horizontal */}
         <div className="d-md-none">
-          {utentesFiltrados.map((utente) => (
+          {utentesDaPagina.map((utente) => (
             <div key={utente.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
               <div
                 className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
@@ -253,6 +169,7 @@ const UtentesPage: React.FC = () => {
                 <div className="fw-medium text-dark text-truncate">{utente.nome}</div>
                 <div className="d-flex flex-wrap gap-1 mt-1">
                   {getBadgePrioridade(utente.prioridade)}
+                  {getBadgeComplexidade(utente.complexidade)}
                   {getBadgeEstado(utente.estado)}
                 </div>
               </div>
@@ -288,12 +205,13 @@ const UtentesPage: React.FC = () => {
                 <th className="fw-medium border-bottom-0 py-3">Contacto</th>
                 <th className="fw-medium border-bottom-0 py-3">Última Visita</th>
                 <th className="fw-medium border-bottom-0 py-3">Prioridade</th>
+                <th className="fw-medium border-bottom-0 py-3">Complexidade</th>
                 <th className="fw-medium border-bottom-0 py-3">Estado</th>
                 <th className="fw-medium border-bottom-0 pe-4 py-3 text-end">Ações</th>
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {utentesFiltrados.map((utente) => (
+              {utentesDaPagina.map((utente) => (
                 <tr key={utente.id}>
                   <td className="ps-4 py-3 text-muted">{utente.numeroUtente}</td>
                   <td className="py-3 fw-medium text-dark text-nowrap">
@@ -306,8 +224,9 @@ const UtentesPage: React.FC = () => {
                   </td>
                   <td className="py-3 text-muted">{utente.equipaResponsavel}</td>
                   <td className="py-3 text-muted">{utente.telefone}</td>
-                  <td className="py-3 text-muted">{utente.ultimaVisita}</td>
+                  <td className="py-3 text-muted">{formatarData(utente.ultimaVisita)}</td>
                   <td className="py-3">{getBadgePrioridade(utente.prioridade)}</td>
+                  <td className="py-3">{getBadgeComplexidade(utente.complexidade)}</td>
                   <td className="py-3">{getBadgeEstado(utente.estado)}</td>
                   <td className="pe-4 py-3 text-end">
                     <button
@@ -333,14 +252,29 @@ const UtentesPage: React.FC = () => {
 
         {/* Rodapé da Tabela com Paginação */}
         <div className="card-footer bg-white border-top p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 text-muted small">
-          <span>A mostrar 1 a 5 de 24 utentes</span>
+          <span>
+            {utentesFiltrados.length === 0
+              ? 'Sem utentes para mostrar'
+              : `A mostrar ${(paginaValida - 1) * ITENS_POR_PAGINA + 1} a ${Math.min(paginaValida * ITENS_POR_PAGINA, utentesFiltrados.length)} de ${utentesFiltrados.length} utentes`}
+          </span>
           <nav>
             <ul className="pagination pagination-sm mb-0">
-              <li className="page-item disabled"><a className="page-link" href="#">Anterior</a></li>
-              <li className="page-item active"><a className="page-link bg-success border-success" href="#">1</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">2</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">3</a></li>
-              <li className="page-item"><a className="page-link text-success" href="#">Próximo</a></li>
+              <li className={`page-item ${paginaValida === 1 ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setPaginaAtual(paginaValida - 1)}>Anterior</button>
+              </li>
+              {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
+                <li key={pagina} className={`page-item ${pagina === paginaValida ? 'active' : ''}`}>
+                  <button
+                    className={`page-link ${pagina === paginaValida ? 'bg-success border-success' : 'text-success'}`}
+                    onClick={() => setPaginaAtual(pagina)}
+                  >
+                    {pagina}
+                  </button>
+                </li>
+              ))}
+              <li className={`page-item ${paginaValida === totalPaginas ? 'disabled' : ''}`}>
+                <button className="page-link text-success" onClick={() => setPaginaAtual(paginaValida + 1)}>Próximo</button>
+              </li>
             </ul>
           </nav>
         </div>

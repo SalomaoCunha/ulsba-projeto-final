@@ -1,13 +1,15 @@
-export type EstadoViatura = 'Ativa' | 'Inativa' | 'Em manutenção';
+export type EstadoViatura = 'OPERACIONAL' | 'EM_MANUTENCAO' | 'INATIVA';
 
 export interface Viatura {
-  id: string;
+  id: number;
   matricula: string;
-  modelo: string;
-  combustivel: string;
-  autonomiaKm: number;
+  designacao: string | null;
+  tipo_motorizacao: string;
   lugares: number;
+  autonomia: number | null;
+  unidade_autonomia: string | null;
   estado: EstadoViatura;
-  proximaRevisao: string;
-  equipaId: string | null; // null = sem equipa atribuída
+  data_ultima_revisao: string | null;
+  periodicidade_revisao_meses: number | null;
+  equipa_codigo: string | null; // null = sem equipa atribuída
 }
