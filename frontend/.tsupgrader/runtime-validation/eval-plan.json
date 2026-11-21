@@ -1,0 +1,71 @@
+{
+  "projectType": "webapp",
+  "setup": [
+    {
+      "command": "npm",
+      "args": ["ci"],
+      "timeoutSeconds": 600
+    }
+  ],
+  "assertions": [
+    {
+      "name": "production-build",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "changed-files-lint",
+      "kind": "process",
+      "command": "npx",
+      "args": [
+        "eslint",
+        "src/pages/EquipasPage.tsx",
+        "src/pages/NovoUtentePage.tsx",
+        "src/components/MapaLeaflet.tsx",
+        "src/services/localService.ts",
+        "src/services/equipaService.ts",
+        "src/services/equipaService.test.ts",
+        "src/services/localService.test.ts",
+        "src/utils/coordenadasPortugal.ts",
+        "src/utils/coordenadasPortugal.test.ts",
+        "src/pages/MapaPage.tsx",
+        "src/types/equipa.ts"
+      ],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": ["test"],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "dev-server-home-200",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": [
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "url": "http://127.0.0.1:5173/",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 120
+    }
+  ]
+}

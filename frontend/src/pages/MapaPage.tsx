@@ -373,7 +373,10 @@ const MapaPage: React.FC = () => {
       )}
 
       {/* Mapa */}
-      <div className="flex-grow-1" style={{ minHeight: '450px' }}>
+      {/* Altura explícita (não percentagem): o Leaflet fica dentro de um .card com h-100,
+          mas uma div com apenas flex-grow não dá uma altura "definida" aos filhos em
+          percentagem, e o mapa fica com 0px de altura. */}
+      <div style={{ height: 'max(450px, calc(100vh - 280px))' }}>
         <MapaLeaflet
           utentes={utentesFiltrados}
           modoEdicao={modoEdicao}
