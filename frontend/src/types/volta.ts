@@ -1,4 +1,5 @@
 export type EstadoVolta = 'RASCUNHO' | 'CONFIRMADA' | 'EM_CURSO' | 'CONCLUIDA' | 'CANCELADA';
+export type EstadoVisita = 'PENDENTE' | 'PLANEADA' | 'EM_CURSO' | 'CONCLUIDA' | 'CANCELADA';
 
 export interface Volta {
   id: number;
@@ -18,7 +19,35 @@ export interface FiltrosVoltas {
   dataFim: string;
   equipaId?: number;
   viaturaId?: number;
+  profissionalId?: number;
   estado?: EstadoVolta;
+}
+
+export interface VisitaAgenda {
+  visitaId: number;
+  voltaId: number;
+  dataVolta: string;
+  voltaEstado: EstadoVolta;
+  utenteId: number;
+  utenteNome: string;
+  utenteNumero: string;
+  visitaEstado: EstadoVisita;
+  inicioPrevisto: string | null;
+  fimPrevisto: string | null;
+  inicioReal: string | null;
+  fimReal: string | null;
+  equipaCodigo: string | null;
+  viaturaMatricula: string | null;
+  localNome: string | null;
+  localMorada: string | null;
+}
+
+export interface FiltrosVisitasAgenda {
+  dataInicio: string;
+  dataFim: string;
+  utenteId?: number;
+  profissionalId?: number;
+  estado?: EstadoVisita;
 }
 
 export interface VoltaCriar {
@@ -55,4 +84,3 @@ export interface VoltaDetalhe extends Volta {
   distanciaRealKm: number | null;
   paragens: ParagemDetalhe[];
 }
-

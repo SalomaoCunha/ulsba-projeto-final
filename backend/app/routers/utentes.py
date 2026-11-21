@@ -1,17 +1,25 @@
 from datetime import date
-from app.schemas import PrioridadeAlterar, ComplexidadeAlterar, EquipaResponsavelAlterar, UtenteInativar
-from fastapi import HTTPException
-from fastapi import APIRouter, Depends
-from app.schemas import UtenteResumo, UtenteCriar, UtenteEditar
 
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
 from app.routers.auth import get_current_user
-
+from app.schemas import (
+    ComplexidadeAlterar,
+    CoordenadasAtualizar,
+    EquipaResponsavelAlterar,
+    PrioridadeAlterar,
+    UtenteCriar,
+    UtenteEditar,
+    UtenteInativar,
+    UtenteResumo,
+    validar_coordenadas_portugal,
+)
 
 router = APIRouter(prefix="/utentes", tags=["utentes"])
 
-# LISTAR PACIENTES 
+
+# LISTAR PACIENTES
 @router.get("", response_model=list[UtenteResumo])
 def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     # RF03/RF07: um utente inativado sai do planeamento por omissão.
@@ -21,8 +29,8 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
     if nome:
         condicoes.append("nome ILIKE %s")
         parametros.append(f"%{nome}%")
-    
-    if numero: 
+
+    if numero:
         condicoes.append("numero_utente ILIKE %s")
         parametros.append(f"%{numero}%")
 
@@ -30,7 +38,7 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
 
     if condicoes:
         where = "WHERE " + " AND ".join(condicoes)
-    
+
     query = f"""
         SELECT utente_id, numero_utente, nome, idade, estado, genero,
             data_nascimento, contacto_telefonico,
@@ -48,12 +56,11 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
 
     return conn.execute(query, parametros).fetchall()
 
-#FICHA INDIVIDUAL DE CADA PACIENTE
 
+# FICHA INDIVIDUAL DE CADA PACIENTE
 @router.get("/{utente_id}", response_model=UtenteResumo)
 def obter(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
-
-    query = f"""
+    query = """
         SELECT utente_id, numero_utente, nome, idade, estado, genero,
             data_nascimento, contacto_telefonico,
             urgencia_designacao, urgencia_cor,
@@ -70,11 +77,11 @@ def obter(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get
 
     result = conn.execute(query, (utente_id,)).fetchone()
 
-
     if result is None:
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
     return result
+
 
 @router.post("", response_model=UtenteResumo, status_code=201)
 def criar(dados: UtenteCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -85,16 +92,25 @@ def criar(dados: UtenteCriar, conn=Depends(get_conn), utilizador: dict = Depends
            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
            RETURNING id
         """,
-        (dados.numero_utente, dados.nome, dados.genero, dados.data_nascimento,
-         dados.local_id, dados.contacto_telefonico, dados.situacao_clinica,
-         dados.notas, utilizador["id"]),
+        (
+            dados.numero_utente,
+            dados.nome,
+            dados.genero,
+            dados.data_nascimento,
+            dados.local_id,
+            dados.contacto_telefonico,
+            dados.situacao_clinica,
+            dados.notas,
+            utilizador["id"],
+        ),
     ).fetchone()["id"]
 
     return obter(novo_id, conn, utilizador)
 
+
 @router.put("/{utente_id}", response_model=UtenteResumo)
 def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
-    cursor =  conn.execute(
+    cursor = conn.execute(
         "UPDATE utente SET nome = %s, contacto_telefonico = %s, situacao_clinica = %s, notas = %s WHERE id = %s",
         (dados.nome, dados.contacto_telefonico, dados.situacao_clinica, dados.notas, utente_id),
     )
@@ -103,6 +119,37 @@ def editar(utente_id: int, dados: UtenteEditar, conn=Depends(get_conn), utilizad
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
     return obter(utente_id, conn, utilizador)
+
+
+@router.put("/{utente_id}/coordenadas", response_model=UtenteResumo)
+def atualizar_coordenadas(
+    utente_id: int,
+    dados: CoordenadasAtualizar,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    validar_coordenadas_portugal(dados.lat, dados.lng)
+
+    utente = conn.execute(
+        "SELECT local_id FROM utente WHERE id = %s",
+        (utente_id,),
+    ).fetchone()
+
+    if utente is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    conn.execute(
+        """
+        UPDATE local
+        SET geom = ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+            origem_coordenadas = 'MARCADA_NO_MAPA'
+        WHERE id = %s
+        """,
+        (dados.lng, dados.lat, utente["local_id"]),
+    )
+
+    return obter(utente_id, conn, utilizador)
+
 
 @router.post("/{utente_id}/prioridade", response_model=UtenteResumo, status_code=201)
 def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -117,9 +164,10 @@ def alterar_prioridade(utente_id: int, dados: PrioridadeAlterar, conn=Depends(ge
     if exist is None:
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
-    conn.execute(query, (utente_id, dados.nivel_urgencia_id, dados.motivo, utilizador["id"],)).fetchone()["id"]
+    conn.execute(query, (utente_id, dados.nivel_urgencia_id, dados.motivo, utilizador["id"])).fetchone()["id"]
 
     return obter(utente_id, conn, utilizador)
+
 
 @router.get("/{utente_id}/historico-prioridade")
 def historico_prioridade(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -145,8 +193,8 @@ def historico_prioridade(utente_id: int, conn=Depends(get_conn), utilizador: dic
 
     if not result:
         raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
-    
-    return result 
+
+    return result
 
 
 @router.post("/{utente_id}/complexidade", response_model=UtenteResumo, status_code=201)
@@ -162,9 +210,10 @@ def alterar_complexidade(utente_id: int, dados: ComplexidadeAlterar, conn=Depend
     if exist is None:
         raise HTTPException(status_code=404, detail="Utente não encontrado")
 
-    conn.execute(query, (utente_id, dados.nivel_complexidade_id, dados.observacao, utilizador["id"],)).fetchone()["id"]
+    conn.execute(query, (utente_id, dados.nivel_complexidade_id, dados.observacao, utilizador["id"])).fetchone()["id"]
 
     return obter(utente_id, conn, utilizador)
+
 
 @router.get("/{utente_id}/historico-complexidade")
 def historico_complexidade(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -188,8 +237,9 @@ def historico_complexidade(utente_id: int, conn=Depends(get_conn), utilizador: d
 
     if not result:
         raise HTTPException(status_code=404, detail="Utente sem histórico de avaliações")
-    
-    return result 
+
+    return result
+
 
 @router.post("/{utente_id}/equipa", response_model=UtenteResumo, status_code=201)
 def alterar_equipa_responsavel(utente_id: int, dados: EquipaResponsavelAlterar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -206,14 +256,13 @@ def alterar_equipa_responsavel(utente_id: int, dados: EquipaResponsavelAlterar, 
         (utente_id,),
     )
 
-
     query = """
             INSERT INTO atribuicao_equipa_responsavel (utente_id, equipa_id, motivo, registada_por)
             VALUES (%s, %s, %s, %s)
             RETURNING id
             """
 
-    conn.execute(query, (utente_id, dados.equipa_id, dados.motivo, utilizador["id"],)).fetchone()["id"]
+    conn.execute(query, (utente_id, dados.equipa_id, dados.motivo, utilizador["id"])).fetchone()["id"]
 
     return obter(utente_id, conn, utilizador)
 
@@ -267,4 +316,3 @@ def inativar(utente_id: int, dados: UtenteInativar, conn=Depends(get_conn), util
     )
 
     return obter(utente_id, conn, utilizador)
-

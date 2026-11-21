@@ -3,9 +3,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_conn
 from app.routers.auth import get_current_user
-from app.schemas import VoltaResumo, VoltaCriar
+from app.schemas import VoltaResumo, VoltaCriar, VisitaAgendaResumo
 
 router = APIRouter(prefix="/voltas", tags=["voltas"])
+
 
 @router.get("", response_model=list[VoltaResumo])
 def listar(
@@ -13,6 +14,7 @@ def listar(
     data_fim: date,
     equipa_id: Optional[int] = None,
     viatura_id: Optional[int] = None,
+    profissional_id: Optional[int] = None,
     estado: Optional[str] = None,
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
@@ -37,6 +39,16 @@ def listar(
         condicoes.append("v.viatura_id=%s")
         parametros.append(viatura_id)
 
+    if profissional_id is not None:
+        condicoes.append("""
+            v.equipa_id IN (
+                SELECT em_prof.equipa_id
+                FROM equipa_membro em_prof
+                WHERE em_prof.profissional_id = %s AND em_prof.valido_ate IS NULL
+            )
+        """)
+        parametros.append(profissional_id)
+
     if estado is not None:
         condicoes.append("v.estado=%s")
         parametros.append(estado)
@@ -51,9 +63,84 @@ def listar(
         )
         """)
         parametros.append(utilizador["id"])
-        
-    
+
     query = base + " WHERE " + " AND ".join(condicoes) + " ORDER BY v.partida_prevista"
+    return conn.execute(query, parametros).fetchall()
+
+
+@router.get("/visitas", response_model=list[VisitaAgendaResumo])
+def listar_visitas(
+    data_inicio: date,
+    data_fim: date,
+    utente_id: Optional[int] = None,
+    profissional_id: Optional[int] = None,
+    estado: Optional[str] = None,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    base = """
+        SELECT vis.id AS visita_id,
+               v.id AS volta_id,
+               v.data AS data_volta,
+               v.estado AS volta_estado,
+               vis.utente_id,
+               u.nome AS utente_nome,
+               u.numero_utente AS utente_numero,
+               vis.estado AS visita_estado,
+               vis.inicio_previsto,
+               vis.fim_previsto,
+               vis.inicio_real,
+               vis.fim_real,
+               e.codigo AS equipa_codigo,
+               vi.matricula AS viatura_matricula,
+               l.nome AS local_nome,
+               l.morada AS local_morada
+        FROM visita vis
+        JOIN paragem p ON p.id = vis.paragem_id
+        JOIN volta v ON v.id = p.volta_id
+        JOIN utente u ON u.id = vis.utente_id
+        JOIN local l ON l.id = p.local_id
+        LEFT JOIN equipa e ON e.id = COALESCE(vis.equipa_executante_id, v.equipa_id)
+        LEFT JOIN viatura vi ON vi.id = v.viatura_id
+    """
+    condicoes = ["v.data BETWEEN %s AND %s"]
+    parametros = [data_inicio, data_fim]
+
+    if utente_id is not None:
+        condicoes.append("vis.utente_id = %s")
+        parametros.append(utente_id)
+
+    if profissional_id is not None:
+        condicoes.append("""
+            COALESCE(vis.equipa_executante_id, v.equipa_id) IN (
+                SELECT em_prof.equipa_id
+                FROM equipa_membro em_prof
+                WHERE em_prof.profissional_id = %s AND em_prof.valido_ate IS NULL
+            )
+        """)
+        parametros.append(profissional_id)
+
+    if estado is not None:
+        condicoes.append("vis.estado = %s")
+        parametros.append(estado)
+
+    if not utilizador["vista_geral"]:
+        condicoes.append("""
+            COALESCE(vis.equipa_executante_id, v.equipa_id) IN (
+                SELECT em2.equipa_id
+                FROM profissional p2
+                JOIN equipa_membro em2 ON em2.profissional_id = p2.id AND em2.valido_ate IS NULL
+                WHERE p2.utilizador_id = %s
+            )
+        """)
+        parametros.append(utilizador["id"])
+
+    query = (
+        base
+        + " WHERE "
+        + " AND ".join(condicoes)
+        + " ORDER BY COALESCE(vis.inicio_previsto, v.partida_prevista), p.ordem"
+    )
     return conn.execute(query, parametros).fetchall()
 
 
@@ -76,8 +163,6 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
             agrupado[local_id] = []
 
         agrupado[local_id].append(utente_id)
-    
-
 
     partida = datetime.combine(dados.data, time(9, 30))
     regresso = datetime.combine(dados.data, time(16, 0))
@@ -90,7 +175,6 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         """,
         (dados.data, dados.equipa_id, dados.viatura_id, partida, regresso, utilizador["id"]),
     ).fetchone()["id"]
-
 
     for ordem, (local_id, utente_ids) in enumerate(agrupado.items(), start=1):
         paragem_id = conn.execute(
@@ -116,8 +200,8 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
                 (utente_id, paragem_id, dados.equipa_id, partida, regresso, utilizador["id"]),
             )
 
-
     return {"id": volta_id}
+
 
 @router.get("/{volta_id}")
 def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
@@ -174,7 +258,7 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
                 "lng": linha["lng"],
                 "visitas": [],
             }
-        
+
         paragens[paragem_id]["visitas"].append({
             "visita_id": linha["visita_id"],
             "utente_id": linha["utente_id"],
@@ -190,5 +274,3 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
 
     volta["paragens"] = list(paragens.values())
     return volta
-    
-

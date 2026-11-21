@@ -69,11 +69,13 @@ Notas:
 frontend/
 ├── public/              # Ficheiros estáticos
 ├── src/
-│   ├── assets/          # Imagens e outros recursos
+│   ├── components/      # Componentes reutilizáveis (ex.: modais, mapa)
+│   ├── config/          # Configuração estática (ex.: níveis de prioridade/complexidade)
 │   ├── layouts/         # Layouts partilhados (ex.: MainLayout)
 │   ├── pages/           # Uma página por rota (ex.: DashboardPage)
-│   ├── services/        # Acesso a dados (atualmente dados fictícios)
+│   ├── services/        # Acesso à API real (fetch ao backend FastAPI)
 │   ├── types/           # Tipos TypeScript partilhados (ex.: Utente)
+│   ├── utils/           # Funções auxiliares (ex.: formatação de datas/horas)
 │   ├── App.tsx          # Definição das rotas
 │   ├── main.tsx         # Ponto de entrada da aplicação
 │   └── index.css        # Estilos globais
@@ -95,13 +97,22 @@ import type { Utente } from '@/types/utente';
 
 ### Rotas
 
-| Caminho          | Página             |
-| ---------------- | ------------------ |
-| `/`              | Dashboard          |
-| `/utentes`       | Lista de utentes   |
-| `/utentes/novo`  | Novo utente        |
-| `/agenda`        | Agenda             |
-| `/visitas`       | Visitas            |
+| Caminho               | Página             |
+| --------------------- | ------------------ |
+| `/login`               | Login              |
+| `/`                    | Dashboard          |
+| `/utentes`             | Lista de utentes   |
+| `/utentes/novo`        | Novo utente        |
+| `/mapa`                | Mapa de utentes    |
+| `/equipas`             | Equipas            |
+| `/viaturas`            | Viaturas           |
+| `/agenda`              | Agenda (calendário de voltas) |
+| `/agenda/voltas/:id`   | Detalhe da volta   |
+| `/visitas`             | Visitas (em construção) |
+| `/rotas`               | Rotas (em construção) |
+| `/relatorios`          | Relatórios (em construção) |
+| `/mensagens`           | Mensagens (em construção) |
+| `/configuracoes`       | Configurações (em construção) |
 
 Novas páginas: criar o ficheiro em `src/pages/` e registar a rota em `src/App.tsx`, dentro do `MainLayout`.
 

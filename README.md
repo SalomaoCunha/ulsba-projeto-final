@@ -50,7 +50,7 @@ A forma recomendada de arrancar o projeto completo (frontend + backend + base de
 2. `docker compose up --build`
 3. Frontend: http://localhost:5173 · API: http://localhost:8000/docs · Health: http://localhost:8000/health
 
-**Importante — migrações:** `docker compose up` ativa o PostGIS num volume novo, mas **não cria automaticamente as tabelas da aplicação**. Depois do arranque, aplica `db/migrations/0001...` a `0003...` conforme os comandos em [db/README.md](db/README.md). Não uses `docker compose down -v` sem saberes que isso apaga o volume da base de dados.
+**Sobre as migrações:** o serviço `db-migrate` do `docker compose up` aplica automaticamente todas as migrações em `db/migrations/` a um volume novo — não é preciso correr nada à mão. O `backend` só arranca depois do `db-migrate` terminar com sucesso; se a API não responder, confirma primeiro com `docker compose logs db-migrate` se as migrações aplicaram bem. Ver [db/README.md](db/README.md) para detalhes (ex.: aplicar uma migração nova sem reconstruir tudo). Não uses `docker compose down -v` sem saberes que isso apaga o volume da base de dados.
 
 ### Problemas comuns
 - `/health` falha por causa do PostGIS: confirma a extensão na BD indicada por `POSTGRES_DB` e a variável `DATABASE_URL`. Num volume antigo, o script `db/init/` não é executado novamente; **não apagues o volume como primeiro passo**.

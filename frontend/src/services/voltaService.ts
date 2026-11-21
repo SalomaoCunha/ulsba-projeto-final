@@ -1,53 +1,127 @@
-import type { Volta, FiltrosVoltas, EstadoVolta, VoltaCriar, VoltaDetalhe } from '../types/volta';
+import type {
+  Volta,
+  FiltrosVoltas,
+  EstadoVolta,
+  EstadoVisita,
+  VoltaCriar,
+  VoltaDetalhe,
+  VisitaAgenda,
+  FiltrosVisitasAgenda,
+} from '../types/volta';
 import { apiFetch } from './apiClient';
 
 interface VoltaDTO {
-    id: number;
-    data: string;
-    designacao: string | null;
-    estado: string;
-    equipa_id: number | null;
-    equipa_codigo: string | null;
-    viatura_id: number | null;
-    viatura_matricula: string | null;
-    partida_prevista: string | null;
-    regresso_previsto: string | null;
+  id: number;
+  data: string;
+  designacao: string | null;
+  estado: string;
+  equipa_id: number | null;
+  equipa_codigo: string | null;
+  viatura_id: number | null;
+  viatura_matricula: string | null;
+  partida_prevista: string | null;
+  regresso_previsto: string | null;
+}
+
+interface VisitaAgendaDTO {
+  visita_id: number;
+  volta_id: number;
+  data_volta: string;
+  volta_estado: string;
+  utente_id: number;
+  utente_nome: string;
+  utente_numero: string;
+  visita_estado: string;
+  inicio_previsto: string | null;
+  fim_previsto: string | null;
+  inicio_real: string | null;
+  fim_real: string | null;
+  equipa_codigo: string | null;
+  viatura_matricula: string | null;
+  local_nome: string | null;
+  local_morada: string | null;
 }
 
 function mapearVolta(dto: VoltaDTO): Volta {
-    return {
-        id: dto.id,
-        data: dto.data,
-        designacao: dto.designacao,
-        estado: dto.estado as EstadoVolta,
-        equipaId: dto.equipa_id,
-        equipaCodigo: dto.equipa_codigo,
-        viaturaId: dto.viatura_id,
-        viaturaMatricula: dto.viatura_matricula,
-        partidaPrevista: dto.partida_prevista,
-        regressoPrevisto: dto.regresso_previsto,
-    }
+  return {
+    id: dto.id,
+    data: dto.data,
+    designacao: dto.designacao,
+    estado: dto.estado as EstadoVolta,
+    equipaId: dto.equipa_id,
+    equipaCodigo: dto.equipa_codigo,
+    viaturaId: dto.viatura_id,
+    viaturaMatricula: dto.viatura_matricula,
+    partidaPrevista: dto.partida_prevista,
+    regressoPrevisto: dto.regresso_previsto,
+  };
+}
+
+function mapearVisitaAgenda(dto: VisitaAgendaDTO): VisitaAgenda {
+  return {
+    visitaId: dto.visita_id,
+    voltaId: dto.volta_id,
+    dataVolta: dto.data_volta,
+    voltaEstado: dto.volta_estado as EstadoVolta,
+    utenteId: dto.utente_id,
+    utenteNome: dto.utente_nome,
+    utenteNumero: dto.utente_numero,
+    visitaEstado: dto.visita_estado as EstadoVisita,
+    inicioPrevisto: dto.inicio_previsto,
+    fimPrevisto: dto.fim_previsto,
+    inicioReal: dto.inicio_real,
+    fimReal: dto.fim_real,
+    equipaCodigo: dto.equipa_codigo,
+    viaturaMatricula: dto.viatura_matricula,
+    localNome: dto.local_nome,
+    localMorada: dto.local_morada,
+  };
 }
 
 export async function getVoltas(filtros: FiltrosVoltas): Promise<Volta[]> {
-    const parametros = new URLSearchParams();
-    parametros.set('data_inicio', filtros.dataInicio);
-    parametros.set('data_fim', filtros.dataFim);
+  const parametros = new URLSearchParams();
+  parametros.set('data_inicio', filtros.dataInicio);
+  parametros.set('data_fim', filtros.dataFim);
 
-    if(filtros.equipaId !== undefined) {
-        parametros.set('equipa_id', String(filtros.equipaId));
-    }
+  if (filtros.equipaId !== undefined) {
+    parametros.set('equipa_id', String(filtros.equipaId));
+  }
 
-    if(filtros.viaturaId !== undefined) {
-        parametros.set('viatura_id', String(filtros.viaturaId));
-    }
+  if (filtros.viaturaId !== undefined) {
+    parametros.set('viatura_id', String(filtros.viaturaId));
+  }
 
-    if(filtros.estado !== undefined) {
-        parametros.set('estado', String(filtros.estado));
-    }
+  if (filtros.profissionalId !== undefined) {
+    parametros.set('profissional_id', String(filtros.profissionalId));
+  }
 
-    const dtos = await apiFetch<VoltaDTO[]>(`/voltas?${parametros.toString()}`);
-    return dtos.map(mapearVolta);
+  if (filtros.estado !== undefined) {
+    parametros.set('estado', String(filtros.estado));
+  }
+
+  const dtos = await apiFetch<VoltaDTO[]>(`/voltas?${parametros.toString()}`);
+  return dtos.map(mapearVolta);
+}
+
+export async function getVisitasAgenda(filtros: FiltrosVisitasAgenda): Promise<VisitaAgenda[]> {
+  const parametros = new URLSearchParams();
+  parametros.set('data_inicio', filtros.dataInicio);
+  parametros.set('data_fim', filtros.dataFim);
+
+  if (filtros.utenteId !== undefined) {
+    parametros.set('utente_id', String(filtros.utenteId));
+  }
+
+  if (filtros.profissionalId !== undefined) {
+    parametros.set('profissional_id', String(filtros.profissionalId));
+  }
+
+  if (filtros.estado !== undefined) {
+    parametros.set('estado', String(filtros.estado));
+  }
+
+  const dtos = await apiFetch<VisitaAgendaDTO[]>(`/voltas/visitas?${parametros.toString()}`);
+  return dtos.map(mapearVisitaAgenda);
 }
 
 export async function criarVolta(dados: VoltaCriar): Promise<{ id: number }> {
@@ -117,4 +191,3 @@ export async function getVoltaDetalhe(id: number): Promise<VoltaDetalhe> {
     })),
   };
 }
-

@@ -43,11 +43,11 @@ sequenceDiagram
     B->>A: POST /auth/login
     A->>D: validar utilizador
     A-->>B: token JWT
-    B->>A: GET /utentes/geo (Bearer token)
-    A->>A: validar token e perfil
+    B->>A: GET /utentes (Bearer token)
+    A->>A: validar token
     A->>D: consulta com PostGIS
-    D-->>A: utentes com coordenadas
-    A-->>B: GeoJSON
+    D-->>A: utentes com coordenadas (lat/lng)
+    A-->>B: JSON (lat/lng por utente, não GeoJSON)
     B->>B: Leaflet desenha os marcadores
 ```
 
@@ -81,9 +81,13 @@ desde que fundamentadas nos requisitos, nos conhecimentos da equipa e no prazo.
 | Algoritmo de rotas | Ecossistema forte de otimização (OR-Tools, NetworkX) | Existe, menos comum |
 | Tipagem | Type hints (opcional) | Forte, em compilação |
 
-Decisão: **FastAPI**. Justificação: [PREENCHER com a razão real da equipa:
-conhecimentos, prazo até fevereiro, linguagem do algoritmo da docente de
-Matemática].
+Decisão: **FastAPI**. Justificação: a razão decisiva foi o conhecimento
+prévio da equipa — quem ficou responsável pelo backend já tinha experiência
+em Python e nenhuma em C#/.NET, e o prazo entre outubro de 2026 e fevereiro
+de 2027, com a equipa a trabalhar em part-time, não comportava o tempo de
+aprendizagem de uma linguagem e framework novas. A documentação automática
+(`/docs`) revelou-se também útil na prática para validar o contrato dos
+endpoints com o frontend antes de cada integração.
 
 ### PostgreSQL + PostGIS vs MySQL / SQL Server
 
@@ -96,13 +100,27 @@ Matemática].
 
 Decisão: **PostgreSQL + PostGIS**.
 
+### Frontend: React, TypeScript e Vite
+
+React e TypeScript por serem o par mais comum para interfaces web
+interativas com tipagem estática. Vite como ferramenta de desenvolvimento
+pelo servidor de desenvolvimento rápido (arranque e recarregamento quase
+instantâneos) e por ser hoje a opção por omissão para projetos React novos.
+Leaflet + OpenStreetMap para o mapa, por serem as opções abertas mais usadas
+para mapas interativos na web, sem custos de licenciamento.
+
+Decisão: **PostgreSQL + PostGIS**.
+
 ## Segurança e perfis de acesso
 
 - **Autenticação:** JWT com expiração curta. Palavras-passe guardadas com
   hash (argon2 ou bcrypt), nunca em texto simples.
-- **Perfis:** `admin`, `coordenador`, `enfermeiro` (a validar com a equipa de
-  cuidados paliativos). As permissões por rota estão em `docs/endpoints.md`
-  e são verificadas **no backend**, não só no frontend.
+- **Perfis:** `COORDENADOR`, `PROFISSIONAL_SAUDE`, `ADMINISTRADOR` (enum
+  `perfil_utilizador` na BD). As permissões por rota pretendidas estão em
+  `docs/endpoints.md`, mas a autorização por perfil **ainda não está
+  implementada nos endpoints** — hoje qualquer utilizador autenticado acede a
+  qualquer rota, independentemente do perfil (ver "Em aberto" em
+  `docs/endpoints.md`).
 - **Validação de entradas:** modelos Pydantic e queries parametrizadas,
   contra injeção SQL.
 - **CORS** restrito à origem do frontend.
@@ -114,5 +132,6 @@ Decisão: **PostgreSQL + PostGIS**.
 ## Evolução futura
 
 Integração do algoritmo de otimização de rotas (conceção pela docente de
-Matemática). Nesta fase o backend apenas expõe a extração dos dados
-necessários (`GET /rotas/dados`).
+Matemática). Está planeado o backend expor a extração dos dados necessários
+(`GET /rotas/dados`), mas este endpoint ainda não existe — ver "Rotas
+(preparação para o algoritmo)" em `docs/endpoints.md`.
