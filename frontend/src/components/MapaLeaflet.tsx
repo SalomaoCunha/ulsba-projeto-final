@@ -123,10 +123,10 @@ const MapaLeaflet: React.FC<Props> = ({
 }) => {
   const center: [number, number] = [38.015, -7.863];
 
-  // Filtra por prioridade (se ativo) e ignora registos sem coordenadas (0, 0)
+  // Filtra por prioridade (se ativo) e ignora registos sem coordenadas
   const pinosVisiveis = (
     filtroAtivo ? utentes.filter((ut) => ut.prioridade === filtroAtivo) : utentes
-  ).filter((ut) => ut.lat !== 0 || ut.lng !== 0);
+  ).filter((ut): ut is Utente & { lat: number; lng: number } => ut.lat !== null && ut.lng !== null);
 
   const pontoEdicaoDesenhavel =
     pontoEdicao &&

@@ -115,7 +115,7 @@ const MapaPage: React.FC = () => {
   const utentesFiltrados = filtrarUtentes(utentes, filtros);
 
   // Contadores alinhados com o conjunto visível (RF16 e RF17)
-  const totalNoMapa = utentesFiltrados.filter((u) => u.lat !== 0 || u.lng !== 0).length;
+  const totalNoMapa = utentesFiltrados.filter((u) => u.lat !== null && u.lng !== null).length;
   const totalUrgentes = utentesFiltrados.filter((u) => {
     const p = u.prioridade.trim().toLowerCase();
     return Boolean(p) && !p.includes('não urgente') && !p.includes('nao urgente');
@@ -134,8 +134,8 @@ const MapaPage: React.FC = () => {
   const abrirEdicaoParaUtente = (utente: Utente) => {
     setModoEdicao(true);
     setUtenteSelecionadoId(String(utente.id));
-    setLatTexto(utente.lat !== 0 ? String(utente.lat) : '');
-    setLngTexto(utente.lng !== 0 ? String(utente.lng) : '');
+    setLatTexto(utente.lat !== null ? String(utente.lat) : '');
+    setLngTexto(utente.lng !== null ? String(utente.lng) : '');
     setErroApi(null);
     setSucessoMsg(null);
   };
@@ -152,8 +152,8 @@ const MapaPage: React.FC = () => {
     if (!utenteSelecionadoId && utentes.length > 0) {
       const primeiro = utentes[0];
       setUtenteSelecionadoId(String(primeiro.id));
-      setLatTexto(primeiro.lat !== 0 ? String(primeiro.lat) : '');
-      setLngTexto(primeiro.lng !== 0 ? String(primeiro.lng) : '');
+      setLatTexto(primeiro.lat !== null ? String(primeiro.lat) : '');
+      setLngTexto(primeiro.lng !== null ? String(primeiro.lng) : '');
     }
   };
 
@@ -163,8 +163,8 @@ const MapaPage: React.FC = () => {
     setSucessoMsg(null);
     const encontrado = utentes.find((u) => String(u.id) === novoId);
     if (encontrado) {
-      setLatTexto(encontrado.lat !== 0 ? String(encontrado.lat) : '');
-      setLngTexto(encontrado.lng !== 0 ? String(encontrado.lng) : '');
+      setLatTexto(encontrado.lat !== null ? String(encontrado.lat) : '');
+      setLngTexto(encontrado.lng !== null ? String(encontrado.lng) : '');
     } else {
       setLatTexto('');
       setLngTexto('');
@@ -298,7 +298,7 @@ const MapaPage: React.FC = () => {
                     {utentes.map((u) => (
                       <option key={u.id} value={String(u.id)}>
                         {u.numeroUtente} — {u.nome}
-                        {u.lat === 0 && u.lng === 0 ? ' (sem coordenadas)' : ''}
+                        {u.lat === null || u.lng === null ? ' (sem coordenadas)' : ''}
                       </option>
                     ))}
                   </select>
@@ -383,7 +383,10 @@ const MapaPage: React.FC = () => {
       )}
 
       {/* Mapa */}
-      <div className="flex-grow-1" style={{ minHeight: '450px' }}>
+      {/* Altura explícita (não percentagem): o Leaflet fica dentro de um .card com h-100,
+          mas uma div com apenas flex-grow não dá uma altura "definida" aos filhos em
+          percentagem, e o mapa fica com 0px de altura. */}
+      <div style={{ height: 'max(450px, calc(100vh - 280px))' }}>
         <MapaLeaflet
           utentes={utentesFiltrados}
           modoEdicao={modoEdicao}
