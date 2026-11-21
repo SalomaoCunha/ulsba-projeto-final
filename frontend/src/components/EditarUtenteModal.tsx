@@ -209,6 +209,16 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
           </Form.Group>
 
           <Form.Group className="mb-3">
+            <Form.Label>Situação Clínica</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={rascunho.situacaoClinica.join('\n')}
+              onChange={(e) => setRascunho({ ...rascunho, situacaoClinica: e.target.value.split('\n') })}
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
             <Form.Label>Notas</Form.Label>
             <Form.Control
               value={rascunho.notas}
