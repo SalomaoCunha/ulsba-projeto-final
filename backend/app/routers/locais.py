@@ -21,6 +21,11 @@ def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user))
     return conn.execute(query).fetchall()
 
 
+@router.get("/concelhos")
+def listar_concelhos(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    return conn.execute("SELECT id, nome FROM concelho ORDER BY nome").fetchall()
+
+
 @router.post("", status_code=201)
 def criar(dados: LocalCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     # A tabela `local` não tem coluna criado_por, por isso não passamos

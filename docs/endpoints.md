@@ -45,6 +45,7 @@ todas as equipas em vez de só às suas.
 | Método | Rota | Descrição | Perfis |
 |---|---|---|---|
 | GET | /locais | Lista locais ativos (id, tipo, nome, morada, localidade, concelho) | todos |
+| GET | /locais/concelhos | Lista concelhos (id, nome) para criar locais | todos |
 | POST | /locais | Criar local (morada + concelho; coordenadas opcionais, fornecidas pelo cliente, sem geocoding externo) | coordenador, admin |
 
 ## Níveis (referência)

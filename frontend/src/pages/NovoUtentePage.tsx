@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUtente } from '../services/utenteService';
-import { getLocais } from '../services/localService';
-import type { Local } from '../types/local';
+import { createLocal, getConcelhos, getLocais } from '../services/localService';
+import MapaLeaflet from '../components/MapaLeaflet';
+import { coordenadasEmPortugalContinental } from '../utils/coordenadasPortugal';
+import type { Concelho, Local, NovoLocalPayload, TipoLocalCodigo } from '../types/local';
 
 const LABEL_GENERO: Record<string, string> = {
   FEMININO: 'Feminino',
@@ -11,11 +13,46 @@ const LABEL_GENERO: Record<string, string> = {
   NAO_INDICADO: 'Prefere não indicar',
 };
 
+const TIPOS_LOCAL: { codigo: TipoLocalCodigo; label: string }[] = [
+  { codigo: 'DOMICILIO', label: 'Domicílio' },
+  { codigo: 'LAR', label: 'Lar' },
+  { codigo: 'UNIDADE_CUIDADOS_CONTINUADOS', label: 'Unidade de cuidados continuados' },
+  { codigo: 'UNIDADE_CUIDADOS_PALIATIVOS', label: 'Unidade de cuidados paliativos' },
+  { codigo: 'BASE', label: 'Base' },
+];
+
+const PONTO_INICIAL = { lat: 38.016, lng: -7.872 };
+
+interface DadosLocalFormulario {
+  tipo: TipoLocalCodigo;
+  nome: string;
+  morada: string;
+  codigoPostal: string;
+  localidade: string;
+  concelhoId: string;
+  contactoTelefonico: string;
+}
+
 const NovoUtentePage: React.FC = () => {
   const navigate = useNavigate();
   const [locais, setLocais] = useState<Local[]>([]);
+  const [concelhos, setConcelhos] = useState<Concelho[]>([]);
+  const [carregandoReferencias, setCarregandoReferencias] = useState(true);
   const [aGuardar, setAGuardar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroLocal, setErroLocal] = useState<string | null>(null);
+  const [modoCriarLocal, setModoCriarLocal] = useState(false);
+  const [pontoLocal, setPontoLocal] = useState(PONTO_INICIAL);
+  const [pontoLocalConfirmado, setPontoLocalConfirmado] = useState(false);
+  const [dadosLocal, setDadosLocal] = useState<DadosLocalFormulario>({
+    tipo: 'DOMICILIO',
+    nome: '',
+    morada: '',
+    codigoPostal: '',
+    localidade: '',
+    concelhoId: '',
+    contactoTelefonico: '',
+  });
 
   const [formData, setFormData] = useState({
     numeroUtente: '',
@@ -29,30 +66,120 @@ const NovoUtentePage: React.FC = () => {
   });
 
   useEffect(() => {
-    getLocais().then(setLocais).catch((erro) => console.error('Falha ao carregar locais:', erro));
+    Promise.all([getLocais(), getConcelhos()])
+      .then(([locaisCarregados, concelhosCarregados]) => {
+        setLocais(locaisCarregados);
+        setConcelhos(concelhosCarregados);
+        if (locaisCarregados.length === 0) setModoCriarLocal(true);
+      })
+      .catch((erroCarregamento) => {
+        console.error('Falha ao carregar locais e concelhos:', erroCarregamento);
+        setErro('Não foi possível carregar os locais. Atualiza a página e tenta novamente.');
+      })
+      .finally(() => setCarregandoReferencias(false));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErro(null);
   };
+
+  const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setDadosLocal((atual) => ({
+      ...atual,
+      [name]: name === 'tipo' ? (value as TipoLocalCodigo) : value,
+    }));
+    setErroLocal(null);
+    if (['morada', 'codigoPostal', 'localidade', 'concelhoId'].includes(name)) {
+      setPontoLocalConfirmado(false);
+    }
+  };
+
+  const iniciarCriacaoLocal = () => {
+    setModoCriarLocal(true);
+    setPontoLocal(PONTO_INICIAL);
+    setPontoLocalConfirmado(false);
+    setErroLocal(null);
+  };
+
+  const validarLocal = (): string | null => {
+    if (!dadosLocal.morada.trim()) return 'Indica a morada do local.';
+    if (!dadosLocal.localidade.trim()) return 'Indica a localidade do local.';
+    if (!dadosLocal.concelhoId) return 'Seleciona o concelho do local.';
+    if (dadosLocal.tipo !== 'DOMICILIO' && !dadosLocal.nome.trim()) {
+      return 'Indica o nome do local.';
+    }
+    if (!pontoLocalConfirmado) {
+      return 'Confirma ou ajusta a localização no mapa antes de continuar.';
+    }
+    if (!coordenadasEmPortugalContinental(pontoLocal.lat, pontoLocal.lng)) {
+      return 'A localização tem de estar dentro de Portugal continental.';
+    }
+    return null;
+  };
+
+  const pontoLocalValido = coordenadasEmPortugalContinental(pontoLocal.lat, pontoLocal.lng);
 
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.localId) {
+    if (!modoCriarLocal && !formData.localId) {
       setErro('Escolhe o local onde o utente se encontra.');
       return;
     }
 
+    if (modoCriarLocal) {
+      const erroValidacaoLocal = validarLocal();
+      if (erroValidacaoLocal) {
+        setErroLocal(erroValidacaoLocal);
+        return;
+      }
+    }
+
     setErro(null);
+    setErroLocal(null);
     setAGuardar(true);
     try {
+      let localId = formData.localId ? Number(formData.localId) : undefined;
+
+      if (modoCriarLocal) {
+        const payloadLocal: NovoLocalPayload = {
+          tipo: dadosLocal.tipo,
+          nome: dadosLocal.nome.trim() || null,
+          morada: dadosLocal.morada.trim(),
+          codigoPostal: dadosLocal.codigoPostal.trim() || null,
+          localidade: dadosLocal.localidade.trim(),
+          concelhoId: Number(dadosLocal.concelhoId),
+          contactoTelefonico: dadosLocal.contactoTelefonico.trim() || null,
+          lat: pontoLocal.lat,
+          lng: pontoLocal.lng,
+        };
+        const criado = await createLocal(payloadLocal);
+        localId = criado.id;
+        const localSelecionado: Local = {
+          id: criado.id,
+          tipo: payloadLocal.tipo,
+          nome: payloadLocal.nome ?? null,
+          morada: payloadLocal.morada,
+          localidade: payloadLocal.localidade,
+          concelho: concelhos.find((concelho) => concelho.id === payloadLocal.concelhoId)?.nome ?? '',
+        };
+        setLocais((atuais) => [...atuais, localSelecionado]);
+        setFormData((atual) => ({ ...atual, localId: String(criado.id) }));
+        setModoCriarLocal(false);
+      }
+
+      if (localId === undefined) {
+        throw new Error('Escolhe ou cria o local onde o utente se encontra.');
+      }
+
       await createUtente({
         numeroUtente: formData.numeroUtente,
         nome: formData.nome,
         genero: formData.genero,
         dataNascimento: formData.dataNascimento,
-        localId: Number(formData.localId),
+        localId,
         contactoTelefonico: formData.contacto,
         situacaoClinica: formData.situacaoClinica,
         notas: formData.notas,
@@ -60,7 +187,11 @@ const NovoUtentePage: React.FC = () => {
       navigate('/utentes');
     } catch (erro) {
       console.error('Falha ao criar utente:', erro);
-      setErro('Não foi possível criar o utente. Confirma os dados e tenta novamente.');
+      setErro(
+        erro instanceof Error
+          ? erro.message
+          : 'Não foi possível criar o utente. Confirma os dados e tenta novamente.',
+      );
     } finally {
       setAGuardar(false);
     }
@@ -152,24 +283,195 @@ const NovoUtentePage: React.FC = () => {
             </div>
 
             <div className="col-12">
-              <label className="form-label text-muted small fw-medium">Local *</label>
-              <select
-                className="form-select bg-light"
-                name="localId"
-                value={formData.localId}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Escolhe o local onde o utente se encontra...</option>
-                {locais.map((local) => (
-                  <option key={local.id} value={local.id}>
-                    {local.nome ? `${local.nome} — ` : ''}{local.morada}, {local.localidade}
-                  </option>
-                ))}
-              </select>
-              <div className="form-text">
-                Não encontras o local? É preciso criá-lo primeiro em Locais.
-              </div>
+              {modoCriarLocal ? (
+                <section className="border rounded p-3" aria-labelledby="titulo-novo-local">
+                  <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <h6 id="titulo-novo-local" className="fw-bold mb-0">Criar local nesta ficha</h6>
+                    {locais.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => {
+                          setModoCriarLocal(false);
+                          setErroLocal(null);
+                        }}
+                        disabled={aGuardar}
+                      >
+                        Escolher local existente
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label htmlFor="novo-local-tipo" className="form-label text-muted small fw-medium">
+                        Tipo de local *
+                      </label>
+                      <select
+                        id="novo-local-tipo"
+                        className="form-select bg-light"
+                        name="tipo"
+                        value={dadosLocal.tipo}
+                        onChange={handleLocalChange}
+                        required
+                      >
+                        {TIPOS_LOCAL.map((tipo) => (
+                          <option key={tipo.codigo} value={tipo.codigo}>{tipo.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-8">
+                      <label htmlFor="novo-local-nome" className="form-label text-muted small fw-medium">
+                        Nome {dadosLocal.tipo !== 'DOMICILIO' ? '*' : '(opcional)'}
+                      </label>
+                      <input
+                        id="novo-local-nome"
+                        className="form-control bg-light"
+                        name="nome"
+                        value={dadosLocal.nome}
+                        onChange={handleLocalChange}
+                        required={dadosLocal.tipo !== 'DOMICILIO'}
+                        placeholder="Ex.: nome da instituição"
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label htmlFor="novo-local-morada" className="form-label text-muted small fw-medium">
+                        Morada *
+                      </label>
+                      <input
+                        id="novo-local-morada"
+                        className="form-control bg-light"
+                        name="morada"
+                        value={dadosLocal.morada}
+                        onChange={handleLocalChange}
+                        required
+                        autoComplete="street-address"
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label htmlFor="novo-local-codigo-postal" className="form-label text-muted small fw-medium">
+                        Código postal
+                      </label>
+                      <input
+                        id="novo-local-codigo-postal"
+                        className="form-control bg-light"
+                        name="codigoPostal"
+                        value={dadosLocal.codigoPostal}
+                        onChange={handleLocalChange}
+                        autoComplete="postal-code"
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label htmlFor="novo-local-localidade" className="form-label text-muted small fw-medium">
+                        Localidade *
+                      </label>
+                      <input
+                        id="novo-local-localidade"
+                        className="form-control bg-light"
+                        name="localidade"
+                        value={dadosLocal.localidade}
+                        onChange={handleLocalChange}
+                        required
+                        autoComplete="address-level2"
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <label htmlFor="novo-local-concelho" className="form-label text-muted small fw-medium">
+                        Concelho *
+                      </label>
+                      <select
+                        id="novo-local-concelho"
+                        className="form-select bg-light"
+                        name="concelhoId"
+                        value={dadosLocal.concelhoId}
+                        onChange={handleLocalChange}
+                        required
+                      >
+                        <option value="">Selecionar concelho</option>
+                        {concelhos.map((concelho) => (
+                          <option key={concelho.id} value={concelho.id}>{concelho.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <label htmlFor="novo-local-contacto" className="form-label text-muted small fw-medium">
+                        Telefone do local
+                      </label>
+                      <input
+                        id="novo-local-contacto"
+                        className="form-control bg-light"
+                        name="contactoTelefonico"
+                        value={dadosLocal.contactoTelefonico}
+                        onChange={handleLocalChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="alert alert-info small mt-3 mb-2">
+                    A morada não é enviada a serviços de geocodificação. O mapa usa tiles públicos do
+                    OpenStreetMap, que podem revelar a área visualizada ao fornecedor. Clique no mapa ou
+                    arraste o pino para definir e confirmar as coordenadas.
+                  </div>
+                  <MapaLeaflet
+                    utentes={[]}
+                    modoEdicao
+                    mostrarLegenda={false}
+                    pontoEdicao={pontoLocal}
+                    pontoEdicaoValido={pontoLocalValido}
+                    onSelecionarPonto={(lat, lng) => {
+                      setPontoLocal({ lat, lng });
+                      setPontoLocalConfirmado(true);
+                      setErroLocal(null);
+                    }}
+                  />
+                  <div className="small mt-2" aria-live="polite">
+                    {pontoLocalConfirmado && pontoLocalValido ? (
+                      <span className="text-success">
+                        Coordenadas confirmadas: {pontoLocal.lat.toFixed(5)}, {pontoLocal.lng.toFixed(5)}.
+                      </span>
+                    ) : pontoLocalConfirmado ? (
+                      <span className="text-danger">
+                        Ponto fora de Portugal continental. Escolhe uma localização dentro do território.
+                      </span>
+                    ) : (
+                      <span className="text-muted">
+                        Pino centrado em Beja. Confirma a localização no mapa antes de guardar.
+                      </span>
+                    )}
+                  </div>
+                  {erroLocal && <div className="alert alert-danger small mt-2 mb-0" role="alert">{erroLocal}</div>}
+                </section>
+              ) : (
+                <>
+                  <label htmlFor="utente-local" className="form-label text-muted small fw-medium">Local *</label>
+                  <select
+                    id="utente-local"
+                    className="form-select bg-light"
+                    name="localId"
+                    value={formData.localId}
+                    onChange={handleChange}
+                    required
+                    disabled={carregandoReferencias || locais.length === 0}
+                  >
+                    <option value="">
+                      {carregandoReferencias ? 'A carregar locais...' : 'Escolhe o local onde o utente se encontra...'}
+                    </option>
+                    {locais.map((local) => (
+                      <option key={local.id} value={local.id}>
+                        {local.nome ? `${local.nome} — ` : ''}{local.morada}, {local.localidade}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm px-0"
+                    onClick={iniciarCriacaoLocal}
+                    disabled={aGuardar || carregandoReferencias}
+                  >
+                    <i className="bi bi-plus-circle me-1"></i>
+                    Criar novo local
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="col-12">
