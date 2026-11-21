@@ -48,6 +48,15 @@ todas as equipas em vez de só às suas.
 | GET | /locais/concelhos | Lista concelhos (id, nome) para criar locais | todos |
 | POST | /locais | Criar local (morada + concelho; coordenadas opcionais, fornecidas pelo cliente, sem geocoding externo) | coordenador, admin |
 
+## Equipas
+
+| Método | Rota | Descrição | Perfis |
+|---|---|---|---|
+| GET | /equipas | Lista equipas visíveis ao utilizador autenticado, com membros atuais | todos |
+| GET | /equipas/profissionais | Lista profissionais disponíveis para compor equipas | todos |
+| POST | /equipas | Criar equipa com código, designação opcional e membros | coordenador, admin |
+| PUT | /equipas/{equipa_id} | Atualizar código, designação e composição da equipa | coordenador, admin |
+
 ## Níveis (referência)
 
 | Método | Rota | Descrição | Perfis |

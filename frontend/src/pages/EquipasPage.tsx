@@ -1,31 +1,130 @@
 import React, { useState, useEffect } from 'react';
-import { getEquipas } from '../services/equipaService';
+import {
+  createEquipa,
+  getEquipas,
+  getProfissionaisEquipa,
+  updateEquipa,
+} from '../services/equipaService';
 import { getViaturas } from '../services/viaturaService';
-import type { Equipa } from '../types/equipa';
+import type { DadosEquipa, Equipa, ProfissionalEquipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
+interface FormularioEquipa {
+  codigo: string;
+  designacao: string;
+  membros: number[];
+}
 
 const EquipasPage: React.FC = () => {
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfissionalEquipa[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [equipaEditandoId, setEquipaEditandoId] = useState<number | null>(null);
+  const [dadosFormulario, setDadosFormulario] = useState<FormularioEquipa>({
+    codigo: '',
+    designacao: '',
+    membros: [],
+  });
+  const [erroEquipa, setErroEquipa] = useState<string | null>(null);
+  const [erroProfissionais, setErroProfissionais] = useState<string | null>(null);
+  const [aGuardar, setAGuardar] = useState(false);
 
   useEffect(() => {
-    comAtrasoMinimo(Promise.allSettled([
-      getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro)),
-      getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)),
-    ])).finally(() => setCarregando(false));
-  }, [])
+    comAtrasoMinimo(
+      Promise.allSettled([
+        getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro)),
+        getViaturas().then(setViaturas).catch((erro) => console.error('Falha ao carregar viaturas:', erro)),
+        getProfissionaisEquipa()
+          .then(setProfissionais)
+          .catch((erro) => {
+            console.error('Falha ao carregar profissionais:', erro);
+            setErroProfissionais('Não foi possível carregar a lista de profissionais.');
+          }),
+      ]),
+    ).finally(() => setCarregando(false));
+  }, []);
 
   const viaturasDaEquipa = (equipa: Equipa) => {
-    return viaturas.filter(v => v.equipa_codigo === equipa.codigo);
-  }
+    return viaturas.filter((viatura) => viatura.equipa_codigo === equipa.codigo);
+  };
 
   const viaturasSemEquipa = () => {
-    return viaturas.filter(v => v.equipa_codigo === null);
-  }
+    return viaturas.filter((viatura) => viatura.equipa_codigo === null);
+  };
+
+  const abrirNovaEquipa = () => {
+    setEquipaEditandoId(null);
+    setDadosFormulario({ codigo: '', designacao: '', membros: [] });
+    setErroEquipa(null);
+    setModalAberto(true);
+  };
+
+  const abrirEdicaoEquipa = (equipa: Equipa) => {
+    setEquipaEditandoId(equipa.id);
+    setDadosFormulario({
+      codigo: equipa.codigo,
+      designacao: equipa.designacao ?? '',
+      membros: equipa.membros.map((membro) => membro.id),
+    });
+    setErroEquipa(null);
+    setModalAberto(true);
+  };
+
+  const fecharModal = () => {
+    if (aGuardar) return;
+    setModalAberto(false);
+    setErroEquipa(null);
+  };
+
+  const alternarMembro = (profissionalId: number, selecionado: boolean) => {
+    setDadosFormulario((atual) => ({
+      ...atual,
+      membros: selecionado
+        ? [...atual.membros, profissionalId]
+        : atual.membros.filter((id) => id !== profissionalId),
+    }));
+  };
+
+  const guardarEquipa = async (evento: React.FormEvent) => {
+    evento.preventDefault();
+    const codigo = dadosFormulario.codigo.trim().toUpperCase();
+    if (!codigo) {
+      setErroEquipa('Indica o código da equipa.');
+      return;
+    }
+
+    setErroEquipa(null);
+    setAGuardar(true);
+    try {
+      const payload: DadosEquipa = {
+        ...dadosFormulario,
+        codigo,
+        designacao: dadosFormulario.designacao.trim() || null,
+      };
+      const guardada = equipaEditandoId === null
+        ? await createEquipa(payload)
+        : await updateEquipa(equipaEditandoId, payload);
+
+      setEquipas((atuais) => {
+        const existe = atuais.some((equipa) => equipa.id === guardada.id);
+        return existe
+          ? atuais.map((equipa) => (equipa.id === guardada.id ? guardada : equipa))
+          : [...atuais, guardada].sort((a, b) => a.codigo.localeCompare(b.codigo));
+      });
+      setModalAberto(false);
+    } catch (erro) {
+      console.error('Falha ao guardar equipa:', erro);
+      setErroEquipa(
+        erro instanceof Error ? erro.message : 'Não foi possível guardar a equipa.',
+      );
+    } finally {
+      setAGuardar(false);
+    }
+  };
 
   if (carregando) {
     return (
@@ -43,9 +142,9 @@ const EquipasPage: React.FC = () => {
           <p className="text-muted mb-0 small">Gestão de equipas, profissionais e viaturas associadas</p>
         </div>
         <button
+          type="button"
           className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
-          disabled
-          title="Em breve"
+          onClick={abrirNovaEquipa}
         >
           <i className="bi bi-plus-lg"></i>
           Nova Equipa
@@ -53,6 +152,11 @@ const EquipasPage: React.FC = () => {
       </div>
 
       {/* Grelha de Cartões por Equipa */}
+      {equipas.length === 0 && (
+        <div className="alert alert-info">
+          Ainda não existem equipas. Usa “Nova Equipa” para criar a primeira.
+        </div>
+      )}
       <div className="row g-3">
         {equipas.map((equipa) => (
           <div key={equipa.id} className="col-12 col-md-6">
@@ -61,19 +165,30 @@ const EquipasPage: React.FC = () => {
               <div className="d-flex justify-content-between align-items-start">
                 <div>
                   <h6 className="fw-bold mb-1">Equipa {equipa.codigo}</h6>
+                  {equipa.designacao && (
+                    <p className="text-muted small mb-2">{equipa.designacao}</p>
+                  )}
                 </div>
-                <button className="btn btn-sm btn-outline-secondary" disabled title="Em breve">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => abrirEdicaoEquipa(equipa)}
+                  aria-label={`Editar equipa ${equipa.codigo}`}
+                  title={`Editar equipa ${equipa.codigo}`}
+                >
                   <i className="bi bi-pencil"></i>
                 </button>
               </div>
 
               <div>
                 <p className="text-muted small fw-medium mb-1">Profissionais</p>
-                {equipa.membros.map((membro) => (
-                  <div key={membro.id}>
-                    {membro.nome + " — " + membro.funcao}
-                  </div>
-                ))}
+                {equipa.membros.length > 0 ? (
+                  equipa.membros.map((membro) => (
+                    <div key={membro.id}>{membro.nome} — {membro.funcao}</div>
+                  ))
+                ) : (
+                  <div className="small text-muted">Sem profissionais associados</div>
+                )}
               </div>
 
               <div>
@@ -100,6 +215,125 @@ const EquipasPage: React.FC = () => {
                 <span className="fw-medium">{viatura.matricula}</span> — {viatura.designacao ?? 'Sem designação'} ({viatura.estado})
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {modalAberto && (
+        <div
+          className="modal d-block"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-equipa-titulo"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 1050 }}
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) fecharModal();
+          }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <form onSubmit={guardarEquipa}>
+                <div className="modal-header">
+                  <h2 id="modal-equipa-titulo" className="modal-title fs-5">
+                    {equipaEditandoId === null ? 'Nova equipa' : 'Editar equipa'}
+                  </h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={fecharModal}
+                    disabled={aGuardar}
+                    aria-label="Fechar"
+                  />
+                </div>
+                <div className="modal-body">
+                  {erroEquipa && <div className="alert alert-danger">{erroEquipa}</div>}
+                  {erroProfissionais && (
+                    <div className="alert alert-warning">{erroProfissionais}</div>
+                  )}
+                  <div className="row g-3">
+                    <div className="col-12 col-md-4">
+                      <label htmlFor="equipa-codigo" className="form-label">Código *</label>
+                      <input
+                        id="equipa-codigo"
+                        className="form-control"
+                        value={dadosFormulario.codigo}
+                        onChange={(evento) => setDadosFormulario((atual) => ({
+                          ...atual,
+                          codigo: evento.target.value,
+                        }))}
+                        maxLength={5}
+                        required
+                      />
+                    </div>
+                    <div className="col-12 col-md-8">
+                      <label htmlFor="equipa-designacao" className="form-label">
+                        Designação (opcional)
+                      </label>
+                      <input
+                        id="equipa-designacao"
+                        className="form-control"
+                        value={dadosFormulario.designacao}
+                        onChange={(evento) => setDadosFormulario((atual) => ({
+                          ...atual,
+                          designacao: evento.target.value,
+                        }))}
+                        maxLength={80}
+                        placeholder="Designação da equipa, sem presumir uma zona territorial"
+                      />
+                    </div>
+                    <div className="col-12">
+                      <p className="form-label mb-2">Membros</p>
+                      {profissionais.length > 0 ? (
+                        <div className="border rounded p-3 d-flex flex-column gap-2">
+                          {profissionais.map((profissional) => {
+                            const selecionado = dadosFormulario.membros.includes(profissional.id);
+                            return (
+                              <label
+                                key={profissional.id}
+                                className="form-check d-flex align-items-center gap-2 mb-0"
+                              >
+                                <input
+                                  className="form-check-input mt-0"
+                                  type="checkbox"
+                                  checked={selecionado}
+                                  disabled={!profissional.ativo && !selecionado}
+                                  onChange={(evento) =>
+                                    alternarMembro(profissional.id, evento.target.checked)
+                                  }
+                                />
+                                <span className="form-check-label">
+                                  {profissional.nome} — {profissional.funcao}
+                                  {!profissional.ativo && ' (inativo)'}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="small text-muted mb-0">Não existem profissionais registados.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={fecharModal}
+                    disabled={aGuardar}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-success"
+                    disabled={aGuardar || Boolean(erroProfissionais)}
+                  >
+                    {aGuardar ? 'A guardar...' : 'Guardar equipa'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

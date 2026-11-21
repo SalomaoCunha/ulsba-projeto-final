@@ -1,5 +1,5 @@
 -- ============================================================================
--- RF40 | Seed ULSBA (ficcional) — COMPATÍVEL COM AS MIGRAÇÕES 0001..0004
+-- RF40 | Seed ULSBA (ficcional) — COMPATÍVEL COM AS MIGRAÇÕES 0001..0005
 -- Âmbito: APENAS Baixo Alentejo (NUTS III/CIMBAL, 13 concelhos).
 -- NÃO É UMA MIGRAÇÃO. Nunca executar em bases clínicas ou partilhadas.
 -- Repetível: 1ª execução insere; execuções seguintes não alteram os dados.
@@ -17,7 +17,7 @@ SELECT pg_advisory_xact_lock(20261109, 40);
 DO $$
 BEGIN
   IF (SELECT count(*) FROM nivel_urgencia WHERE codigo IN ('U0','U1','U2','NU1','NU2') AND ativo) <> 5 THEN
-    RAISE EXCEPTION 'RF40: aplicar previamente as migrações 0001 a 0004';
+    RAISE EXCEPTION 'RF40: aplicar previamente as migrações 0001 a 0005';
   END IF;
   IF (SELECT count(*) FROM nivel_complexidade WHERE codigo IN ('ALTAMENTE_COMPLEXO','COMPLEXO','NAO_COMPLEXO') AND ativo) <> 3 THEN
     RAISE EXCEPTION 'RF40: catálogo IPCPAL incompleto';
@@ -208,8 +208,8 @@ FROM _rf40_prof p JOIN funcao_profissional f ON f.codigo=p.funcao
 WHERE (SELECT aplicar FROM _rf40_exec);
 INSERT INTO equipa(codigo,designacao,viatura_habitual_id,ativa,criada_em)
 SELECT t.codigo,t.nome,v.id,TRUE,TIMESTAMPTZ '2026-06-01 09:00+00'
-FROM (VALUES ('A','Beja e arredores','AA-24-BB'),
-             ('B','Cuba, Serpa e Vidigueira','CC-18-DD')) AS t(codigo,nome,matricula)
+FROM (VALUES ('A',NULL,'AA-24-BB'),
+             ('B',NULL,'CC-18-DD')) AS t(codigo,nome,matricula)
 JOIN viatura v ON v.matricula=t.matricula
 WHERE (SELECT aplicar FROM _rf40_exec);
 INSERT INTO equipa_membro(equipa_id,profissional_id,valido_desde)
