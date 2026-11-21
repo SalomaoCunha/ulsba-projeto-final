@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -146,6 +146,35 @@ class ViaturaResumo(BaseModel):
     equipa_codigo: Optional[str]
 
 
+class ViaturaCriarEditar(BaseModel):
+    matricula: str
+    designacao: Optional[str] = None
+    tipo_motorizacao: str
+    lugares: int
+    autonomia: Optional[float] = None
+    unidade_autonomia: Optional[str] = "KM"
+    estado: str = "OPERACIONAL"
+    data_ultima_revisao: Optional[date] = None
+    periodicidade_revisao_meses: Optional[int] = None
+    equipa_codigo: Optional[str] = None
+
+
+class BloqueioViaturaResumo(BaseModel):
+    id: int
+    viatura_id: int
+    data_inicio: date
+    data_fim: date
+    tipo: Literal["MANUTENCAO", "INDISPONIBILIDADE"]
+    motivo: Optional[str]
+
+
+class BloqueioViaturaCriar(BaseModel):
+    data_inicio: date
+    data_fim: Optional[date] = None
+    tipo: Literal["MANUTENCAO", "INDISPONIBILIDADE"] = "INDISPONIBILIDADE"
+    motivo: Optional[str] = None
+
+
 # Volta
 class VoltaResumo(BaseModel):
     id: int
@@ -158,6 +187,16 @@ class VoltaResumo(BaseModel):
     viatura_matricula: Optional[str]
     partida_prevista: Optional[datetime]
     regresso_previsto: Optional[datetime]
+
+
+class VoltaHorariosReaisAtualizar(BaseModel):
+    partida_real: Optional[datetime] = None
+    regresso_real: Optional[datetime] = None
+
+
+class VisitaHorariosReaisAtualizar(BaseModel):
+    inicio_real: Optional[datetime] = None
+    fim_real: Optional[datetime] = None
 
 
 # Visitas no Calendário (Vista Utente)
