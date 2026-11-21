@@ -155,7 +155,7 @@ const VoltaDetalhePage = () => {
       setRegressoRealHora(extrairHoraInput(atualizada.regressoReal));
       setMensagemSucesso(
         atualizada.resumo && atualizada.resumo.atrasoSaidaMin > 0
-          ? `Saída real registada (+${atualizada.resumo.atrasoSaidaMin} min). Os horários previstos seguintes e o regresso foram ajustados automaticamente.`
+          ? `Saída real registada (+${formatarDuracao(atualizada.resumo.atrasoSaidaMin)}). Os horários previstos seguintes e o regresso foram ajustados automaticamente.`
           : 'Horários reais da volta guardados com sucesso.',
       );
     } catch (erro) {
@@ -193,75 +193,6 @@ const VoltaDetalhePage = () => {
       setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível guardar os horários da visita.');
     } finally {
       setAGuardarVisita(false);
-    }
-  };
-
-  // Atalho para não obrigar a escrever horas à mão: assume que a visita
-  // decorreu tal como previsto. Quem precisar de registar um horário real
-  // diferente continua a poder usar o formulário manual acima.
-  const handleConcluirVisitaRapido = async () => {
-    if (!volta || !visitaSelecionada) return;
-    setMensagemErro(null);
-    setMensagemSucesso(null);
-    setAGuardarVisita(true);
-    try {
-      const atualizada = await registarHorariosReaisVisita(volta.id, visitaSelecionada.visitaId, {
-        inicioReal: visitaSelecionada.inicioPrevisto,
-        fimReal: visitaSelecionada.fimPrevisto,
-      });
-      setVolta(atualizada);
-      setMensagemSucesso(`Visita de ${visitaSelecionada.utenteNome} concluída com o horário previsto.`);
-    } catch (erro) {
-      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível concluir a visita.');
-    } finally {
-      setAGuardarVisita(false);
-    }
-  };
-
-  const [aConcluirTodas, setAConcluirTodas] = useState(false);
-
-  const handleConcluirTodasVisitas = async () => {
-    if (!volta) return;
-    const pendentes = visitas.filter(
-      (v) => v.visitaEstado !== 'CONCLUIDA' && v.visitaEstado !== 'CANCELADA',
-    );
-    if (pendentes.length === 0) return;
-    if (
-      !window.confirm(
-        `Marcar ${pendentes.length} visita(s) como concluída(s), usando o horário previsto de cada uma?`,
-      )
-    ) {
-      return;
-    }
-
-    setMensagemErro(null);
-    setMensagemSucesso(null);
-    setAConcluirTodas(true);
-    try {
-      let atual = volta;
-      let concluidas = 0;
-      // Repete até não haver mais visitas pendentes — concluir uma visita
-      // pode propagar atrasos e mudar o horário previsto das seguintes, por
-      // isso relê sempre a lista mais recente em vez de um array capturado
-      // antes do ciclo começar.
-      while (true) {
-        const visitasAtuais = atual.paragens.flatMap((p) => p.visitas);
-        const proxima = visitasAtuais.find(
-          (v) => v.visitaEstado !== 'CONCLUIDA' && v.visitaEstado !== 'CANCELADA',
-        );
-        if (!proxima) break;
-        atual = await registarHorariosReaisVisita(atual.id, proxima.visitaId, {
-          inicioReal: proxima.inicioPrevisto,
-          fimReal: proxima.fimPrevisto,
-        });
-        concluidas += 1;
-      }
-      setVolta(atual);
-      setMensagemSucesso(`${concluidas} visita(s) concluída(s) com os horários previstos.`);
-    } catch (erro) {
-      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível concluir todas as visitas.');
-    } finally {
-      setAConcluirTodas(false);
     }
   };
 
@@ -345,27 +276,12 @@ const VoltaDetalhePage = () => {
                   <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A confirmar...' : 'Confirmar volta'}</span>
                 </button>
               )}
-              {(volta.estado === 'CONFIRMADA' || volta.estado === 'EM_CURSO') &&
-                visitas.some((v) => v.visitaEstado !== 'CONCLUIDA' && v.visitaEstado !== 'CANCELADA') && (
-                  <button
-                    className="btn btn-sm btn-outline-success d-print-none"
-                    onClick={handleConcluirTodasVisitas}
-                    disabled={aConcluirTodas}
-                    title="Marca todas as visitas por concluir com o respetivo horário previsto"
-                  >
-                    <i className="bi bi-check2-all"></i>
-                    <span className="d-none d-sm-inline">
-                      {' '}
-                      {aConcluirTodas ? 'A concluir visitas...' : 'Concluir todas as visitas'}
-                    </span>
-                  </button>
-                )}
-              {(volta.estado === 'CONFIRMADA' || volta.estado === 'EM_CURSO') && (
+              {volta.estado !== 'CONCLUIDA' && volta.estado !== 'CANCELADA' && (
                 <button
                   className="btn btn-sm btn-success d-print-none"
                   onClick={handleConcluirVolta}
                   disabled={aAtualizarEstado}
-                  title="Só é possível concluir quando não existirem visitas pendentes ou planeadas"
+                  title="Confirma a volta se necessário e conclui, com o horário previsto, qualquer visita ainda em falta"
                 >
                   <i className="bi bi-flag-fill"></i>
                   <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A concluir...' : 'Marcar como feita'}</span>
@@ -481,43 +397,48 @@ const VoltaDetalhePage = () => {
             </div>
           </div>
 
-          {/* Registo de Saída Real e Regresso Real da Volta */}
-          <form onSubmit={handleGuardarHorariosVolta} className="bg-light rounded-3 p-2 px-3 mt-3 d-print-none">
-            <div className="row g-2 align-items-end">
-              <div className="col-12 col-md-4">
-                <div className="small fw-semibold text-dark">
-                  <i className="bi bi-stopwatch me-1 text-success"></i>
-                  Registo real da volta
+          {/* Registo de Saída Real e Regresso Real da Volta — só faz sentido
+              enquanto a volta ainda não está fechada; depois de concluída ou
+              cancelada, os horários reais ficam decididos e mostram-se só como
+              leitura mais acima. */}
+          {volta.estado !== 'CONCLUIDA' && volta.estado !== 'CANCELADA' && (
+            <form onSubmit={handleGuardarHorariosVolta} className="bg-light rounded-3 p-2 px-3 mt-3 d-print-none">
+              <div className="row g-2 align-items-end">
+                <div className="col-12 col-md-4">
+                  <div className="small fw-semibold text-dark">
+                    <i className="bi bi-stopwatch me-1 text-success"></i>
+                    Registo real da volta
+                  </div>
+                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    Saída posterior à prevista ajusta automaticamente visitas e regresso.
+                  </div>
                 </div>
-                <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                  Saída posterior à prevista ajusta automaticamente visitas e regresso.
+                <div className="col-6 col-md-3">
+                  <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Saída real</label>
+                  <input
+                    type="time"
+                    className="form-control form-control-sm"
+                    value={partidaRealHora}
+                    onChange={(e) => setPartidaRealHora(e.target.value)}
+                  />
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Regresso real</label>
+                  <input
+                    type="time"
+                    className="form-control form-control-sm"
+                    value={regressoRealHora}
+                    onChange={(e) => setRegressoRealHora(e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-md-2">
+                  <button type="submit" className="btn btn-success btn-sm w-100" disabled={aGuardarVolta}>
+                    {aGuardarVolta ? 'A guardar...' : 'Atualizar'}
+                  </button>
                 </div>
               </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Saída real</label>
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={partidaRealHora}
-                  onChange={(e) => setPartidaRealHora(e.target.value)}
-                />
-              </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Regresso real</label>
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={regressoRealHora}
-                  onChange={(e) => setRegressoRealHora(e.target.value)}
-                />
-              </div>
-              <div className="col-12 col-md-2">
-                <button type="submit" className="btn btn-success btn-sm w-100" disabled={aGuardarVolta}>
-                  {aGuardarVolta ? 'A guardar...' : 'Atualizar'}
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
 
         {/* Corpo: 3 colunas no desktop, empilhado em mobile */}
@@ -611,48 +532,45 @@ const VoltaDetalhePage = () => {
                     </tbody>
                   </table>
 
-                  {visitaSelecionada.visitaEstado !== 'CONCLUIDA' && visitaSelecionada.visitaEstado !== 'CANCELADA' && (
-                    <button
-                      type="button"
-                      className="btn btn-success btn-sm w-100 mb-2 d-print-none"
-                      onClick={handleConcluirVisitaRapido}
-                      disabled={aGuardarVisita}
-                    >
-                      <i className="bi bi-lightning-charge-fill me-1"></i>
-                      {aGuardarVisita ? 'A concluir...' : 'Concluir agora (usar horário previsto)'}
-                    </button>
-                  )}
-
-                  {/* Registo real da visita (propaga atraso para visitas seguintes) — só
-                      é preciso para quem queira um horário real diferente do previsto. */}
-                  <form onSubmit={handleGuardarHorariosVisita} className="bg-light rounded-3 p-2 mb-3 d-print-none">
-                    <div className="row g-2 align-items-end">
-                      <div className="col-6">
-                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Início real</label>
-                        <input
-                          type="time"
-                          className="form-control form-control-sm"
-                          value={visitaInicioRealHora}
-                          onChange={(e) => setVisitaInicioRealHora(e.target.value)}
-                        />
-                      </div>
-                      <div className="col-6">
-                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Fim real</label>
-                        <input
-                          type="time"
-                          className="form-control form-control-sm"
-                          value={visitaFimRealHora}
-                          onChange={(e) => setVisitaFimRealHora(e.target.value)}
-                        />
-                      </div>
-                      <div className="col-12">
-                        <button type="submit" className="btn btn-outline-success btn-sm w-100" disabled={aGuardarVisita}>
-                          <i className="bi bi-check2-circle me-1"></i>
-                          {aGuardarVisita ? 'A atualizar...' : 'Guardar horários reais da visita'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
+                  {/* Registo real da visita (propaga atraso para visitas seguintes) — opcional:
+                      "Marcar como feita" na volta já fecha sozinha qualquer visita em falta
+                      com o horário previsto; isto só é preciso para quem queira registar um
+                      horário real diferente. Some assim que a volta ou a própria visita já
+                      estiverem fechadas — nessa altura os horários reais já estão decididos e
+                      só fazem sentido como leitura (tabela Previsto/Real acima). */}
+                  {volta.estado !== 'CONCLUIDA' &&
+                    volta.estado !== 'CANCELADA' &&
+                    visitaSelecionada.visitaEstado !== 'CONCLUIDA' &&
+                    visitaSelecionada.visitaEstado !== 'CANCELADA' && (
+                      <form onSubmit={handleGuardarHorariosVisita} className="bg-light rounded-3 p-2 mb-3 d-print-none">
+                        <div className="row g-2 align-items-end">
+                          <div className="col-6">
+                            <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Início real</label>
+                            <input
+                              type="time"
+                              className="form-control form-control-sm"
+                              value={visitaInicioRealHora}
+                              onChange={(e) => setVisitaInicioRealHora(e.target.value)}
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Fim real</label>
+                            <input
+                              type="time"
+                              className="form-control form-control-sm"
+                              value={visitaFimRealHora}
+                              onChange={(e) => setVisitaFimRealHora(e.target.value)}
+                            />
+                          </div>
+                          <div className="col-12">
+                            <button type="submit" className="btn btn-outline-success btn-sm w-100" disabled={aGuardarVisita}>
+                              <i className="bi bi-check2-circle me-1"></i>
+                              {aGuardarVisita ? 'A atualizar...' : 'Guardar horários reais da visita'}
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
 
                   <h6 className="fw-bold small text-uppercase text-muted mb-2">
                     <i className="bi bi-chat-left-text me-1"></i> Ocorrências da visita

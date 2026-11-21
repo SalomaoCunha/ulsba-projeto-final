@@ -348,31 +348,67 @@ def confirmar(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(
     return obter(volta_id, conn, utilizador)
 
 
+def _concluir_visitas_pendentes(volta_id: int, conn) -> None:
+    # "Marcar como feita" não deve obrigar a fechar cada visita à mão
+    # primeiro: fecha aqui, com o horário previsto (assume que decorreu
+    # como planeado), qualquer visita que ainda não esteja concluída ou
+    # cancelada. Quem precisar de um horário real diferente continua a
+    # poder registá-lo antes de concluir, através do formulário da visita —
+    # isto só preenche o que ainda não foi preenchido.
+    conn.execute(
+        """
+        UPDATE visita vis
+        SET inicio_real = COALESCE(vis.inicio_real, vis.inicio_previsto),
+            fim_real = COALESCE(vis.fim_real, vis.fim_previsto),
+            estado = 'CONCLUIDA'
+        FROM paragem p
+        WHERE vis.paragem_id = p.id
+          AND p.volta_id = %s
+          AND vis.estado NOT IN ('CONCLUIDA', 'CANCELADA')
+        """,
+        (volta_id,),
+    )
+    # ck_participacao_minima (migração 0003) exige pelo menos um
+    # participante por visita concluída; usa a composição da equipa da
+    # volta para quem ainda não tinha participantes registados.
+    conn.execute(
+        """
+        INSERT INTO visita_participante (visita_id, profissional_id)
+        SELECT vis.id, vp.profissional_id
+        FROM visita vis
+        JOIN paragem p ON p.id = vis.paragem_id
+        JOIN volta_profissional vp ON vp.volta_id = p.volta_id
+        WHERE p.volta_id = %s
+          AND NOT EXISTS (SELECT 1 FROM visita_participante x WHERE x.visita_id = vis.id)
+        ON CONFLICT DO NOTHING
+        """,
+        (volta_id,),
+    )
+
+
 @router.put("/{volta_id}/concluir")
 def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Único botão para "marcar como feita": trata do que for preciso para lá
+    # chegar (confirmar se ainda estiver em rascunho, fechar visitas em
+    # falta) numa só chamada, em vez de obrigar o utilizador a saber que há
+    # 3 passos distintos antes de poder fechar a volta.
     volta = conn.execute("SELECT estado FROM volta WHERE id = %s", (volta_id,)).fetchone()
     if volta is None:
         raise HTTPException(status_code=404, detail="Volta não encontrada")
-    if volta["estado"] not in ("CONFIRMADA", "EM_CURSO"):
-        raise HTTPException(
-            status_code=400,
-            detail="Só é possível concluir uma volta confirmada ou em curso",
+    if volta["estado"] in ("CONCLUIDA", "CANCELADA"):
+        raise HTTPException(status_code=400, detail="Esta volta já está concluída ou cancelada.")
+
+    if volta["estado"] == "RASCUNHO":
+        conn.execute(
+            """
+            UPDATE volta
+            SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+            WHERE id = %s
+            """,
+            (utilizador["id"], volta_id),
         )
 
-    pendentes = conn.execute(
-        """
-        SELECT count(*) AS total
-        FROM paragem p
-        JOIN visita vis ON vis.paragem_id = p.id
-        WHERE p.volta_id = %s AND vis.estado IN ('PENDENTE', 'PLANEADA', 'EM_CURSO')
-        """,
-        (volta_id,),
-    ).fetchone()["total"]
-    if pendentes > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Há {pendentes} visita(s) por concluir ou cancelar antes de fechar a volta",
-        )
+    _concluir_visitas_pendentes(volta_id, conn)
 
     conn.execute("UPDATE volta SET estado = 'CONCLUIDA' WHERE id = %s", (volta_id,))
     _commit_ou_erro(conn)

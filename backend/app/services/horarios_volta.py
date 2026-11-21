@@ -31,6 +31,15 @@ def _minutos_entre(inicio: datetime, fim: datetime) -> int:
     return int(round((fim - inicio).total_seconds() / 60))
 
 
+def formatar_minutos_como_duracao(minutos: int) -> str:
+    # Mesma regra do formatarDuracao() do frontend (VoltaDetalhePage.tsx):
+    # "125 min" lê-se pior do que "2h 5m" numa frase para o coordenador.
+    horas, mins = divmod(minutos, 60)
+    if horas <= 0:
+        return f"{mins} min"
+    return f"{horas}h {mins}m" if mins > 0 else f"{horas}h"
+
+
 @dataclass
 class VisitaAgendaItem:
     visita_id: int
@@ -80,7 +89,8 @@ def avaliar_regresso_beja(
         excesso = _minutos_entre(limite_beja, referencia_lisboa)
         aviso = (
             f"Atenção: o atraso empurra o regresso para as {referencia_lisboa.strftime('%H:%M')}, "
-            f"ultrapassando em {excesso} min a hora limite de regresso a Beja ({hora_limite.strftime('%H:%M')})."
+            f"ultrapassando em {formatar_minutos_como_duracao(excesso)} a hora limite de regresso a Beja "
+            f"({hora_limite.strftime('%H:%M')})."
         )
         return True, excesso, aviso
 
