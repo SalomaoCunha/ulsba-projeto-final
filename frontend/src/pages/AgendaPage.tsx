@@ -1,18 +1,27 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { Calendar, dateFnsLocalizer, type EventProps, type ToolbarProps, type SlotInfo } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import {
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  startOfMonth,
+  endOfMonth,
+  endOfDay,
+  isSameDay,
+} from 'date-fns';
 import { pt } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getVoltas, getVisitasAgenda } from '../services/voltaService';
 import { getEquipas } from '../services/equipaService';
-import { getViaturas } from '../services/viaturaService';
+import { getViaturas, getBloqueiosViaturas, viaturaBloqueadaNoDia } from '../services/viaturaService';
 import { getUtentes } from '../services/utenteService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import type { Volta, EstadoVolta, VisitaAgenda, EstadoVisita } from '../types/volta';
 import type { Equipa } from '../types/equipa';
-import type { Viatura } from '../types/viatura';
+import type { BloqueioViatura, Viatura } from '../types/viatura';
 import type { Utente } from '../types/utente';
 import EcraCarregamento from '../components/EcraCarregamento';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
@@ -85,9 +94,34 @@ type EventoAgenda =
       end: Date;
       cor: string;
       resource: VisitaAgenda;
+    }
+  | {
+      tipo: 'bloqueio_viatura';
+      id: number;
+      title: string;
+      start: Date;
+      end: Date;
+      matricula: string;
+      resource: BloqueioViatura;
     };
 
 function EventoCalendario({ event }: EventProps<EventoAgenda>) {
+  if (event.tipo === 'bloqueio_viatura') {
+    const tipoLabel = event.resource.tipo === 'MANUTENCAO' ? 'Manutenção' : 'Indisponível';
+    return (
+      <div className="agenda-evento">
+        <div className="fw-semibold text-truncate">
+          <i className="bi bi-slash-circle me-1"></i>
+          {event.matricula}
+        </div>
+        <div className="small text-truncate">
+          {tipoLabel}
+          {event.resource.motivo ? ` · ${event.resource.motivo}` : ''}
+        </div>
+      </div>
+    );
+  }
+
   if (event.tipo === 'visita') {
     const inicio = event.resource.inicioPrevisto ?? event.resource.inicioReal;
     const fim = event.resource.fimPrevisto ?? event.resource.fimReal;
@@ -137,6 +171,7 @@ const AgendaPage = () => {
   const [voltas, setVoltas] = useState<Volta[]>([]);
   const [visitas, setVisitas] = useState<VisitaAgenda[]>([]);
   const [voltasDoMes, setVoltasDoMes] = useState<Volta[]>([]);
+  const [bloqueiosViaturas, setBloqueiosViaturas] = useState<BloqueioViatura[]>([]);
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [utentes, setUtentes] = useState<Utente[]>([]);
@@ -157,6 +192,7 @@ const AgendaPage = () => {
 
   const [dataAtual, setDataAtual] = useState(new Date());
   const [diaSelecionado, setDiaSelecionado] = useState<Date | null>(null);
+  const [mostrarFormularioNovaVolta, setMostrarFormularioNovaVolta] = useState(false);
 
   const intervalo = useMemo(() => ({
     dataInicio: format(startOfMonth(dataAtual), 'yyyy-MM-dd'),
@@ -172,6 +208,14 @@ const AgendaPage = () => {
       getUtentes().then(setUtentes),
     ])).finally(() => setCarregando(false));
   }, []);
+
+  const mapaMatriculas = useMemo(() => {
+    const mapa = new Map<number, string>();
+    for (const v of viaturas) {
+      mapa.set(v.id, v.matricula);
+    }
+    return mapa;
+  }, [viaturas]);
 
   // Lista única de profissionais extraída das equipas a que o utilizador tem acesso
   const profissionais = useMemo<ProfissionalOpcao[]>(() => {
@@ -218,13 +262,16 @@ const AgendaPage = () => {
       .catch((erro) => console.error('Falha ao carregar voltas:', erro));
   }, [vista, intervalo, equipaId, profissionalId, viaturaId, estadoVolta, utenteId, estadoVisita]);
 
-  // Sem os filtros da UI de propósito: usada só para saber que equipa/viatura
-  // já está ocupada num dia, independentemente do que está selecionado nos
-  // selects de filtro (senão uma equipa "escondida" pelo filtro parecia livre).
-  const recarregarVoltasDoMes = useCallback(() => {
-    return getVoltas(intervalo)
-      .then(setVoltasDoMes)
-      .catch((erro) => console.error('Falha ao carregar voltas do mês:', erro));
+  // Sem filtros de equipa/viatura para saber exatamente o que está ocupado/bloqueado no mês
+  const recarregarVoltasEBloqueiosDoMes = useCallback(() => {
+    return Promise.all([
+      getVoltas(intervalo)
+        .then(setVoltasDoMes)
+        .catch((erro) => console.error('Falha ao carregar voltas do mês:', erro)),
+      getBloqueiosViaturas(intervalo)
+        .then(setBloqueiosViaturas)
+        .catch((erro) => console.error('Falha ao carregar bloqueios de viaturas:', erro)),
+    ]);
   }, [intervalo]);
 
   useEffect(() => {
@@ -232,13 +279,22 @@ const AgendaPage = () => {
   }, [recarregarDadosVista]);
 
   useEffect(() => {
-    recarregarVoltasDoMes();
-  }, [recarregarVoltasDoMes]);
+    recarregarVoltasEBloqueiosDoMes();
+  }, [recarregarVoltasEBloqueiosDoMes]);
 
   const mudarVista = (novaVista: VistaAgenda) => {
     setVista(novaVista);
     setDiaSelecionado(null);
+    setMostrarFormularioNovaVolta(false);
   };
+
+  const bloqueiosVisiveisNoCalendario = useMemo(() => {
+    if (vista === 'utente') return [];
+    if (viaturaId !== undefined) {
+      return bloqueiosViaturas.filter((b) => b.viatura_id === viaturaId);
+    }
+    return bloqueiosViaturas;
+  }, [vista, viaturaId, bloqueiosViaturas]);
 
   const eventos = useMemo<EventoAgenda[]>(() => {
     if (vista === 'utente') {
@@ -254,7 +310,7 @@ const AgendaPage = () => {
       }));
     }
 
-    return voltas.map((volta) => ({
+    const eventosVoltas: EventoAgenda[] = voltas.map((volta) => ({
       tipo: 'volta',
       id: volta.id,
       voltaId: volta.id,
@@ -264,11 +320,58 @@ const AgendaPage = () => {
       cor: COR_ESTADO_VOLTA[volta.estado],
       resource: volta,
     }));
-  }, [vista, voltas, visitas]);
 
-  const aoEstilizarEvento = useCallback((evento: EventoAgenda) => ({
-    style: { backgroundColor: evento.cor, border: 'none' },
-  }), []);
+    const eventosBloqueios: EventoAgenda[] = bloqueiosVisiveisNoCalendario.map((bloqueio) => {
+      const matricula = mapaMatriculas.get(bloqueio.viatura_id) ?? `Viatura #${bloqueio.viatura_id}`;
+      return {
+        tipo: 'bloqueio_viatura',
+        id: bloqueio.id,
+        title: `${matricula} bloqueada`,
+        start: parse(bloqueio.data_inicio, 'yyyy-MM-dd', new Date()),
+        end: endOfDay(parse(bloqueio.data_fim, 'yyyy-MM-dd', new Date())),
+        matricula,
+        resource: bloqueio,
+      };
+    });
+
+    return [...eventosVoltas, ...eventosBloqueios];
+  }, [vista, voltas, visitas, bloqueiosVisiveisNoCalendario, mapaMatriculas]);
+
+  const aoEstilizarEvento = useCallback((evento: EventoAgenda) => {
+    if (evento.tipo === 'bloqueio_viatura') {
+      const manutencao = evento.resource.tipo === 'MANUTENCAO';
+      return {
+        style: {
+          backgroundColor: manutencao ? 'rgba(253, 126, 20, 0.22)' : 'rgba(220, 53, 69, 0.20)',
+          color: manutencao ? '#7a3b00' : '#842029',
+          border: `1px dashed ${manutencao ? 'rgba(253, 126, 20, 0.7)' : 'rgba(220, 53, 69, 0.65)'}`,
+          opacity: 0.85,
+        },
+      };
+    }
+
+    return {
+      style: { backgroundColor: evento.cor, border: 'none' },
+    };
+  }, []);
+
+  // Quando uma viatura específica está filtrada, marca os dias bloqueados com cor mais transparente
+  const aoEstilizarDia = useCallback(
+    (dataDia: Date) => {
+      if (vista === 'utente' || viaturaId === undefined) return {};
+      const diaIso = format(dataDia, 'yyyy-MM-dd');
+      const bloqueio = viaturaBloqueadaNoDia(bloqueiosViaturas, viaturaId, diaIso);
+      if (!bloqueio) return {};
+
+      const manutencao = bloqueio.tipo === 'MANUTENCAO';
+      return {
+        style: {
+          backgroundColor: manutencao ? 'rgba(253, 126, 20, 0.12)' : 'rgba(220, 53, 69, 0.11)',
+        },
+      };
+    },
+    [vista, viaturaId, bloqueiosViaturas],
+  );
 
   const voltasDoDia = useMemo(() => {
     if (!diaSelecionado) return [];
@@ -281,6 +384,19 @@ const AgendaPage = () => {
       isSameDay(new Date(visita.inicioPrevisto ?? visita.dataVolta), diaSelecionado),
     );
   }, [diaSelecionado, visitas]);
+
+  const bloqueiosDoDia = useMemo(() => {
+    if (!diaSelecionado) return [];
+    const diaIso = format(diaSelecionado, 'yyyy-MM-dd');
+    return bloqueiosVisiveisNoCalendario.filter(
+      (b) => b.data_inicio <= diaIso && b.data_fim >= diaIso,
+    );
+  }, [diaSelecionado, bloqueiosVisiveisNoCalendario]);
+
+  const abrirDia = (data: Date) => {
+    setDiaSelecionado(data);
+    setMostrarFormularioNovaVolta(false);
+  };
 
   if (carregando) {
     return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
@@ -374,7 +490,9 @@ const AgendaPage = () => {
             >
               <option value="">Todas as viaturas</option>
               {viaturas.map((viatura) => (
-                <option key={viatura.id} value={viatura.id}>{viatura.matricula}</option>
+                <option key={viatura.id} value={viatura.id}>
+                  {viatura.matricula} {viatura.designacao ? `— ${viatura.designacao}` : ''}
+                </option>
               ))}
             </select>
 
@@ -430,11 +548,18 @@ const AgendaPage = () => {
             endAccessor="end"
             components={{ event: EventoCalendario, toolbar: BarraCalendario }}
             eventPropGetter={aoEstilizarEvento}
+            dayPropGetter={aoEstilizarDia}
             date={dataAtual}
             onNavigate={setDataAtual}
-            onSelectEvent={(evento) => navigate(`/agenda/voltas/${evento.voltaId}`)}
+            onSelectEvent={(evento) => {
+              if (evento.tipo === 'bloqueio_viatura') {
+                abrirDia(evento.start);
+                return;
+              }
+              navigate(`/agenda/voltas/${evento.voltaId}`);
+            }}
             selectable
-            onSelectSlot={(slot: SlotInfo) => setDiaSelecionado(slot.start)}
+            onSelectSlot={(slot: SlotInfo) => abrirDia(slot.start)}
             views={['month']}
             defaultView="month"
             messages={MENSAGENS_PT}
@@ -442,19 +567,21 @@ const AgendaPage = () => {
           />
         </div>
 
-        {/* Legenda adaptada ao tipo de entidade exibida (Volta vs. Visita) */}
+        {/* Legenda */}
         <div className="d-flex flex-wrap gap-3 mt-3 small text-muted">
-          {vista === 'utente'
-            ? (Object.keys(LABEL_ESTADO_VISITA) as EstadoVisita[]).map((chave) => (
-                <span key={chave} className="d-flex align-items-center gap-1">
-                  <span
-                    className="rounded-circle d-inline-block"
-                    style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VISITA[chave] }}
-                  />
-                  {LABEL_ESTADO_VISITA[chave]}
-                </span>
-              ))
-            : (Object.keys(LABEL_ESTADO_VOLTA) as EstadoVolta[]).map((chave) => (
+          {vista === 'utente' ? (
+            (Object.keys(LABEL_ESTADO_VISITA) as EstadoVisita[]).map((chave) => (
+              <span key={chave} className="d-flex align-items-center gap-1">
+                <span
+                  className="rounded-circle d-inline-block"
+                  style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VISITA[chave] }}
+                />
+                {LABEL_ESTADO_VISITA[chave]}
+              </span>
+            ))
+          ) : (
+            <>
+              {(Object.keys(LABEL_ESTADO_VOLTA) as EstadoVolta[]).map((chave) => (
                 <span key={chave} className="d-flex align-items-center gap-1">
                   <span
                     className="rounded-circle d-inline-block"
@@ -463,6 +590,20 @@ const AgendaPage = () => {
                   {LABEL_ESTADO_VOLTA[chave]}
                 </span>
               ))}
+              <span className="d-flex align-items-center gap-1">
+                <span
+                  className="rounded d-inline-block"
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    backgroundColor: 'rgba(220, 53, 69, 0.22)',
+                    border: '1px dashed rgba(220, 53, 69, 0.7)',
+                  }}
+                />
+                Viatura indisponível / bloqueada
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -473,6 +614,33 @@ const AgendaPage = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {/* Bloqueios de viaturas ativos neste dia */}
+          {vista !== 'utente' && bloqueiosDoDia.length > 0 && (
+            <div className="mb-3">
+              <div className="small fw-semibold text-danger mb-1">
+                <i className="bi bi-slash-circle me-1"></i>
+                Viaturas bloqueadas neste dia
+              </div>
+              {bloqueiosDoDia.map((bloq) => (
+                <div
+                  key={bloq.id}
+                  className="small rounded px-2 py-1 mb-1"
+                  style={{
+                    backgroundColor:
+                      bloq.tipo === 'MANUTENCAO'
+                        ? 'rgba(253, 126, 20, 0.15)'
+                        : 'rgba(220, 53, 69, 0.14)',
+                    color: bloq.tipo === 'MANUTENCAO' ? '#7a3b00' : '#842029',
+                  }}
+                >
+                  <strong>{mapaMatriculas.get(bloq.viatura_id) ?? `Viatura #${bloq.viatura_id}`}</strong> —{' '}
+                  {bloq.tipo === 'MANUTENCAO' ? 'Manutenção' : 'Indisponibilidade pontual'}
+                  {bloq.motivo ? ` (${bloq.motivo})` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+
           {vista === 'utente' ? (
             visitasDoDia.length === 0 ? (
               <p className="text-muted small mb-0">
@@ -501,39 +669,52 @@ const AgendaPage = () => {
                 </button>
               ))
             )
-          ) : voltasDoDia.length === 0 ? (
+          ) : voltasDoDia.length === 0 || mostrarFormularioNovaVolta ? (
             diaSelecionado && (
               <PainelConstrucaoRota
                 data={diaSelecionado}
                 equipas={equipas}
                 viaturas={viaturas}
+                bloqueiosViaturas={bloqueiosViaturas}
+                viaturaIdInicial={viaturaId}
                 utentes={utentes}
                 voltasDoMes={voltasDoMes}
                 onCriada={() => {
                   setDiaSelecionado(null);
+                  setMostrarFormularioNovaVolta(false);
                   recarregarDadosVista();
-                  recarregarVoltasDoMes();
+                  recarregarVoltasEBloqueiosDoMes();
                 }}
               />
             )
           ) : (
-            voltasDoDia.map((volta) => (
+            <>
+              {voltasDoDia.map((volta) => (
+                <button
+                  key={volta.id}
+                  type="button"
+                  className="d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start py-2 border-bottom"
+                  onClick={() => navigate(`/agenda/voltas/${volta.id}`)}
+                >
+                  <div>
+                    <div className="fw-medium">{formatarHora(volta.partidaPrevista)} → {formatarHora(volta.regressoPrevisto)}</div>
+                    <div className="small text-muted">{volta.equipaCodigo ?? 'Sem equipa'} · {volta.viaturaMatricula ?? 'Sem viatura'}</div>
+                  </div>
+                  <span
+                    className="rounded-circle d-inline-block flex-shrink-0"
+                    style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VOLTA[volta.estado] }}
+                  />
+                </button>
+              ))}
               <button
-                key={volta.id}
                 type="button"
-                className="d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start py-2 border-bottom"
-                onClick={() => navigate(`/agenda/voltas/${volta.id}`)}
+                className="btn btn-outline-success btn-sm w-100 mt-3"
+                onClick={() => setMostrarFormularioNovaVolta(true)}
               >
-                <div>
-                  <div className="fw-medium">{formatarHora(volta.partidaPrevista)} → {formatarHora(volta.regressoPrevisto)}</div>
-                  <div className="small text-muted">{volta.equipaCodigo ?? 'Sem equipa'} · {volta.viaturaMatricula ?? 'Sem viatura'}</div>
-                </div>
-                <span
-                  className="rounded-circle d-inline-block flex-shrink-0"
-                  style={{ width: '10px', height: '10px', backgroundColor: COR_ESTADO_VOLTA[volta.estado] }}
-                />
+                <i className="bi bi-plus-lg me-1"></i>
+                Agendar outra volta neste dia
               </button>
-            ))
+            </>
           )}
         </Modal.Body>
       </Modal>
