@@ -9,6 +9,7 @@ from app.schemas import (
     CoordenadasAtualizar,
     EquipaResponsavelAlterar,
     PrioridadeAlterar,
+    UtenteAtivar,
     UtenteCriar,
     UtenteEditar,
     UtenteInativar,
@@ -293,6 +294,31 @@ def historico_equipa(utente_id: int, conn=Depends(get_conn), utilizador: dict = 
         raise HTTPException(status_code=404, detail="Utente sem histórico de equipa responsável")
 
     return result
+
+
+@router.put("/{utente_id}/ativar", response_model=UtenteResumo)
+def ativar(utente_id: int, dados: UtenteAtivar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    utente = conn.execute("SELECT estado FROM utente WHERE id = %s", (utente_id,)).fetchone()
+    if utente is None:
+        raise HTTPException(status_code=404, detail="Utente não encontrado")
+
+    if utente["estado"] == "ATIVO":
+        raise HTTPException(status_code=400, detail="Utente já está ativo")
+
+    data_transicao = dados.data_transicao or date.today()
+
+    conn.execute("UPDATE utente SET estado = 'ATIVO' WHERE id = %s", (utente_id,))
+
+    conn.execute(
+        """
+        INSERT INTO utente_transicao_estado
+            (utente_id, estado_anterior, estado_novo, data_transicao, motivo, registada_por)
+        VALUES (%s, %s, 'ATIVO', %s, %s, %s)
+        """,
+        (utente_id, utente["estado"], data_transicao, dados.motivo, utilizador["id"]),
+    )
+
+    return obter(utente_id, conn, utilizador)
 
 
 @router.put("/{utente_id}/inativar", response_model=UtenteResumo)

@@ -82,13 +82,19 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
               <i className="bi bi-clipboard2-pulse text-success mt-1"></i>
               <div>
                 <p className="text-muted mb-1" style={{ fontSize: '0.75rem' }}>Situação Clínica:</p>
-                <ul className="mb-0 ps-3 fw-medium text-dark" style={{ fontSize: '0.8rem' }}>
-                  {utente.situacaoClinica.map((sit, idx) => <li key={idx}>{sit}</li>)}
-                </ul>
+                {utente.situacaoClinica.length > 0 ? (
+                  <ul className="mb-0 ps-3 fw-medium text-dark" style={{ fontSize: '0.8rem' }}>
+                    {utente.situacaoClinica.map((sit, idx) => <li key={idx}>{sit}</li>)}
+                  </ul>
+                ) : (
+                  <p className="fst-italic text-muted mb-0" style={{ fontSize: '0.8rem' }}>
+                    Sem situação clínica registada.
+                  </p>
+                )}
               </div>
             </div>
 
-            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas} />
+            <DetailItem icon="bi-journal-text" label="Notas:" value={utente.notas || 'Sem notas registadas.'} />
           </div>
         </div>
       </div>

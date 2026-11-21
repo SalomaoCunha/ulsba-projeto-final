@@ -268,6 +268,11 @@ class UtenteInativar(BaseModel):
     data_transicao: Optional[date] = None
 
 
+class UtenteAtivar(BaseModel):
+    motivo: str
+    data_transicao: Optional[date] = None
+
+
 # ocorrencia
 class OcorrenciaCriar(BaseModel):
     volta_id: Optional[int] = None
