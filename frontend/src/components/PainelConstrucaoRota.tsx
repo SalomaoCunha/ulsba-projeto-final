@@ -64,6 +64,8 @@ function calcularDistanciaKm(
 
 function obterCoordenadas(utente: Utente): [number, number] | null {
   if (
+    utente.lat === null ||
+    utente.lng === null ||
     !Number.isFinite(utente.lat) ||
     !Number.isFinite(utente.lng) ||
     (utente.lat === 0 && utente.lng === 0)
