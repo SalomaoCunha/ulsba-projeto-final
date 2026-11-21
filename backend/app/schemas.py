@@ -68,6 +68,8 @@ class UtenteResumo(BaseModel):
     localidade: Optional[str]
     concelho: Optional[str]
     cuidador_principal_nome: Optional[str]
+    situacao_clinica: Optional[str] = None
+    notas: Optional[str] = None
     lat: Optional[float]
     lng: Optional[float]
 

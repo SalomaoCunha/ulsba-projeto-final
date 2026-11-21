@@ -421,7 +421,7 @@ const AgendaPage = () => {
 
   const descricaoContextoAtual =
     vista === 'unidade'
-      ? `Vista Unidade · ${equipaAtiva ? `Equipa ${equipaAtiva.codigo}${equipaAtiva.designacao ? ` (${equipaAtiva.designacao})` : ''}` : 'Todas as equipas'} · ${viaturaAtiva ? `Viatura ${viaturaAtiva.matricula}` : 'Todas as viaturas'}`
+      ? `Vista Unidade · ${equipaAtiva ? `Equipa ${equipaAtiva.codigo}` : 'Todas as equipas'} · ${viaturaAtiva ? `Viatura ${viaturaAtiva.matricula}` : 'Todas as viaturas'}`
       : vista === 'profissional'
         ? `Vista Profissional · ${profissionalAtivo ? `${profissionalAtivo.nome} (${profissionalAtivo.funcao} · Eq. ${profissionalAtivo.equipasCodigos.join(', ')})` : 'Todos os profissionais'}`
         : `Vista Utente · ${utenteAtivo ? utenteAtivo.nome : 'Todos os utentes'} · Visitas domiciliárias`;
@@ -486,7 +486,7 @@ const AgendaPage = () => {
             <option value="">Todas as equipas</option>
             {equipas.map((equipa) => (
               <option key={equipa.id} value={equipa.id}>
-                Equipa {equipa.codigo} {equipa.designacao ? `— ${equipa.designacao}` : ''}
+                {`Equipa ${equipa.codigo}`}
               </option>
             ))}
           </select>

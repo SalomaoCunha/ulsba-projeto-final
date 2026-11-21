@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 from typing import Optional
-
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
@@ -21,6 +21,8 @@ from app.services.horarios_volta import (
 )
 
 router = APIRouter(prefix="/voltas", tags=["voltas"])
+
+LISBOA = ZoneInfo("Europe/Lisbon")
 
 
 def _obter_hora_limite_beja(conn) -> time:
@@ -220,20 +222,30 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         "SELECT id, local_id FROM utente WHERE id = ANY(%s)",
         (dados.utente_ids,),
     ).fetchall()
+    local_por_utente = {u["id"]: u["local_id"] for u in utentes}
 
     agrupado: dict[int, list[int]] = {}
 
-    for u in utentes:
-        local_id = u["local_id"]
-        utente_id = u["id"]
+    # A ordem das paragens segue a ordem de dados.utente_ids (ordem de
+    # seleção no frontend) — o SELECT acima não garante nenhuma ordem
+    # (ANY(%s) não preserva a ordem do array em Postgres), por isso não se
+    # pode iterar sobre `utentes` diretamente.
+    for utente_id in dados.utente_ids:
+        local_id = local_por_utente.get(utente_id)
+        if local_id is None:
+            continue
 
         if local_id not in agrupado:
             agrupado[local_id] = []
 
         agrupado[local_id].append(utente_id)
 
-    partida = datetime.combine(dados.data, time(9, 30))
-    regresso = datetime.combine(dados.data, time(16, 0))
+    # 9:30/16:00 são horas locais de Portugal: têm de ficar associadas ao
+    # fuso (Europe/Lisbon), senão o psycopg envia-as "nuas" e o Postgres
+    # (sessão em UTC) grava-as como se já fossem UTC — desvio de 1h no
+    # horário de verão (DST).
+    partida = datetime.combine(dados.data, time(9, 30), tzinfo=LISBOA)
+    regresso = datetime.combine(dados.data, time(16, 0), tzinfo=LISBOA)
 
     volta_id = conn.execute(
         """

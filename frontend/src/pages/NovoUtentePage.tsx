@@ -411,18 +411,23 @@ const NovoUtentePage: React.FC = () => {
                     OpenStreetMap, que podem revelar a área visualizada ao fornecedor. Clique no mapa ou
                     arraste o pino para definir e confirmar as coordenadas.
                   </div>
-                  <MapaLeaflet
-                    utentes={[]}
-                    modoEdicao
-                    mostrarLegenda={false}
-                    pontoEdicao={pontoLocal}
-                    pontoEdicaoValido={pontoLocalValido}
-                    onSelecionarPonto={(lat, lng) => {
-                      setPontoLocal({ lat, lng });
-                      setPontoLocalConfirmado(true);
-                      setErroLocal(null);
-                    }}
-                  />
+                  {/* Altura explícita: o MapaLeaflet tem um .card com h-100, que não
+                      resolve percentagem nenhuma dentro de uma <section> sem altura
+                      própria — sem isto o mapa fica com 0px de altura. */}
+                  <div style={{ height: '360px' }}>
+                    <MapaLeaflet
+                      utentes={[]}
+                      modoEdicao
+                      mostrarLegenda={false}
+                      pontoEdicao={pontoLocal}
+                      pontoEdicaoValido={pontoLocalValido}
+                      onSelecionarPonto={(lat, lng) => {
+                        setPontoLocal({ lat, lng });
+                        setPontoLocalConfirmado(true);
+                        setErroLocal(null);
+                      }}
+                    />
+                  </div>
                   <div className="small mt-2" aria-live="polite">
                     {pontoLocalConfirmado && pontoLocalValido ? (
                       <span className="text-success">
