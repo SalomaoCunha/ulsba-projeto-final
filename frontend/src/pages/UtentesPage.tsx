@@ -50,6 +50,9 @@ const UtentesPage: React.FC = () => {
     if (estado === 'Ativo') {
       return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill">Ativo</span>;
     }
+    if (estado === 'Referenciado') {
+      return <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 rounded-pill">Referenciado</span>;
+    }
     return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill">Inativo</span>;
   };
 

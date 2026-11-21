@@ -1,8 +1,9 @@
 import type { Utente } from '../types/utente';
 import { apiFetch } from './apiClient';
 
-// Forma real da resposta da API (snake_case, só os campos não-clínicos —
-// situação clínica e notas ficam de fora por omissão, RNF22).
+// Forma real da resposta da API (snake_case). Situação clínica e notas já
+// vêm desde a migração 0005 (antes a vista vw_utente_ficha não as expunha) —
+// o histórico continua por implementar no backend.
 interface UtenteDTO {
   utente_id: number;
   numero_utente: string;
@@ -19,12 +20,14 @@ interface UtenteDTO {
   localidade: string | null;
   concelho: string | null;
   cuidador_principal_nome: string | null;
+  situacao_clinica: string | null;
+  notas: string | null;
   lat: number | null;
   lng: number | null;
 }
 
-// A API ainda não devolve situação clínica, notas nem histórico no resumo —
-// ficam com valores vazios/seguros até existirem esses endpoints/campos.
+// O histórico de prioridade/complexidade continua por implementar no
+// backend — ficam com valores vazios até existirem esses endpoints.
 function mapearUtente(dto: UtenteDTO): Utente {
   return {
     id: dto.utente_id,
@@ -35,20 +38,20 @@ function mapearUtente(dto: UtenteDTO): Utente {
     telefone: dto.contacto_telefonico ?? '',
     equipaResponsavel: dto.equipa_responsavel_codigo ? `Equipa ${dto.equipa_responsavel_codigo}` : '',
     cuidadorPrincipal: dto.cuidador_principal_nome ?? '',
-    situacaoClinica: [],
+    situacaoClinica: dto.situacao_clinica ? dto.situacao_clinica.split('\n') : [],
     tipoLocal: 'Domicílio',
     ruaNumero: dto.morada ?? '',
     codigoPostal: dto.codigo_postal ?? '',
     localidade: dto.localidade ?? '',
     concelho: dto.concelho ?? '',
-    lat: dto.lat ?? 0,
-    lng: dto.lng ?? 0,
-    notas: '',
+    lat: dto.lat,
+    lng: dto.lng,
+    notas: dto.notas ?? '',
     prioridade: (dto.urgencia_designacao ?? '') as Utente['prioridade'],
     historicoPrioridade: [],
     complexidade: (dto.complexidade_designacao ?? '') as Utente['complexidade'],
     historicoComplexidade: [],
-    estado: dto.estado === 'ATIVO' ? 'Ativo' : 'Inativo',
+    estado: dto.estado === 'ATIVO' ? 'Ativo' : dto.estado === 'REFERENCIADO' ? 'Referenciado' : 'Inativo',
   };
 }
 

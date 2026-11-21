@@ -114,15 +114,18 @@ const VoltaDetalhePage = () => {
 
   const visitaSelecionada = visitas.find((v) => v.visitaId === visitaSelecionadaId) ?? null;
 
-  useEffect(() => {
-    if (visitaSelecionada) {
-      setVisitaInicioRealHora(extrairHoraInput(visitaSelecionada.inicioReal));
-      setVisitaFimRealHora(extrairHoraInput(visitaSelecionada.fimReal));
-    } else {
-      setVisitaInicioRealHora('');
-      setVisitaFimRealHora('');
-    }
-  }, [visitaSelecionada?.visitaId, visitaSelecionada?.inicioReal, visitaSelecionada?.fimReal]);
+  // Ajusta os campos de hora real quando a visita selecionada muda — durante o
+  // render (não num useEffect), como o React recomenda para "adjusting state
+  // when a prop changes", para não disparar um ciclo extra de render.
+  const chaveHoras = visitaSelecionada
+    ? `${visitaSelecionada.visitaId}:${visitaSelecionada.inicioReal ?? ''}:${visitaSelecionada.fimReal ?? ''}`
+    : '';
+  const [chaveHorasAplicada, setChaveHorasAplicada] = useState('');
+  if (chaveHoras !== chaveHorasAplicada) {
+    setChaveHorasAplicada(chaveHoras);
+    setVisitaInicioRealHora(visitaSelecionada ? extrairHoraInput(visitaSelecionada.inicioReal) : '');
+    setVisitaFimRealHora(visitaSelecionada ? extrairHoraInput(visitaSelecionada.fimReal) : '');
+  }
 
   const handleGuardarHorariosVolta = async (e: React.FormEvent) => {
     e.preventDefault();

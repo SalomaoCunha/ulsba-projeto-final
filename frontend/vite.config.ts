@@ -9,4 +9,11 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // Bind mount do Docker Desktop no Windows nem sempre propaga eventos
+    // de ficheiro para o container; sem polling o Vite não vê as gravações.
+    watch: {
+      usePolling: true,
+    },
+  },
 })

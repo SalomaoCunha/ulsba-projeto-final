@@ -47,6 +47,7 @@ def listar(nome: str | None = None, numero: str | None = None, conn=Depends(get_
             ultima_visita,
             morada, codigo_postal, localidade, concelho,
             cuidador_principal_nome,
+            situacao_clinica, notas,
             ST_Y(geom::geometry) AS lat,
             ST_X(geom::geometry) AS lng
         FROM vw_utente_ficha
@@ -68,6 +69,7 @@ def obter(utente_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get
             ultima_visita,
             morada, codigo_postal, localidade, concelho,
             cuidador_principal_nome,
+            situacao_clinica, notas,
             ST_Y(geom::geometry) AS lat,
             ST_X(geom::geometry) AS lng
         FROM vw_utente_ficha

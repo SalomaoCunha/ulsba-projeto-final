@@ -54,6 +54,7 @@ const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) =
           >
             <option value="">Todos</option>
             <option value="Ativo">Ativo</option>
+            <option value="Referenciado">Referenciado</option>
             <option value="Inativo">Inativo</option>
           </select>
         </div>

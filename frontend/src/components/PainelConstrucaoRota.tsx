@@ -64,6 +64,8 @@ function calcularDistanciaKm(
 
 function obterCoordenadas(utente: Utente): [number, number] | null {
   if (
+    utente.lat === null ||
+    utente.lng === null ||
     !Number.isFinite(utente.lat) ||
     !Number.isFinite(utente.lng) ||
     (utente.lat === 0 && utente.lng === 0)
@@ -368,7 +370,7 @@ const PainelConstrucaoRota = ({
           <option value="">Escolher equipa disponível</option>
           {equipasDisponiveis.map((eq) => (
             <option key={eq.id} value={eq.id}>
-              Equipa {eq.codigo} {eq.designacao ? `— ${eq.designacao}` : ''}
+              {`Equipa ${eq.codigo}`}
             </option>
           ))}
         </select>
