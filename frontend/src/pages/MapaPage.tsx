@@ -6,12 +6,7 @@ import { atualizarCoordenadasUtente, getUtentes } from '../services/utenteServic
 import type { Utente } from '../types/utente';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { filtrarUtentes, filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
-
-// Limites de Portugal continental (WGS84), alinhados com o backend (RF04/RNF27)
-const PT_CONT_LAT_MIN = 36.95;
-const PT_CONT_LAT_MAX = 42.16;
-const PT_CONT_LNG_MIN = -9.55;
-const PT_CONT_LNG_MAX = -6.18;
+import { coordenadasEmPortugalContinental, LIMITES_PORTUGAL_CONTINENTAL } from '../utils/coordenadasPortugal';
 
 interface ResultadoValidacao {
   valido: boolean;
@@ -46,10 +41,10 @@ function validarCoordenadasPortugal(latTexto: string, lngTexto: string): Resulta
   }
 
   if (
-    lng >= PT_CONT_LAT_MIN &&
-    lng <= PT_CONT_LAT_MAX &&
-    lat >= PT_CONT_LNG_MIN &&
-    lat <= PT_CONT_LNG_MAX
+    lng >= LIMITES_PORTUGAL_CONTINENTAL.latitudeMinima &&
+    lng <= LIMITES_PORTUGAL_CONTINENTAL.latitudeMaxima &&
+    lat >= LIMITES_PORTUGAL_CONTINENTAL.longitudeMinima &&
+    lat <= LIMITES_PORTUGAL_CONTINENTAL.longitudeMaxima
   ) {
     return {
       valido: false,
@@ -72,12 +67,7 @@ function validarCoordenadasPortugal(latTexto: string, lngTexto: string): Resulta
     };
   }
 
-  if (
-    lat < PT_CONT_LAT_MIN ||
-    lat > PT_CONT_LAT_MAX ||
-    lng < PT_CONT_LNG_MIN ||
-    lng > PT_CONT_LNG_MAX
-  ) {
+  if (!coordenadasEmPortugalContinental(lat, lng)) {
     return {
       valido: false,
       lat,

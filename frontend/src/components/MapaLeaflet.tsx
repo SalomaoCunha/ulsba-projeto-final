@@ -66,6 +66,7 @@ interface Props {
   modoEdicao?: boolean;
   pontoEdicao?: { lat: number; lng: number } | null;
   pontoEdicaoValido?: boolean;
+  mostrarLegenda?: boolean;
   onSelecionarPonto?: (lat: number, lng: number) => void;
   onIniciarEdicaoUtente?: (utente: Utente) => void;
   onToggleFiltros?: () => void;
@@ -117,6 +118,7 @@ const MapaLeaflet: React.FC<Props> = ({
   modoEdicao = false,
   pontoEdicao = null,
   pontoEdicaoValido = true,
+  mostrarLegenda = true,
   onSelecionarPonto,
   onIniciarEdicaoUtente,
   onToggleFiltros,
@@ -142,33 +144,34 @@ const MapaLeaflet: React.FC<Props> = ({
       className="card shadow-sm border-0 h-100 overflow-hidden position-relative"
       style={{ maxHeight: '100%', minHeight: '420px' }}
     >
-      {/* Legenda */}
-      <div
-        className="position-absolute bg-white p-3 rounded shadow-sm border d-none d-sm-block"
-        style={{ top: '16px', left: '16px', zIndex: 1000, width: '185px', opacity: 0.95 }}
-      >
-        <h6 className="fw-bold text-dark mb-2 small">Legenda</h6>
-        <div className="d-flex flex-column gap-2 small mb-2">
-          {NIVEIS_PRIORIDADE.map((nivel) => (
-            <div key={nivel.valor} className="d-flex align-items-center gap-2">
-              <span
-                className="rounded-circle flex-shrink-0"
-                style={{ width: '12px', height: '12px', backgroundColor: nivel.corDot }}
-              ></span>
-              <span className="text-muted">{nivel.label}</span>
-            </div>
-          ))}
+      {mostrarLegenda && (
+        <div
+          className="position-absolute bg-white p-3 rounded shadow-sm border d-none d-sm-block"
+          style={{ top: '16px', left: '16px', zIndex: 1000, width: '185px', opacity: 0.95 }}
+        >
+          <h6 className="fw-bold text-dark mb-2 small">Legenda</h6>
+          <div className="d-flex flex-column gap-2 small mb-2">
+            {NIVEIS_PRIORIDADE.map((nivel) => (
+              <div key={nivel.valor} className="d-flex align-items-center gap-2">
+                <span
+                  className="rounded-circle flex-shrink-0"
+                  style={{ width: '12px', height: '12px', backgroundColor: nivel.corDot }}
+                ></span>
+                <span className="text-muted">{nivel.label}</span>
+              </div>
+            ))}
+          </div>
+          {onToggleFiltros && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 mt-2"
+              onClick={onToggleFiltros}
+            >
+              <i className="bi bi-funnel"></i> Filtrar Utentes
+            </button>
+          )}
         </div>
-        {onToggleFiltros && (
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 mt-2"
-            onClick={onToggleFiltros}
-          >
-            <i className="bi bi-funnel"></i> Filtrar Utentes
-          </button>
-        )}
-      </div>
+      )}
 
       {/* Aviso flutuante quando está em modo de marcação */}
       {modoEdicao && (
