@@ -1,5 +1,5 @@
 -- RF40 — verificação não destrutiva do seed inicial.
--- Executar na mesma base que recebeu as migrações 0001..0004.
+-- Executar na mesma base que recebeu as migrações 0001..0005.
 BEGIN;
 SET LOCAL TIME ZONE 'UTC';
 

@@ -13,13 +13,14 @@
 | `migrations/0002_extensoes_modelo_documentado.sql` | Adiciona `escala_profissional`, `territorio_cobertura` e o snapshot geográfico de `paragem`. |
 | `migrations/0003_integridade_operacional.sql` | Reforça as regras de integridade de voltas, visitas, recursos, participantes e retificações. |
 | `migrations/0004_ajuste_niveis_urgencia.sql` | Desativa os níveis provisórios A/B/C/NU e introduz U0, U1, U2, NU1 e NU2. |
+| `migrations/0005_remover_zonas_ficticias_das_equipas.sql` | Remove designações territoriais fictícias das equipas de demonstração. |
 | `migrate/Dockerfile` e `migrate/runner.py` | Serviço Docker `db-migrate` que aplica apenas as migrações pendentes e mantém o histórico de versões. |
 | `migrate/test_runner.py` | Testes do mecanismo de migrações. |
 | `tests/0001_verificacao_postgis.sql` | Verificação SQL do modelo e do PostGIS; reverte os dados temporários com `ROLLBACK`. |
 | `tests/0002_verificacao_seed_rf40.sql` | Verificação SQL dos dados fictícios semeados (RF40); reverte os dados temporários com `ROLLBACK`. |
 
 
-**Após as quatro migrações:** 32 tabelas de domínio, 252 atributos, 18 ENUM e cinco níveis de urgência ativos. O migrador acrescenta a tabela técnica `public.schema_migrations`, que não pertence às 32 tabelas de domínio.
+**Após as cinco migrações:** 32 tabelas de domínio, 252 atributos, 18 ENUM e cinco níveis de urgência ativos. O migrador acrescenta a tabela técnica `public.schema_migrations`, que não pertence às 32 tabelas de domínio.
 
 A documentação do modelo e dos requisitos encontra-se em [`docs/modelo-dados.md`](../docs/modelo-dados.md) e [`docs/requisitos.md`](../docs/requisitos.md).
 
@@ -43,7 +44,7 @@ docker compose up -d --build
 O Docker segue esta sequência:
 
 1. Inicia `db` (PostgreSQL/PostGIS) e aguarda que esteja disponível.
-2. Executa `db-migrate`, aplicando `0001` → `0002` → `0003` → `0004`, ou apenas as versões pendentes.
+2. Executa `db-migrate`, aplicando `0001` → `0002` → `0003` → `0004` → `0005`, ou apenas as versões pendentes.
 3. Inicia o backend FastAPI após a conclusão bem-sucedida das migrações.
 4. Inicia o frontend.
 
@@ -70,7 +71,7 @@ FROM public.schema_migrations
 ORDER BY version;
 ```
 
-Numa instalação nova, devem existir as versões 1 a 4 com `origem = 'migrate'`. Para verificar os níveis de urgência:
+Numa instalação nova, devem existir as versões 1 a 5 com `origem = 'migrate'`. Para verificar os níveis de urgência:
 
 ```sql
 SELECT codigo, designacao, ordem, ativo
@@ -129,7 +130,7 @@ Guarda o backup fora do Git. Depois, verifica o estado:
 docker compose run --rm db-migrate status
 ```
 
-**Apenas se confirmares que as quatro migrações foram realmente aplicadas e que o esquema está na versão 4**, regista a baseline:
+**Apenas se confirmares que as quatro migrações foram realmente aplicadas e que o esquema está na versão 4**, regista a baseline 4. A migração 0005 será então aplicada pelo migrador:
 
 ```powershell
 docker compose run --rm db-migrate baseline 4

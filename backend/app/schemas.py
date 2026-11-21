@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Literal, Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Limites aproximados de Portugal continental (WGS84 / SRID 4326)
 PT_CONT_LAT_MIN = 36.95
@@ -127,6 +127,16 @@ class EquipaResumo(BaseModel):
     designacao: Optional[str]
     ativa: bool
     membros: list[MembroEquipa]
+
+
+class EquipaCriarEditar(BaseModel):
+    codigo: str = Field(min_length=1, max_length=5)
+    designacao: Optional[str] = Field(default=None, max_length=80)
+    membros: list[int] = Field(default_factory=list)
+
+
+class ProfissionalEquipaResumo(MembroEquipa):
+    ativo: bool
 
 
 # Viaturas
