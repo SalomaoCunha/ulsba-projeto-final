@@ -499,18 +499,21 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 1300px;
   border-radius: 16px;
   overflow: hidden;
+  /* Sem isto, este cartão (item de um flex-column com overflow-auto) podia
+     ser encolhido pelo próprio flex abaixo da altura do seu conteúdo em vez
+     de ultrapassar a altura do ecrã e deixar o contentor pai fazer scroll —
+     e como o cartão tem overflow:hidden, esse encolhimento cortava
+     silenciosamente o fundo da página (ex.: a última visita da lista) sem
+     nenhuma barra de scroll a indicar que havia mais conteúdo. */
+  flex-shrink: 0;
 }
 
-/* A lista de visitas só ganha scroll próprio a partir do breakpoint "lg"
-   (quando as 3 colunas já estão lado a lado); em mobile, empilhada,
-   cada secção cresce com a página normalmente. */
-@media (min-width: 992px) {
-  .ulsba-volta-coluna-scroll {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 0.25rem;
-  }
-}
+/* A lista de visitas cresce com o conteúdo, tal como as colunas de
+   detalhe/mapa ao lado — um max-height fixo (60vh) cortava a meio a última
+   visita sem qualquer indicação visual de que havia mais para ver com
+   scroll, dando a sensação de caixa apertada/partida. A página toda
+   (.overflow-auto no contentor pai) já trata do scroll quando a caixa é
+   mais alta do que o ecrã. */
 
 /* Caixa de nota (ocorrência), estilo "post-it" claro — inspirado nas caixas
    amarelas/azuis do mockup, sem depender só da cor para o significado
