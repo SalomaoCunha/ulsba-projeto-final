@@ -594,7 +594,7 @@ const AgendaPage = () => {
             views={['month']}
             defaultView="month"
             messages={MENSAGENS_PT}
-            style={{ height: '75vh', minHeight: '600px' }}
+            style={{ height: 'auto', minHeight: '600px' }}
           />
         </div>
 

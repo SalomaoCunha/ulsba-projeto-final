@@ -5,6 +5,8 @@ export interface FiltrosUtentes {
   complexidade: string | null;
   estado: string | null;
   equipa: string | null;
+  // Várias localidades selecionáveis em simultâneo (OR entre elas); vazio = todas.
+  localidades: string[];
   dataDe: string;
   dataAte: string;
 }
@@ -14,6 +16,7 @@ export const filtrosVazios: FiltrosUtentes = {
   complexidade: null,
   estado: null,
   equipa: null,
+  localidades: [],
   dataDe: '',
   dataAte: '',
 };
@@ -30,6 +33,9 @@ export function filtrarUtentes(utentes: Utente[], filtros: FiltrosUtentes): Uten
       return false;
     }
     if (filtros.equipa && u.equipaResponsavel !== filtros.equipa) {
+      return false;
+    }
+    if (filtros.localidades.length > 0 && !filtros.localidades.includes(u.localidade)) {
       return false;
     }
 

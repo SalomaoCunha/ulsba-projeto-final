@@ -198,3 +198,38 @@ def editar(
         raise HTTPException(status_code=409, detail="Já existe uma equipa com esse código.") from erro
 
     return equipa
+
+
+@router.delete("/{equipa_id}", status_code=200)
+def apagar(
+    equipa_id: int,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    equipa = conn.execute("SELECT id FROM equipa WHERE id = %s", (equipa_id,)).fetchone()
+    if equipa is None:
+        raise HTTPException(status_code=404, detail="Equipa não encontrada.")
+
+    # Equipa é referenciada por histórico (membros, utentes atribuídos,
+    # voltas) sem ON DELETE CASCADE — um DELETE físico falharia por
+    # violação de chave estrangeira assim que houver qualquer atividade
+    # real. Só apaga de facto uma equipa sem nenhum vestígio; caso
+    # contrário, desativa-a (fica fora das escolhas de equipa disponível,
+    # mas preserva o histórico).
+    tem_vestigios = conn.execute(
+        """
+        SELECT
+            EXISTS(SELECT 1 FROM equipa_membro WHERE equipa_id = %(id)s)
+            OR EXISTS(SELECT 1 FROM atribuicao_equipa_responsavel WHERE equipa_id = %(id)s)
+            OR EXISTS(SELECT 1 FROM volta WHERE equipa_id = %(id)s)
+            AS tem
+        """,
+        {"id": equipa_id},
+    ).fetchone()["tem"]
+
+    if tem_vestigios:
+        conn.execute("UPDATE equipa SET ativa = false WHERE id = %s", (equipa_id,))
+        return {"id": equipa_id, "apagada": False, "desativada": True}
+
+    conn.execute("DELETE FROM equipa WHERE id = %s", (equipa_id,))
+    return {"id": equipa_id, "apagada": True, "desativada": False}

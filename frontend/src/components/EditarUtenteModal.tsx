@@ -3,7 +3,7 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import type { TipoLocal, Utente } from '../types/utente';
 import { NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
 import type { PrioridadeValor, ComplexidadeValor } from '@/config/niveis';
-import { alterarPrioridade, alterarComplexidade, alterarEquipaResponsavel, updateUtente, getUtenteById } from '../services/utenteService';
+import { alterarPrioridade, alterarComplexidade, alterarEquipaResponsavel, updateUtente, getUtenteById, ativarUtente, inativarUtente } from '../services/utenteService';
 import { getNiveisUrgencia, getNiveisComplexidade } from '../services/nivelService';
 import { getEquipas } from '../services/equipaService';
 import { getUtilizadorAtual } from '../services/authService';
@@ -33,6 +33,11 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
   const [niveisComplexidade, setNiveisComplexidade] = useState<NivelComplexidadeDTO[]>([]);
   const [podeEditarEquipa, setPodeEditarEquipa] = useState(false);
 
+  const [modoTransicaoEstado, setModoTransicaoEstado] = useState<'ativar' | 'inativar' | null>(null);
+  const [motivoTransicao, setMotivoTransicao] = useState('');
+  const [aTransitar, setATransitar] = useState(false);
+  const [erroTransicao, setErroTransicao] = useState<string | null>(null);
+
   useEffect(() => {
     getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
     getNiveisUrgencia().then(setNiveisUrgencia).catch((erro) => console.error('Falha ao carregar níveis de urgência:', erro));
@@ -60,6 +65,28 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
       lista.push('O motivo é obrigatório quando a prioridade muda (RF10).');
     }
     return lista;
+  };
+
+  const confirmarTransicaoEstado = async () => {
+    if (!motivoTransicao.trim()) {
+      setErroTransicao('O motivo é obrigatório.');
+      return;
+    }
+    setATransitar(true);
+    setErroTransicao(null);
+    try {
+      const atualizado = modoTransicaoEstado === 'ativar'
+        ? await ativarUtente(utente.id, motivoTransicao)
+        : await inativarUtente(utente.id, motivoTransicao);
+      setRascunho(atualizado);
+      setModoTransicaoEstado(null);
+      setMotivoTransicao('');
+      onGuardar(atualizado);
+    } catch (erro) {
+      setErroTransicao(erro instanceof Error ? erro.message : 'Não foi possível alterar o estado.');
+    } finally {
+      setATransitar(false);
+    }
   };
 
   const handleGuardar = async () => {
@@ -124,6 +151,60 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
         {erros.length > 0 && (
           <div className="alert alert-danger">
             {erros.map((erro, idx) => <div key={idx}>{erro}</div>)}
+          </div>
+        )}
+
+        <div className="d-flex justify-content-between align-items-center border rounded p-2 mb-3 bg-light">
+          <div>
+            <span className="text-muted small me-2">Estado atual:</span>
+            <span className="fw-medium">{rascunho.estado}</span>
+          </div>
+          {rascunho.estado !== 'Ativo' && (
+            <Button
+              size="sm"
+              variant="outline-success"
+              onClick={() => { setModoTransicaoEstado('ativar'); setErroTransicao(null); }}
+            >
+              Ativar
+            </Button>
+          )}
+          {rascunho.estado === 'Ativo' && (
+            <Button
+              size="sm"
+              variant="outline-danger"
+              onClick={() => { setModoTransicaoEstado('inativar'); setErroTransicao(null); }}
+            >
+              Desativar
+            </Button>
+          )}
+        </div>
+
+        {modoTransicaoEstado && (
+          <div className="border rounded p-2 mb-3">
+            <Form.Label className="small fw-medium">
+              Motivo para {modoTransicaoEstado === 'ativar' ? 'ativar' : 'desativar'} o utente
+            </Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              value={motivoTransicao}
+              onChange={(e) => setMotivoTransicao(e.target.value)}
+              placeholder="Obrigatório"
+            />
+            {erroTransicao && <div className="text-danger small mt-1">{erroTransicao}</div>}
+            <div className="d-flex justify-content-end gap-2 mt-2">
+              <Button
+                size="sm"
+                variant="light"
+                onClick={() => { setModoTransicaoEstado(null); setMotivoTransicao(''); setErroTransicao(null); }}
+                disabled={aTransitar}
+              >
+                Cancelar
+              </Button>
+              <Button size="sm" variant="primary" onClick={confirmarTransicaoEstado} disabled={aTransitar}>
+                {aTransitar ? 'A guardar...' : 'Confirmar'}
+              </Button>
+            </div>
           </div>
         )}
 

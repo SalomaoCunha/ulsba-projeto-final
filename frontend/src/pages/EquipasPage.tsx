@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   createEquipa,
+  deleteEquipa,
   getEquipas,
   getProfissionaisEquipa,
   updateEquipa,
@@ -32,6 +33,8 @@ const EquipasPage: React.FC = () => {
   const [erroEquipa, setErroEquipa] = useState<string | null>(null);
   const [erroProfissionais, setErroProfissionais] = useState<string | null>(null);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aApagarId, setAApagarId] = useState<number | null>(null);
+  const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
 
   useEffect(() => {
     comAtrasoMinimo(
@@ -72,6 +75,31 @@ const EquipasPage: React.FC = () => {
     });
     setErroEquipa(null);
     setModalAberto(true);
+  };
+
+  const apagarEquipa = async (equipa: Equipa) => {
+    if (!window.confirm(`Apagar a Equipa ${equipa.codigo}?`)) return;
+    setAApagarId(equipa.id);
+    setAvisoApagar(null);
+    try {
+      const resultado = await deleteEquipa(equipa.id);
+      if (resultado.apagada) {
+        setEquipas((atuais) => atuais.filter((e) => e.id !== equipa.id));
+      } else {
+        // Tem histórico associado — o backend desativou-a em vez de apagar.
+        setEquipas((atuais) =>
+          atuais.map((e) => (e.id === equipa.id ? { ...e, ativa: false } : e)),
+        );
+        setAvisoApagar(
+          `A Equipa ${equipa.codigo} tem histórico associado (membros, utentes ou voltas) e por isso foi desativada em vez de apagada.`,
+        );
+      }
+    } catch (erro) {
+      console.error('Falha ao apagar equipa:', erro);
+      setAvisoApagar('Não foi possível apagar a equipa.');
+    } finally {
+      setAApagarId(null);
+    }
   };
 
   const fecharModal = () => {
@@ -151,6 +179,13 @@ const EquipasPage: React.FC = () => {
         </button>
       </div>
 
+      {avisoApagar && (
+        <div className="alert alert-warning alert-dismissible" role="alert">
+          {avisoApagar}
+          <button type="button" className="btn-close" onClick={() => setAvisoApagar(null)} aria-label="Fechar"></button>
+        </div>
+      )}
+
       {/* Grelha de Cartões por Equipa */}
       {equipas.length === 0 && (
         <div className="alert alert-info">
@@ -164,20 +199,39 @@ const EquipasPage: React.FC = () => {
 
               <div className="d-flex justify-content-between align-items-start">
                 <div>
-                  <h6 className="fw-bold mb-1">Equipa {equipa.codigo}</h6>
+                  <div className="d-flex align-items-center gap-2 mb-1">
+                    <h6 className="fw-bold mb-0">Equipa {equipa.codigo}</h6>
+                    {!equipa.ativa && (
+                      <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                        Inativa
+                      </span>
+                    )}
+                  </div>
                   {equipa.designacao && (
                     <p className="text-muted small mb-2">{equipa.designacao}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => abrirEdicaoEquipa(equipa)}
-                  aria-label={`Editar equipa ${equipa.codigo}`}
-                  title={`Editar equipa ${equipa.codigo}`}
-                >
-                  <i className="bi bi-pencil"></i>
-                </button>
+                <div className="d-flex gap-1">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => abrirEdicaoEquipa(equipa)}
+                    aria-label={`Editar equipa ${equipa.codigo}`}
+                    title={`Editar equipa ${equipa.codigo}`}
+                  >
+                    <i className="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => apagarEquipa(equipa)}
+                    disabled={aApagarId === equipa.id}
+                    aria-label={`Apagar equipa ${equipa.codigo}`}
+                    title={`Apagar equipa ${equipa.codigo}`}
+                  >
+                    <i className="bi bi-trash"></i>
+                  </button>
+                </div>
               </div>
 
               <div>

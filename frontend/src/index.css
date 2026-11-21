@@ -419,6 +419,26 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* A vista de mês do react-big-calendar reparte uma altura TOTAL fixa por
+   todas as semanas em partes iguais — com `height: 75vh` no componente,
+   um dia com 2+ voltas ou um texto mais comprido ficava cortado, porque a
+   linha da semana não tinha onde crescer. Dando a cada linha uma altura
+   mínima (em vez de forçar todas a caberem num total fixo) e deixando
+   overflow visível, as caixas crescem com o conteúdo; o scroll do ecrã
+   trata do resto. */
+.agenda-calendar-scroll .rbc-month-view {
+  overflow: visible;
+}
+
+.agenda-calendar-scroll .rbc-month-row {
+  min-height: 110px;
+  overflow: visible;
+}
+
+.agenda-calendar-scroll .rbc-row-content {
+  overflow: visible;
+}
+
 /* O react-big-calendar desenha uma grelha fixa de 7 colunas: em ecrãs
    estreitos não há espaço para mostrar hora+equipa dentro de cada
    evento sem obrigar a scroll horizontal (pouco prático em mobile).
