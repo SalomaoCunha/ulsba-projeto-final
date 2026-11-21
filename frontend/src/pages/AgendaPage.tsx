@@ -209,6 +209,16 @@ const AgendaPage = () => {
     ])).finally(() => setCarregando(false));
   }, []);
 
+  const equipaAtiva = useMemo(
+    () => equipas.find((eq) => eq.id === equipaId) ?? null,
+    [equipas, equipaId],
+  );
+
+  const viaturaAtiva = useMemo(
+    () => viaturas.find((v) => v.id === viaturaId) ?? null,
+    [viaturas, viaturaId],
+  );
+
   const mapaMatriculas = useMemo(() => {
     const mapa = new Map<number, string>();
     for (const v of viaturas) {
@@ -217,7 +227,6 @@ const AgendaPage = () => {
     return mapa;
   }, [viaturas]);
 
-  // Lista única de profissionais extraída das equipas a que o utilizador tem acesso
   const profissionais = useMemo<ProfissionalOpcao[]>(() => {
     const mapa = new Map<number, ProfissionalOpcao>();
     for (const equipa of equipas) {
@@ -239,6 +248,16 @@ const AgendaPage = () => {
     }
     return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
   }, [equipas]);
+
+  const profissionalAtivo = useMemo(
+    () => profissionais.find((profissional) => profissional.id === profissionalId) ?? null,
+    [profissionais, profissionalId],
+  );
+
+  const utenteAtivo = useMemo(
+    () => utentes.find((utente) => Number(utente.id) === utenteId) ?? null,
+    [utentes, utenteId],
+  );
 
   const recarregarDadosVista = useCallback(() => {
     if (vista === 'utente') {
@@ -262,7 +281,6 @@ const AgendaPage = () => {
       .catch((erro) => console.error('Falha ao carregar voltas:', erro));
   }, [vista, intervalo, equipaId, profissionalId, viaturaId, estadoVolta, utenteId, estadoVisita]);
 
-  // Sem filtros de equipa/viatura para saber exatamente o que está ocupado/bloqueado no mês
   const recarregarVoltasEBloqueiosDoMes = useCallback(() => {
     return Promise.all([
       getVoltas(intervalo)
@@ -355,7 +373,6 @@ const AgendaPage = () => {
     };
   }, []);
 
-  // Quando uma viatura específica está filtrada, marca os dias bloqueados com cor mais transparente
   const aoEstilizarDia = useCallback(
     (dataDia: Date) => {
       if (vista === 'utente' || viaturaId === undefined) return {};
@@ -402,20 +419,28 @@ const AgendaPage = () => {
     return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
   }
 
-  const subtituloVista =
+  const descricaoContextoAtual =
     vista === 'unidade'
-      ? 'Gestão e consulta de voltas da unidade'
+      ? `Vista Unidade · ${equipaAtiva ? `Equipa ${equipaAtiva.codigo}${equipaAtiva.designacao ? ` (${equipaAtiva.designacao})` : ''}` : 'Todas as equipas'} · ${viaturaAtiva ? `Viatura ${viaturaAtiva.matricula}` : 'Todas as viaturas'}`
       : vista === 'profissional'
-        ? 'Voltas atribuídas por profissional de saúde'
-        : 'Visitas domiciliárias agendadas por utente';
+        ? `Vista Profissional · ${profissionalAtivo ? `${profissionalAtivo.nome} (${profissionalAtivo.funcao} · Eq. ${profissionalAtivo.equipasCodigos.join(', ')})` : 'Todos os profissionais'}`
+        : `Vista Utente · ${utenteAtivo ? utenteAtivo.nome : 'Todos os utentes'} · Visitas domiciliárias`;
 
   return (
     <div className="h-100 d-flex flex-column">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h1 className="h4 fw-bold text-dark mb-1">Calendário de Voltas</h1>
-          <p className="text-muted mb-0 small">{subtituloVista}</p>
+          <p className="text-muted mb-0 small">{descricaoContextoAtual}</p>
         </div>
+        {vista === 'unidade' && (
+          <div className="d-flex align-items-center gap-2">
+            <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+              <i className="bi bi-people-fill me-1"></i>
+              {equipaAtiva ? `Equipa ${equipaAtiva.codigo}` : 'Todas as equipas'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Separadores de perspetiva: Unidade / Profissional / Utente (RF19) */}
@@ -449,18 +474,19 @@ const AgendaPage = () => {
         </li>
       </ul>
 
-      {/* Filtros específicos de cada vista (sem filtro de Equipas na vista Utente — RF19/RF49) */}
+      {/* Filtros explícitos de cada vista (sem filtro de Equipas na vista Utente — RF19/RF49) */}
       <div className="d-flex flex-wrap gap-2 mb-3 agenda-filtros">
         {vista === 'unidade' && (
           <select
-            className="form-select form-select-sm agenda-filtro-select"
+            aria-label="Selecionar equipa"
+            className="form-select form-select-sm agenda-filtro-select fw-medium"
             value={equipaId ?? ''}
             onChange={(e) => setEquipaId(e.target.value === '' ? undefined : Number(e.target.value))}
           >
             <option value="">Todas as equipas</option>
             {equipas.map((equipa) => (
               <option key={equipa.id} value={equipa.id}>
-                {equipa.designacao ? `Equipa ${equipa.codigo} — ${equipa.designacao}` : `Equipa ${equipa.codigo}`}
+                Equipa {equipa.codigo} {equipa.designacao ? `— ${equipa.designacao}` : ''}
               </option>
             ))}
           </select>
@@ -468,6 +494,7 @@ const AgendaPage = () => {
 
         {vista === 'profissional' && (
           <select
+            aria-label="Selecionar profissional"
             className="form-select form-select-sm agenda-filtro-select"
             value={profissionalId ?? ''}
             onChange={(e) => setProfissionalId(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -484,6 +511,7 @@ const AgendaPage = () => {
         {(vista === 'unidade' || vista === 'profissional') && (
           <>
             <select
+              aria-label="Selecionar viatura"
               className="form-select form-select-sm agenda-filtro-select"
               value={viaturaId ?? ''}
               onChange={(e) => setViaturaId(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -497,6 +525,7 @@ const AgendaPage = () => {
             </select>
 
             <select
+              aria-label="Filtrar voltas por estado"
               className="form-select form-select-sm agenda-filtro-select"
               value={estadoVolta ?? ''}
               onChange={(e) => setEstadoVolta(e.target.value === '' ? undefined : (e.target.value as EstadoVolta))}
@@ -512,6 +541,7 @@ const AgendaPage = () => {
         {vista === 'utente' && (
           <>
             <select
+              aria-label="Selecionar utente"
               className="form-select form-select-sm agenda-filtro-select"
               value={utenteId ?? ''}
               onChange={(e) => setUtenteId(e.target.value === '' ? undefined : Number(e.target.value))}
@@ -525,6 +555,7 @@ const AgendaPage = () => {
             </select>
 
             <select
+              aria-label="Filtrar visitas por estado"
               className="form-select form-select-sm agenda-filtro-select"
               value={estadoVisita ?? ''}
               onChange={(e) => setEstadoVisita(e.target.value === '' ? undefined : (e.target.value as EstadoVisita))}
@@ -567,7 +598,6 @@ const AgendaPage = () => {
           />
         </div>
 
-        {/* Legenda */}
         <div className="d-flex flex-wrap gap-3 mt-3 small text-muted">
           {vista === 'utente' ? (
             (Object.keys(LABEL_ESTADO_VISITA) as EstadoVisita[]).map((chave) => (
@@ -607,14 +637,14 @@ const AgendaPage = () => {
         </div>
       </div>
 
-      <Modal show={diaSelecionado !== null} onHide={() => setDiaSelecionado(null)} centered>
+      <Modal show={diaSelecionado !== null} onHide={() => setDiaSelecionado(null)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title className="text-capitalize fs-6">
             {diaSelecionado && format(diaSelecionado, "d 'de' MMMM", { locale: pt })}
+            {equipaAtiva ? ` · Equipa ${equipaAtiva.codigo}` : ''}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {/* Bloqueios de viaturas ativos neste dia */}
           {vista !== 'utente' && bloqueiosDoDia.length > 0 && (
             <div className="mb-3">
               <div className="small fw-semibold text-danger mb-1">
@@ -672,8 +702,10 @@ const AgendaPage = () => {
           ) : voltasDoDia.length === 0 || mostrarFormularioNovaVolta ? (
             diaSelecionado && (
               <PainelConstrucaoRota
+                key={`${format(diaSelecionado, 'yyyy-MM-dd')}-${equipaId ?? 'todas'}-${viaturaId ?? 'todas'}`}
                 data={diaSelecionado}
                 equipas={equipas}
+                equipaIdInicial={equipaId}
                 viaturas={viaturas}
                 bloqueiosViaturas={bloqueiosViaturas}
                 viaturaIdInicial={viaturaId}
@@ -698,7 +730,7 @@ const AgendaPage = () => {
                 >
                   <div>
                     <div className="fw-medium">{formatarHora(volta.partidaPrevista)} → {formatarHora(volta.regressoPrevisto)}</div>
-                    <div className="small text-muted">{volta.equipaCodigo ?? 'Sem equipa'} · {volta.viaturaMatricula ?? 'Sem viatura'}</div>
+                    <div className="small text-muted">{volta.equipaCodigo ? `Equipa ${volta.equipaCodigo}` : 'Sem equipa'} · {volta.viaturaMatricula ?? 'Sem viatura'}</div>
                   </div>
                   <span
                     className="rounded-circle d-inline-block flex-shrink-0"
