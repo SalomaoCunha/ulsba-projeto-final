@@ -368,7 +368,7 @@ const PainelConstrucaoRota = ({
           <option value="">Escolher equipa disponível</option>
           {equipasDisponiveis.map((eq) => (
             <option key={eq.id} value={eq.id}>
-              Equipa {eq.codigo} {eq.designacao ? `— ${eq.designacao}` : ''}
+              {`Equipa ${eq.codigo}`}
             </option>
           ))}
         </select>
