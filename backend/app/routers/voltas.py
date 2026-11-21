@@ -256,6 +256,20 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         (dados.data, dados.equipa_id, dados.viatura_id, partida, regresso, utilizador["id"]),
     ).fetchone()["id"]
 
+    # Escala por omissão: a composição atual da equipa (ajustável depois).
+    # Sem isto, volta_profissional fica sempre vazia e uma visita nunca
+    # consegue passar a CONCLUIDA (exige pelo menos um participante, e o
+    # participante é inferido daqui quando não é registado à mão).
+    conn.execute(
+        """
+        INSERT INTO volta_profissional (volta_id, profissional_id)
+        SELECT %s, em.profissional_id
+        FROM equipa_membro em
+        WHERE em.equipa_id = %s AND em.valido_ate IS NULL
+        """,
+        (volta_id, dados.equipa_id),
+    )
+
     for ordem, (local_id, utente_ids) in enumerate(agrupado.items(), start=1):
         paragem_id = conn.execute(
             """

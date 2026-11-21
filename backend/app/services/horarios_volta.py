@@ -314,7 +314,14 @@ def calcular_resumo_volta(
         atraso_saida_min = _minutos_entre(p_prev, p_real)
 
     visitas_ativas: list[dict[str, Any]] = []
-    duracao_prevista_visitas_min = 0
+    # Chave (início, fim) -> duração em minutos, contada uma única vez por
+    # janela distinta. Enquanto não existir hora por paragem (RF39/RF21,
+    # fora do âmbito essencial), todas as visitas de uma volta partilham o
+    # mesmo início/fim previsto (o da volta toda) — somar a duração de cada
+    # visita individualmente duplicava-a N vezes e disparava alertas falsos
+    # de "sobreposição" e "soma excede o total" em qualquer volta com 2+
+    # visitas.
+    janelas_previstas_unicas: dict[tuple, int] = {}
     duracao_real_visitas_acum = 0
     tem_visita_real = False
 
@@ -342,7 +349,9 @@ def calcular_resumo_volta(
                 if v_fim_prev <= v_ini_prev:
                     alertas.append(f"{nome}: fim previsto anterior ou igual ao início previsto.")
                 else:
-                    duracao_prevista_visitas_min += _minutos_entre(v_ini_prev, v_fim_prev)
+                    janelas_previstas_unicas.setdefault(
+                        (v_ini_prev, v_fim_prev), _minutos_entre(v_ini_prev, v_fim_prev)
+                    )
                     visitas_ativas.append(
                         {
                             "nome": nome,
@@ -367,8 +376,11 @@ def calcular_resumo_volta(
                 if r_real is not None and v_fim_real > r_real:
                     alertas.append(f"{nome}: fim real posterior ao regresso real da volta.")
 
+    duracao_prevista_visitas_min = sum(janelas_previstas_unicas.values())
+
     for anterior, seguinte in zip(visitas_ativas, visitas_ativas[1:]):
-        if seguinte["ordem"] > anterior["ordem"] and seguinte["inicio"] < anterior["fim"]:
+        mesma_janela = anterior["inicio"] == seguinte["inicio"] and anterior["fim"] == seguinte["fim"]
+        if not mesma_janela and seguinte["ordem"] > anterior["ordem"] and seguinte["inicio"] < anterior["fim"]:
             alertas.append(
                 f"Horário sobreposto ou invertido entre {anterior['nome']} e {seguinte['nome']}."
             )

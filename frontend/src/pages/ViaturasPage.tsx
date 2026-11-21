@@ -98,7 +98,7 @@ const ViaturasPage: React.FC = () => {
 
   const codigosEquipas =
     equipas.length > 0
-      ? equipas.map((eq) => ({ codigo: eq.codigo, label: eq.designacao ? `Equipa ${eq.codigo} — ${eq.designacao}` : `Equipa ${eq.codigo}` }))
+      ? equipas.map((eq) => ({ codigo: eq.codigo, label: `Equipa ${eq.codigo}` }))
       : [
           { codigo: 'A', label: 'Equipa A' },
           { codigo: 'B', label: 'Equipa B' },
