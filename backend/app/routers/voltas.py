@@ -1,6 +1,8 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
+
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
@@ -23,6 +25,7 @@ from app.services.horarios_volta import (
 router = APIRouter(prefix="/voltas", tags=["voltas"])
 
 LISBOA = ZoneInfo("Europe/Lisbon")
+DURACAO_VISITA_PADRAO_MIN = 30
 
 
 def _obter_hora_limite_beja(conn) -> time:
@@ -270,6 +273,14 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         (volta_id, dados.equipa_id),
     )
 
+    # Horário por visita: sequencial a partir da partida, DURACAO_VISITA_PADRAO_MIN
+    # cada uma (ainda não há seleção de duração por utente/paragem, RF39/RF21
+    # fora do âmbito essencial). Antes, todas as visitas ficavam com o
+    # horário da volta toda (9:30-16:00) repetido — parecia um erro a quem
+    # via a ficha ("como é que 3 visitas acontecem todas ao mesmo tempo?")
+    # e desencadeava alertas de sobreposição/soma sem sentido no resumo.
+    proximo_inicio = partida
+
     for ordem, (local_id, utente_ids) in enumerate(agrupado.items(), start=1):
         paragem_id = conn.execute(
             """
@@ -281,15 +292,92 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         ).fetchone()["id"]
 
         for utente_id in utente_ids:
+            inicio_visita = proximo_inicio
+            fim_visita = inicio_visita + timedelta(minutes=DURACAO_VISITA_PADRAO_MIN)
+            proximo_inicio = fim_visita
+
             conn.execute(
                 """
                 INSERT INTO visita (utente_id, paragem_id, equipa_executante_id, estado, inicio_previsto, fim_previsto, criada_por)
                 VALUES (%s, %s, %s, 'PLANEADA', %s, %s, %s)
                 """,
-                (utente_id, paragem_id, dados.equipa_id, partida, regresso, utilizador["id"]),
+                (utente_id, paragem_id, dados.equipa_id, inicio_visita, fim_visita, utilizador["id"]),
             )
 
     return {"id": volta_id}
+
+
+def _commit_ou_erro(conn):
+    # get_conn() só faz commit quando a dependência do FastAPI é fechada, o
+    # que acontece DEPOIS da resposta HTTP já ter sido enviada ao cliente —
+    # uma falha nesse commit (p.ex. um trigger DEFERRABLE INITIALLY DEFERRED
+    # como trg_volta_validar_confirmacao, que só corre no COMMIT) fica
+    # invisível ao cliente, que recebe sempre 200 mesmo sem nada ter sido
+    # gravado. Ao comitar aqui dentro do próprio handler, uma falha é
+    # apanhada antes da resposta ser construída e devolvida como erro real.
+    try:
+        conn.commit()
+    except psycopg.Error as erro:
+        conn.rollback()
+        mensagem = str(erro).split("\n", 1)[0]
+        raise HTTPException(status_code=400, detail=mensagem) from erro
+
+
+@router.put("/{volta_id}/confirmar")
+def confirmar(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # ck_volta_confirmada_completa (migração 0001) exige confirmada_por e
+    # confirmada_em preenchidos para qualquer estado que não seja
+    # RASCUNHO/CANCELADA — sem este passo, nunca é possível avançar uma
+    # volta para CONFIRMADA/EM_CURSO/CONCLUIDA.
+    volta = conn.execute("SELECT estado FROM volta WHERE id = %s", (volta_id,)).fetchone()
+    if volta is None:
+        raise HTTPException(status_code=404, detail="Volta não encontrada")
+    if volta["estado"] != "RASCUNHO":
+        raise HTTPException(status_code=400, detail="Só é possível confirmar uma volta em rascunho")
+
+    conn.execute(
+        """
+        UPDATE volta
+        SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+        WHERE id = %s
+        """,
+        (utilizador["id"], volta_id),
+    )
+    _commit_ou_erro(conn)
+
+    return obter(volta_id, conn, utilizador)
+
+
+@router.put("/{volta_id}/concluir")
+def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    volta = conn.execute("SELECT estado FROM volta WHERE id = %s", (volta_id,)).fetchone()
+    if volta is None:
+        raise HTTPException(status_code=404, detail="Volta não encontrada")
+    if volta["estado"] not in ("CONFIRMADA", "EM_CURSO"):
+        raise HTTPException(
+            status_code=400,
+            detail="Só é possível concluir uma volta confirmada ou em curso",
+        )
+
+    pendentes = conn.execute(
+        """
+        SELECT count(*) AS total
+        FROM paragem p
+        JOIN visita vis ON vis.paragem_id = p.id
+        WHERE p.volta_id = %s AND vis.estado IN ('PENDENTE', 'PLANEADA', 'EM_CURSO')
+        """,
+        (volta_id,),
+    ).fetchone()["total"]
+    if pendentes > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Há {pendentes} visita(s) por concluir ou cancelar antes de fechar a volta",
+        )
+
+    conn.execute("UPDATE volta SET estado = 'CONCLUIDA' WHERE id = %s", (volta_id,))
+    _commit_ou_erro(conn)
+
+    return obter(volta_id, conn, utilizador)
 
 
 @router.get("/{volta_id}")

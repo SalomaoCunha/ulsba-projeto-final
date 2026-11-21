@@ -7,6 +7,8 @@ import {
   getVoltaDetalhe,
   registarHorariosReaisVisita,
   registarHorariosReaisVolta,
+  confirmarVolta,
+  concluirVolta,
 } from '../services/voltaService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import { LABEL_ESTADO_VISITA, COR_ESTADO_VISITA } from '../config/estadoVisita';
@@ -65,6 +67,7 @@ const VoltaDetalhePage = () => {
 
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [aAtualizarEstado, setAAtualizarEstado] = useState(false);
 
   useEffect(() => {
     getVoltaDetalhe(Number(id))
@@ -193,6 +196,38 @@ const VoltaDetalhePage = () => {
     }
   };
 
+  const handleConfirmarVolta = async () => {
+    if (!volta) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setAAtualizarEstado(true);
+    try {
+      const atualizada = await confirmarVolta(volta.id);
+      setVolta(atualizada);
+      setMensagemSucesso('Volta confirmada com sucesso.');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível confirmar a volta.');
+    } finally {
+      setAAtualizarEstado(false);
+    }
+  };
+
+  const handleConcluirVolta = async () => {
+    if (!volta) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setAAtualizarEstado(true);
+    try {
+      const atualizada = await concluirVolta(volta.id);
+      setVolta(atualizada);
+      setMensagemSucesso('Volta marcada como concluída.');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível concluir a volta.');
+    } finally {
+      setAAtualizarEstado(false);
+    }
+  };
+
   if (carregando) {
     return <EcraCarregamento mensagem="A carregar volta..." />;
   }
@@ -231,6 +266,27 @@ const VoltaDetalhePage = () => {
             </div>
 
             <div className="d-flex align-items-center gap-2 flex-shrink-0">
+              {volta.estado === 'RASCUNHO' && (
+                <button
+                  className="btn btn-sm btn-primary d-print-none"
+                  onClick={handleConfirmarVolta}
+                  disabled={aAtualizarEstado}
+                >
+                  <i className="bi bi-check2-square"></i>
+                  <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A confirmar...' : 'Confirmar volta'}</span>
+                </button>
+              )}
+              {(volta.estado === 'CONFIRMADA' || volta.estado === 'EM_CURSO') && (
+                <button
+                  className="btn btn-sm btn-success d-print-none"
+                  onClick={handleConcluirVolta}
+                  disabled={aAtualizarEstado}
+                  title="Só é possível concluir quando não existirem visitas pendentes ou planeadas"
+                >
+                  <i className="bi bi-flag-fill"></i>
+                  <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A concluir...' : 'Marcar como feita'}</span>
+                </button>
+              )}
               <button className="btn btn-sm btn-outline-secondary d-print-none" onClick={() => window.print()}>
                 <i className="bi bi-printer"></i>
                 <span className="d-none d-sm-inline"> Imprimir relatório</span>
@@ -538,7 +594,11 @@ const VoltaDetalhePage = () => {
               )}
 
               <div className="rounded-3 overflow-hidden border">
-                <MapaPercursoVolta paragens={volta.paragens} />
+                {/* key força remonte ao mudar de volta: o MapContainer do
+                    Leaflet só usa center/zoom na montagem inicial — sem
+                    isto, navegar de uma volta para outra sem recarregar a
+                    página deixava o mapa parado no sítio da volta anterior. */}
+                <MapaPercursoVolta key={volta.id} paragens={volta.paragens} />
               </div>
             </div>
           </div>

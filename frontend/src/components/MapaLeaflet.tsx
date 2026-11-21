@@ -66,6 +66,14 @@ interface Props {
   modoEdicao?: boolean;
   pontoEdicao?: { lat: number; lng: number } | null;
   pontoEdicaoValido?: boolean;
+  // Distingue um ponto só pré-preenchido (p.ex. o centro de Beja por omissão
+  // ao criar um novo local) de um ponto que o utilizador já clicou/arrastou
+  // de propósito. Sem isto, o pino por omissão fica com o mesmo azul "válido"
+  // de um pino confirmado, e o utilizador avança sem perceber que ainda tem
+  // de marcar a localização real. Omitido (ou true) preserva o comportamento
+  // de correção de coordenadas já existentes, onde o ponto de partida já é
+  // uma coordenada real do utente.
+  pontoEdicaoConfirmado?: boolean;
   mostrarLegenda?: boolean;
   onSelecionarPonto?: (lat: number, lng: number) => void;
   onIniciarEdicaoUtente?: (utente: Utente) => void;
@@ -92,13 +100,16 @@ const criarIconePersonalizado = (prioridade: string) => {
   });
 };
 
-const criarIconeEdicao = (valido: boolean) => {
-  const cor = valido ? '#0d6efd' : '#dc3545';
+type EstadoPinoEdicao = 'pendente' | 'valido' | 'invalido';
+
+const criarIconeEdicao = (estado: EstadoPinoEdicao) => {
+  const cor = estado === 'valido' ? '#0d6efd' : estado === 'invalido' ? '#dc3545' : '#adb5bd';
+  const tracejado = estado === 'pendente' ? 'stroke-dasharray="1.5,1.2"' : '';
 
   const svgIcon = `
-    <div style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));">
+    <div style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5)); opacity: ${estado === 'pendente' ? 0.6 : 1};">
       <svg width="38" height="38" viewBox="0 0 16 16" fill="${cor}" xmlns="http://www.w3.org/2000/svg">
-        <path stroke="white" stroke-width="0.8" d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+        <path stroke="white" stroke-width="0.8" ${tracejado} d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
       </svg>
     </div>
   `;
@@ -118,6 +129,7 @@ const MapaLeaflet: React.FC<Props> = ({
   modoEdicao = false,
   pontoEdicao = null,
   pontoEdicaoValido = true,
+  pontoEdicaoConfirmado = true,
   mostrarLegenda = true,
   onSelecionarPonto,
   onIniciarEdicaoUtente,
@@ -138,6 +150,12 @@ const MapaLeaflet: React.FC<Props> = ({
     pontoEdicao.lat <= 90 &&
     pontoEdicao.lng >= -180 &&
     pontoEdicao.lng <= 180;
+
+  const estadoPinoEdicao: EstadoPinoEdicao = !pontoEdicaoConfirmado
+    ? 'pendente'
+    : pontoEdicaoValido
+      ? 'valido'
+      : 'invalido';
 
   return (
     <div
@@ -180,7 +198,7 @@ const MapaLeaflet: React.FC<Props> = ({
           style={{ top: '16px', zIndex: 1000 }}
         >
           <i className="bi bi-crosshair me-2"></i>
-          Clique no mapa ou arraste o pino azul para definir as coordenadas
+          Clique no mapa ou arraste o pino para definir as coordenadas
         </div>
       )}
 
@@ -245,7 +263,7 @@ const MapaLeaflet: React.FC<Props> = ({
         {modoEdicao && pontoEdicaoDesenhavel && (
           <Marker
             position={[pontoEdicao.lat, pontoEdicao.lng]}
-            icon={criarIconeEdicao(pontoEdicaoValido)}
+            icon={criarIconeEdicao(estadoPinoEdicao)}
             draggable
             eventHandlers={{
               dragend: (e) => {
@@ -257,7 +275,9 @@ const MapaLeaflet: React.FC<Props> = ({
           >
             <Popup>
               <div className="small">
-                <strong>Nova posição selecionada</strong>
+                <strong>
+                  {estadoPinoEdicao === 'pendente' ? 'Posição por confirmar' : 'Nova posição selecionada'}
+                </strong>
                 <br />
                 Lat: {pontoEdicao.lat.toFixed(6)}
                 <br />

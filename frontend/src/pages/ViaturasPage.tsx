@@ -5,6 +5,7 @@ import {
   getViaturas,
   createViatura,
   updateViatura,
+  deleteViatura,
   getBloqueiosViaturas,
   criarBloqueioViatura,
   removerBloqueioViatura,
@@ -73,6 +74,8 @@ const ViaturasPage: React.FC = () => {
   const [viaturaEmEdicao, setViaturaEmEdicao] = useState<Viatura | null>(null);
   const [modoCriacao, setModoCriacao] = useState(false);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aApagarId, setAApagarId] = useState<number | null>(null);
+  const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
 
   // Modal de bloqueios por dia (impedimentos)
   const [viaturaBloqueiosModal, setViaturaBloqueiosModal] = useState<Viatura | null>(null);
@@ -151,6 +154,31 @@ const ViaturasPage: React.FC = () => {
   const fecharModalEdicao = () => {
     setViaturaEmEdicao(null);
     setModoCriacao(false);
+  };
+
+  const apagarViatura = async (viatura: Viatura) => {
+    if (!window.confirm(`Apagar a viatura ${viatura.matricula}?`)) return;
+    setAApagarId(viatura.id);
+    setAvisoApagar(null);
+    try {
+      const resultado = await deleteViatura(viatura.id);
+      if (resultado.apagada) {
+        setViaturas((atuais) => atuais.filter((v) => v.id !== viatura.id));
+      } else {
+        // Tem voltas associadas — o backend desativou-a em vez de apagar.
+        setViaturas((atuais) =>
+          atuais.map((v) => (v.id === viatura.id ? { ...v, estado: 'INATIVA' } : v)),
+        );
+        setAvisoApagar(
+          `A viatura ${viatura.matricula} tem voltas associadas e por isso foi marcada como Inativa em vez de apagada.`,
+        );
+      }
+    } catch (erro) {
+      console.error('Falha ao apagar viatura:', erro);
+      setAvisoApagar('Não foi possível apagar a viatura.');
+    } finally {
+      setAApagarId(null);
+    }
   };
 
   const abrirModalBloqueios = (viatura: Viatura) => {
@@ -260,6 +288,13 @@ const ViaturasPage: React.FC = () => {
         </button>
       </div>
 
+      {avisoApagar && (
+        <div className="alert alert-warning alert-dismissible" role="alert">
+          {avisoApagar}
+          <button type="button" className="btn-close" onClick={() => setAvisoApagar(null)} aria-label="Fechar"></button>
+        </div>
+      )}
+
       {/* Filtros por Estado */}
       <div className="d-flex flex-wrap gap-2 mb-3">
         {(
@@ -356,6 +391,15 @@ const ViaturasPage: React.FC = () => {
                 >
                   <i className="bi bi-pencil"></i>
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-light text-danger shadow-sm border flex-shrink-0"
+                  title="Apagar viatura"
+                  disabled={aApagarId === viatura.id}
+                  onClick={() => apagarViatura(viatura)}
+                >
+                  <i className="bi bi-trash"></i>
+                </button>
               </div>
             );
           })}
@@ -451,11 +495,20 @@ const ViaturasPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        className="btn btn-sm btn-light text-secondary shadow-sm border"
+                        className="btn btn-sm btn-light text-secondary shadow-sm border me-1"
                         title="Editar viatura"
                         onClick={() => abrirModalEdicao(viatura)}
                       >
                         <i className="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-light text-danger shadow-sm border"
+                        title="Apagar viatura"
+                        disabled={aApagarId === viatura.id}
+                        onClick={() => apagarViatura(viatura)}
+                      >
+                        <i className="bi bi-trash"></i>
                       </button>
                     </td>
                   </tr>

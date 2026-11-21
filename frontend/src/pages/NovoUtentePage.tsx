@@ -421,6 +421,7 @@ const NovoUtentePage: React.FC = () => {
                       mostrarLegenda={false}
                       pontoEdicao={pontoLocal}
                       pontoEdicaoValido={pontoLocalValido}
+                      pontoEdicaoConfirmado={pontoLocalConfirmado}
                       onSelecionarPonto={(lat, lng) => {
                         setPontoLocal({ lat, lng });
                         setPontoLocalConfirmado(true);
