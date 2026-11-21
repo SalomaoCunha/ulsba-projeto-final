@@ -344,7 +344,7 @@ const AgendaPage = () => {
             <option value="">Todas as equipas</option>
             {equipas.map((equipa) => (
               <option key={equipa.id} value={equipa.id}>
-                {equipa.designacao ? `Equipa ${equipa.codigo} — ${equipa.designacao}` : `Equipa ${equipa.codigo}`}
+                {`Equipa ${equipa.codigo}`}
               </option>
             ))}
           </select>
