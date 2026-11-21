@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, ZoomControl, useMap }
 import L from 'leaflet';
 import { useEffect } from 'react';
 import type { ParagemDetalhe } from '../types/volta';
+import { getNivelPrioridade } from '@/config/niveis';
 
 const AjustarTamanhoMapa: React.FC = () => {
   const map = useMap();
@@ -47,7 +48,15 @@ const criarIconeNumerado = (numero: number, cor: string) => {
 // urgência mais prioritária entre elas para o pino — nunca a menos urgente.
 const corDaParagem = (paragem: ParagemDetalhe) => {
   const comCor = paragem.visitas.filter((v) => v.urgenciaCor !== null);
-  return comCor[0]?.urgenciaCor ?? '#0d6efd';
+  if (comCor.length === 0) return '#0d6efd';
+
+  const maisUrgente = comCor.reduce((atual, candidata) => {
+    const ordemAtual = getNivelPrioridade(atual.urgenciaDesignacao ?? '')?.ordem ?? Infinity;
+    const ordemCandidata = getNivelPrioridade(candidata.urgenciaDesignacao ?? '')?.ordem ?? Infinity;
+    return ordemCandidata < ordemAtual ? candidata : atual;
+  });
+
+  return maisUrgente.urgenciaCor ?? '#0d6efd';
 };
 
 const MapaPercursoVolta: React.FC<Props> = ({ paragens }) => {

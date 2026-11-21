@@ -21,10 +21,33 @@ export async function apiFetch<T>(caminho: string, opcoes: RequestInit = {}): Pr
     throw erro;
   }
 
+  if (resposta.status === 401) {
+    // Token expirado/inválido: sem isto a app fica "presa" a repetir pedidos
+    // que nunca mais vão ter sucesso, em vez de pedir novo login.
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+    throw new Error('Sessão expirada. Inicie sessão novamente.');
+  }
+
   if (!resposta.ok) {
     const erro = await resposta.json().catch(() => null);
-    throw new Error(erro?.detail ?? `Erro ${resposta.status}`);
+    throw new Error(formatarDetailErro(erro?.detail) ?? `Erro ${resposta.status}`);
   }
 
   return resposta.json();
+}
+
+// O FastAPI devolve "detail" como string nos HTTPException normais, mas como
+// lista de objetos {msg, loc, ...} nos erros de validação 422 — sem isto,
+// a mensagem de erro aparecia como "[object Object]".
+function formatarDetailErro(detail: unknown): string | null {
+  if (typeof detail === 'string') return detail;
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => (item && typeof item === 'object' && 'msg' in item ? String(item.msg) : JSON.stringify(item)))
+      .join('; ');
+  }
+
+  return null;
 }

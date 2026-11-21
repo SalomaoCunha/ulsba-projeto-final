@@ -21,8 +21,11 @@ const PainelConstrucaoRota = ({ data, equipas, viaturas, utentes, voltasDoMes, o
   const [selecionados, setSelecionados] = useState<number[]>([]);
   const [aEnviar, setAEnviar] = useState(false);
 
-  // Voltas já marcadas no MESMO dia (para não sugerir equipa/viatura ocupada)
-  const diaIso = data.toISOString().slice(0, 10);
+  // Voltas já marcadas no MESMO dia (para não sugerir equipa/viatura ocupada).
+  // toISOString() converte para UTC antes de cortar a data — à meia-noite
+  // local, num fuso à frente de UTC (Lisboa no verão), isso dá o dia anterior.
+  // Construímos a data a partir dos componentes locais para evitar isso.
+  const diaIso = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
   const voltasDesseDia = voltasDoMes.filter((v) => v.data === diaIso);
 
   const equipasDisponiveis = equipas.filter(
@@ -36,7 +39,12 @@ const PainelConstrucaoRota = ({ data, equipas, viaturas, utentes, voltasDoMes, o
     const ordemA = getNivelPrioridade(a.prioridade)?.ordem ?? Infinity;
     const ordemB = getNivelPrioridade(b.prioridade)?.ordem ?? Infinity;
     if (ordemA !== ordemB) return ordemA - ordemB;
-    return new Date(a.ultimaVisita).getTime() - new Date(b.ultimaVisita).getTime();
+    // Sem ultimaVisita = nunca visitado: trata-se como "há mais tempo
+    // possível" (0 = epoch), não como Date('').getTime() === NaN, que
+    // desestabilizava o sort (NaN não é > nem < nada).
+    const tempoA = a.ultimaVisita ? new Date(a.ultimaVisita).getTime() : 0;
+    const tempoB = b.ultimaVisita ? new Date(b.ultimaVisita).getTime() : 0;
+    return tempoA - tempoB;
   });
 
   const alternarSelecionado = (id: number) => {
@@ -74,7 +82,7 @@ const PainelConstrucaoRota = ({ data, equipas, viaturas, utentes, voltasDoMes, o
         >
           <option value="">Escolher equipa</option>
           {equipasDisponiveis.map((eq) => (
-            <option key={eq.id} value={eq.id}>{eq.designacao ?? `Equipa ${eq.codigo}`}</option>
+            <option key={eq.id} value={eq.id}>{`Equipa ${eq.codigo}`}</option>
           ))}
         </select>
       </div>

@@ -61,7 +61,6 @@ const EquipasPage: React.FC = () => {
               <div className="d-flex justify-content-between align-items-start">
                 <div>
                   <h6 className="fw-bold mb-1">Equipa {equipa.codigo}</h6>
-                  <p className="text-muted small mb-2">{equipa.designacao}</p>
                 </div>
                 <button className="btn btn-sm btn-outline-secondary" disabled title="Em breve">
                   <i className="bi bi-pencil"></i>

@@ -41,10 +41,13 @@ export function filtrarUtentes(utentes: Utente[], filtros: FiltrosUtentes): Uten
 
     const dataVisita = new Date(u.ultimaVisita);
 
-    if (filtros.dataDe && dataVisita < new Date(filtros.dataDe)) {
+    if (filtros.dataDe && dataVisita < new Date(`${filtros.dataDe}T00:00:00.000Z`)) {
       return false;
     }
-    if (filtros.dataAte && dataVisita > new Date(filtros.dataAte)) {
+    // "Até" é inclusivo do próprio dia — comparar com a meia-noite UTC desse
+    // dia (como `new Date(filtros.dataAte)` fazia) excluía qualquer visita
+    // ocorrida depois das 00:00 UTC nesse dia, ou seja, quase todas.
+    if (filtros.dataAte && dataVisita > new Date(`${filtros.dataAte}T23:59:59.999Z`)) {
       return false;
     }
 
