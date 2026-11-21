@@ -318,95 +318,13 @@ const ViaturasPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Cartão Branco Principal */}
+      {/* Cartão Branco Principal — uma única tabela, com scroll horizontal em
+          ecrãs estreitos (table-responsive do Bootstrap); evita manter duas
+          árvores de JSX com a mesma informação e ações, que só divergem com
+          o tempo (já aconteceu: uma ação nova fica num sítio e esquece-se do
+          outro). */}
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
-        {/* Lista em cartões — só em mobile (<md) */}
-        <div className="d-md-none">
-          {viaturasFiltradas.map((viatura) => {
-            const bloqueadaHoje = viaturaBloqueadaNoDia(bloqueios, viatura.id, hojeIso);
-            const totalBloqueios = contarBloqueiosFuturos(viatura.id);
-            return (
-              <div key={viatura.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
-                <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                  <div className="fw-medium text-dark text-truncate">
-                    {viatura.matricula} — {viatura.designacao ?? 'Sem modelo'}
-                  </div>
-                  <div className="text-muted small mt-1">
-                    {LABEL_MOTORIZACAO[viatura.tipo_motorizacao] ?? viatura.tipo_motorizacao}
-                    {viatura.capacidade_deposito ? ` (${viatura.capacidade_deposito})` : ''} ·{' '}
-                    {viatura.autonomia ?? '—'}{' '}
-                    {viatura.unidade_autonomia === 'KM'
-                      ? 'km'
-                      : viatura.unidade_autonomia === 'PERCENTAGEM'
-                        ? '%'
-                        : ''}{' '}
-                    · {viatura.lugares} lug.
-                  </div>
-                  <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
-                    {getBadgeEstado(viatura.estado)}
-                    {bloqueadaHoje && (
-                      <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
-                        Bloqueada hoje
-                      </span>
-                    )}
-                    {viatura.equipa_codigo ? (
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm p-0 text-decoration-none text-success small fw-medium"
-                        onClick={() => navigate('/equipas')}
-                      >
-                        {nomeDaEquipa(viatura.equipa_codigo)}
-                      </button>
-                    ) : (
-                      <span className="text-muted small">Sem equipa</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0 position-relative"
-                  title="Bloqueios / impedimentos por dia"
-                  onClick={() => abrirModalBloqueios(viatura)}
-                >
-                  <i className="bi bi-calendar-x"></i>
-                  {totalBloqueios > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                      {totalBloqueios}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
-                  title="Agendar no calendário"
-                  onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
-                >
-                  <i className="bi bi-calendar3"></i>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
-                  title="Editar viatura"
-                  onClick={() => abrirModalEdicao(viatura)}
-                >
-                  <i className="bi bi-pencil"></i>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-danger shadow-sm border flex-shrink-0"
-                  title="Apagar viatura"
-                  disabled={aApagarId === viatura.id}
-                  onClick={() => apagarViatura(viatura)}
-                >
-                  <i className="bi bi-trash"></i>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Tabela de Dados — a partir de md */}
-        <div className="table-responsive flex-grow-1 d-none d-md-block">
+        <div className="table-responsive flex-grow-1">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
