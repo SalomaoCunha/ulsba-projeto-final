@@ -44,14 +44,14 @@ function mapearUtente(dto: UtenteDTO): Utente {
     codigoPostal: dto.codigo_postal ?? '',
     localidade: dto.localidade ?? '',
     concelho: dto.concelho ?? '',
-    lat: dto.lat ?? 0,
-    lng: dto.lng ?? 0,
+    lat: dto.lat,
+    lng: dto.lng,
     notas: dto.notas ?? '',
     prioridade: (dto.urgencia_designacao ?? '') as Utente['prioridade'],
     historicoPrioridade: [],
     complexidade: (dto.complexidade_designacao ?? '') as Utente['complexidade'],
     historicoComplexidade: [],
-    estado: dto.estado === 'ATIVO' ? 'Ativo' : 'Inativo',
+    estado: dto.estado === 'ATIVO' ? 'Ativo' : dto.estado === 'REFERENCIADO' ? 'Referenciado' : 'Inativo',
   };
 }
 

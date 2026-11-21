@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
+await page.fill('input[type="email"]', 'coordenador.teste@ulsba.invalid');
+await page.fill('input[type="password"]', 'Teste@1234');
+await page.click('button[type="submit"]');
+await page.waitForTimeout(1500);
+await page.goto('http://localhost:5173/utentes', { waitUntil: 'networkidle' });
+await page.waitForTimeout(2000);
+const text = await page.locator('body').innerText();
+const hasReferenciado = text.includes('Referenciado');
+console.log('Tem badge Referenciado visivel:', hasReferenciado);
+await page.screenshot({ path: 'C:/Users/tiago/AppData/Local/Temp/claude/89cdf32d9d12e8b2/60f84757-a214-4ab3-9a9c-540e89a8ba80/scratchpad/utentes-estado.png', fullPage: false });
+await browser.close();

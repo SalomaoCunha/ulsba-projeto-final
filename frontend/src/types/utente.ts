@@ -18,14 +18,14 @@ export interface Utente {
   codigoPostal: string;
   localidade: string;
   concelho: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   notas: string;
   prioridade: PrioridadeValor;
   historicoPrioridade: AlteracaoPrioridade[];
   complexidade: ComplexidadeValor;
   historicoComplexidade: AlteracaoComplexidade[];
-  estado: 'Ativo' | 'Inativo';
+  estado: 'Ativo' | 'Referenciado' | 'Inativo';
 }
 
 export interface AlteracaoPrioridade {
