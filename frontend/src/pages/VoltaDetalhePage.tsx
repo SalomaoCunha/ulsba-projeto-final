@@ -3,7 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Ocorrencia } from '../types/ocorrencia';
 import type { VoltaDetalhe, VisitaDetalhe } from '../types/volta';
 import { getOcorrencias } from '../services/ocorrenciaService';
-import { getVoltaDetalhe } from '../services/voltaService';
+import {
+  getVoltaDetalhe,
+  registarHorariosReaisVisita,
+  registarHorariosReaisVolta,
+} from '../services/voltaService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import { LABEL_ESTADO_VISITA, COR_ESTADO_VISITA } from '../config/estadoVisita';
 import EcraCarregamento from '../components/EcraCarregamento';
@@ -16,6 +20,30 @@ interface VisitaComLocal extends VisitaDetalhe {
   localMorada: string;
 }
 
+function extrairHoraInput(iso?: string | null): string {
+  if (!iso) return '';
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return '';
+  const h = String(data.getHours()).padStart(2, '0');
+  const m = String(data.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function montarIsoLocal(dataVolta: string, horaHHMM: string): string | null {
+  if (!horaHHMM.trim()) return null;
+  const dt = new Date(`${dataVolta}T${horaHHMM}:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toISOString();
+}
+
+function formatarDuracao(minutos?: number | null): string {
+  if (minutos === null || minutos === undefined) return '—';
+  const horas = Math.floor(minutos / 60);
+  const mins = Math.round(minutos % 60);
+  if (horas <= 0) return `${mins} min`;
+  return mins > 0 ? `${horas}h ${mins}m` : `${horas}h`;
+}
+
 const VoltaDetalhePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,10 +53,25 @@ const VoltaDetalhePage = () => {
   const [carregando, setCarregando] = useState(true);
   const [visitaSelecionadaId, setVisitaSelecionadaId] = useState<number | null>(null);
 
+  // Inputs de horários reais da volta
+  const [partidaRealHora, setPartidaRealHora] = useState('');
+  const [regressoRealHora, setRegressoRealHora] = useState('');
+  const [aGuardarVolta, setAGuardarVolta] = useState(false);
+
+  // Inputs de horários reais da visita selecionada
+  const [visitaInicioRealHora, setVisitaInicioRealHora] = useState('');
+  const [visitaFimRealHora, setVisitaFimRealHora] = useState('');
+  const [aGuardarVisita, setAGuardarVisita] = useState(false);
+
+  const [mensagemErro, setMensagemErro] = useState<string | null>(null);
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+
   useEffect(() => {
     getVoltaDetalhe(Number(id))
       .then((dados) => {
         setVolta(dados);
+        setPartidaRealHora(extrairHoraInput(dados.partidaReal));
+        setRegressoRealHora(extrairHoraInput(dados.regressoReal));
         const primeira = dados.paragens[0]?.visitas[0];
         setVisitaSelecionadaId(primeira ? primeira.visitaId : null);
       })
@@ -58,6 +101,95 @@ const VoltaDetalhePage = () => {
       .catch((erro) => console.error('Falha ao carregar ocorrências das visitas:', erro));
   }, [volta]);
 
+  const visitas: VisitaComLocal[] = volta
+    ? volta.paragens.flatMap((paragem) =>
+        paragem.visitas.map((visita) => ({
+          ...visita,
+          paragemOrdem: paragem.ordem,
+          localNome: paragem.localNome,
+          localMorada: paragem.localMorada,
+        })),
+      )
+    : [];
+
+  const visitaSelecionada = visitas.find((v) => v.visitaId === visitaSelecionadaId) ?? null;
+
+  useEffect(() => {
+    if (visitaSelecionada) {
+      setVisitaInicioRealHora(extrairHoraInput(visitaSelecionada.inicioReal));
+      setVisitaFimRealHora(extrairHoraInput(visitaSelecionada.fimReal));
+    } else {
+      setVisitaInicioRealHora('');
+      setVisitaFimRealHora('');
+    }
+  }, [visitaSelecionada?.visitaId, visitaSelecionada?.inicioReal, visitaSelecionada?.fimReal]);
+
+  const handleGuardarHorariosVolta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!volta) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+
+    const partidaIso = montarIsoLocal(volta.data, partidaRealHora);
+    const regressoIso = montarIsoLocal(volta.data, regressoRealHora);
+
+    if (!partidaIso && !regressoIso) {
+      setMensagemErro('Indique a hora de saída real ou de regresso real.');
+      return;
+    }
+
+    setAGuardarVolta(true);
+    try {
+      const atualizada = await registarHorariosReaisVolta(volta.id, {
+        partidaReal: partidaIso,
+        regressoReal: regressoIso,
+      });
+      setVolta(atualizada);
+      setPartidaRealHora(extrairHoraInput(atualizada.partidaReal));
+      setRegressoRealHora(extrairHoraInput(atualizada.regressoReal));
+      setMensagemSucesso(
+        atualizada.resumo && atualizada.resumo.atrasoSaidaMin > 0
+          ? `Saída real registada (+${atualizada.resumo.atrasoSaidaMin} min). Os horários previstos seguintes e o regresso foram ajustados automaticamente.`
+          : 'Horários reais da volta guardados com sucesso.',
+      );
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível guardar os horários da volta.');
+    } finally {
+      setAGuardarVolta(false);
+    }
+  };
+
+  const handleGuardarHorariosVisita = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!volta || !visitaSelecionada) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+
+    const inicioIso = montarIsoLocal(volta.data, visitaInicioRealHora);
+    const fimIso = montarIsoLocal(volta.data, visitaFimRealHora);
+
+    if (!inicioIso && !fimIso) {
+      setMensagemErro('Indique o início real ou o fim real da visita.');
+      return;
+    }
+
+    setAGuardarVisita(true);
+    try {
+      const atualizada = await registarHorariosReaisVisita(volta.id, visitaSelecionada.visitaId, {
+        inicioReal: inicioIso,
+        fimReal: fimIso,
+      });
+      setVolta(atualizada);
+      setMensagemSucesso(
+        `Horários reais de ${visitaSelecionada.utenteNome} guardados. Eventuais atrasos foram propagados para as visitas seguintes e para o regresso previsto.`,
+      );
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível guardar os horários da visita.');
+    } finally {
+      setAGuardarVisita(false);
+    }
+  };
+
   if (carregando) {
     return <EcraCarregamento mensagem="A carregar volta..." />;
   }
@@ -66,21 +198,9 @@ const VoltaDetalhePage = () => {
     return <div>Volta não encontrada.</div>;
   }
 
-  const distanciaMostrada = volta.distanciaRealKm ?? volta.distanciaEstimadaKm;
+  const resumo = volta.resumo;
+  const distanciaMostrada = volta.distanciaRealKm ?? volta.distanciaEstimadaKm ?? resumo?.distanciaParagensSomaKm ?? null;
 
-  const visitas: VisitaComLocal[] = volta.paragens.flatMap((paragem) =>
-    paragem.visitas.map((visita) => ({
-      ...visita,
-      paragemOrdem: paragem.ordem,
-      localNome: paragem.localNome,
-      localMorada: paragem.localMorada,
-    })),
-  );
-
-  const visitaSelecionada = visitas.find((v) => v.visitaId === visitaSelecionadaId) ?? null;
-
-  // Legenda de prioridades realmente presentes nesta volta — evita listar
-  // cores que não se aplicam a nenhum utente desta volta em particular.
   const legendaPrioridades = Array.from(
     new Map(
       visitas
@@ -127,6 +247,46 @@ const VoltaDetalhePage = () => {
             {new Date(volta.data).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
 
+          {/* Aviso de regresso a Beja (aviso, não bloqueio) */}
+          {resumo?.comprometeRegressoBeja && resumo.avisoRegressoBeja && (
+            <div className="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 small mb-3" role="alert">
+              <i className="bi bi-exclamation-triangle-fill fs-6 flex-shrink-0"></i>
+              <div>
+                <strong>Regresso a Beja comprometido:</strong> {resumo.avisoRegressoBeja}
+              </div>
+            </div>
+          )}
+
+          {/* Alertas de coerência de horários ou distâncias */}
+          {resumo && resumo.alertasCoerencia.length > 0 && (
+            <div className="alert alert-danger py-2 px-3 small mb-3" role="alert">
+              <div className="fw-semibold mb-1">
+                <i className="bi bi-shield-exclamation me-1"></i>
+                Incoerências detetadas nos horários ou totais da volta:
+              </div>
+              <ul className="mb-0 ps-3">
+                {resumo.alertasCoerencia.map((alerta, idx) => (
+                  <li key={idx}>{alerta}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {mensagemErro && (
+            <div className="alert alert-danger py-2 px-3 small mb-3 d-flex justify-content-between align-items-center">
+              <span>{mensagemErro}</span>
+              <button type="button" className="btn-close btn-sm" onClick={() => setMensagemErro(null)} />
+            </div>
+          )}
+
+          {mensagemSucesso && (
+            <div className="alert alert-success py-2 px-3 small mb-3 d-flex justify-content-between align-items-center">
+              <span>{mensagemSucesso}</span>
+              <button type="button" className="btn-close btn-sm" onClick={() => setMensagemSucesso(null)} />
+            </div>
+          )}
+
+          {/* Indicadores e Totais Coerentes */}
           <div className="row g-3">
             <div className="col-6 col-md-3">
               <DetalheItem icon="bi-people" label="Equipa" valor={volta.equipaCodigo ? `Equipa ${volta.equipaCodigo}` : 'Sem equipa'} />
@@ -135,12 +295,86 @@ const VoltaDetalhePage = () => {
               <DetalheItem icon="bi-truck" label="Viatura" valor={volta.viaturaMatricula ?? 'Sem viatura'} />
             </div>
             <div className="col-6 col-md-3">
-              <DetalheItem icon="bi-clock" label="Horário previsto" valor={`${formatarHora(volta.partidaPrevista)} → ${formatarHora(volta.regressoPrevisto)}`} />
+              <DetalheItem
+                icon="bi-clock"
+                label="Horário previsto"
+                valor={`${formatarHora(volta.partidaPrevista)} → ${formatarHora(volta.regressoPrevisto)}`}
+              />
             </div>
             <div className="col-6 col-md-3">
-              <DetalheItem icon="bi-signpost-2" label="Distância" valor={distanciaMostrada !== null ? `${distanciaMostrada} km` : '—'} />
+              <DetalheItem
+                icon="bi-signpost-2"
+                label="Distância"
+                valor={distanciaMostrada !== null ? `${distanciaMostrada} km` : 'Por calcular'}
+              />
+            </div>
+            <div className="col-6 col-md-3">
+              <DetalheItem
+                icon="bi-hourglass-split"
+                label="Duração prevista da volta"
+                valor={formatarDuracao(resumo?.duracaoPrevistaVoltaMin)}
+              />
+            </div>
+            <div className="col-6 col-md-3">
+              <DetalheItem
+                icon="bi-clipboard2-pulse"
+                label="Tempo em visitas (prev. / real)"
+                valor={`${formatarDuracao(resumo?.duracaoPrevistaVisitasMin)} / ${formatarDuracao(resumo?.duracaoRealVisitasMin)}`}
+              />
+            </div>
+            <div className="col-6 col-md-3">
+              <DetalheItem
+                icon="bi-geo-alt"
+                label="Deslocação estimada"
+                valor={formatarDuracao(resumo?.tempoDeslocacaoPrevistoMin)}
+              />
+            </div>
+            <div className="col-6 col-md-3">
+              <DetalheItem
+                icon="bi-flag"
+                label="Limite regresso a Beja"
+                valor={resumo?.horaLimiteRegressoBeja ?? '16:00'}
+              />
             </div>
           </div>
+
+          {/* Registo de Saída Real e Regresso Real da Volta */}
+          <form onSubmit={handleGuardarHorariosVolta} className="bg-light rounded-3 p-2 px-3 mt-3 d-print-none">
+            <div className="row g-2 align-items-end">
+              <div className="col-12 col-md-4">
+                <div className="small fw-semibold text-dark">
+                  <i className="bi bi-stopwatch me-1 text-success"></i>
+                  Registo real da volta
+                </div>
+                <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                  Saída posterior à prevista ajusta automaticamente visitas e regresso.
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Saída real</label>
+                <input
+                  type="time"
+                  className="form-control form-control-sm"
+                  value={partidaRealHora}
+                  onChange={(e) => setPartidaRealHora(e.target.value)}
+                />
+              </div>
+              <div className="col-6 col-md-3">
+                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Regresso real</label>
+                <input
+                  type="time"
+                  className="form-control form-control-sm"
+                  value={regressoRealHora}
+                  onChange={(e) => setRegressoRealHora(e.target.value)}
+                />
+              </div>
+              <div className="col-12 col-md-2">
+                <button type="submit" className="btn btn-success btn-sm w-100" disabled={aGuardarVolta}>
+                  {aGuardarVolta ? 'A guardar...' : 'Atualizar'}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
 
         {/* Corpo: 3 colunas no desktop, empilhado em mobile */}
@@ -233,6 +467,36 @@ const VoltaDetalhePage = () => {
                       </tr>
                     </tbody>
                   </table>
+
+                  {/* Registo real da visita (propaga atraso para visitas seguintes) */}
+                  <form onSubmit={handleGuardarHorariosVisita} className="bg-light rounded-3 p-2 mb-3 d-print-none">
+                    <div className="row g-2 align-items-end">
+                      <div className="col-6">
+                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Início real</label>
+                        <input
+                          type="time"
+                          className="form-control form-control-sm"
+                          value={visitaInicioRealHora}
+                          onChange={(e) => setVisitaInicioRealHora(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Fim real</label>
+                        <input
+                          type="time"
+                          className="form-control form-control-sm"
+                          value={visitaFimRealHora}
+                          onChange={(e) => setVisitaFimRealHora(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-12">
+                        <button type="submit" className="btn btn-outline-success btn-sm w-100" disabled={aGuardarVisita}>
+                          <i className="bi bi-check2-circle me-1"></i>
+                          {aGuardarVisita ? 'A atualizar...' : 'Guardar horários reais da visita'}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
 
                   <h6 className="fw-bold small text-uppercase text-muted mb-2">
                     <i className="bi bi-chat-left-text me-1"></i> Ocorrências da visita

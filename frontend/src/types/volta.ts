@@ -12,6 +12,8 @@ export interface Volta {
   viaturaMatricula: string | null;
   partidaPrevista: string | null;
   regressoPrevisto: string | null;
+  partidaReal?: string | null;
+  regressoReal?: string | null;
 }
 
 export interface FiltrosVoltas {
@@ -64,8 +66,10 @@ export interface VisitaDetalhe {
   visitaEstado: string;
   inicioPrevisto: string | null;
   fimPrevisto: string | null;
+  duracaoEstimadaMin?: number | null;
   inicioReal: string | null;
   fimReal: string | null;
+  duracaoRealMin?: number | null;
   urgenciaDesignacao: string | null;
   urgenciaCor: string | null;
 }
@@ -76,11 +80,28 @@ export interface ParagemDetalhe {
   localMorada: string;
   lat: number | null;
   lng: number | null;
+  distanciaDesdeAnteriorKm?: number | null;
   visitas: VisitaDetalhe[];
+}
+
+export interface ResumoVolta {
+  duracaoPrevistaVoltaMin: number | null;
+  duracaoRealVoltaMin: number | null;
+  duracaoPrevistaVisitasMin: number;
+  duracaoRealVisitasMin: number | null;
+  tempoDeslocacaoPrevistoMin: number | null;
+  atrasoSaidaMin: number;
+  distanciaParagensSomaKm: number | null;
+  horaLimiteRegressoBeja: string;
+  comprometeRegressoBeja: boolean;
+  excessoRegressoBejaMin: number;
+  avisoRegressoBeja: string | null;
+  alertasCoerencia: string[];
 }
 
 export interface VoltaDetalhe extends Volta {
   distanciaEstimadaKm: number | null;
   distanciaRealKm: number | null;
   paragens: ParagemDetalhe[];
+  resumo?: ResumoVolta;
 }
