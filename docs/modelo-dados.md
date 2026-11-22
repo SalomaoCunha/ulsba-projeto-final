@@ -26,7 +26,7 @@ A base de dados deve permitir registar e consultar utentes, locais, avaliações
 8. **Histórico e autoria:** avaliações e ocorrências têm registos novos para retificações; auditoria não é substituída pelo histórico de visitas (RF10, RF45, RNF04).
 9. **Segurança:** FKs e tabelas não substituem permissões por perfil/equipa/utente no backend; apenas dados fictícios na sandbox (RF37, RF49, RNF01, RNF22).
 
-**Dimensão proposta:** **32 entidades e 252 atributos**, incluindo `mensagem` (funcionalidade *Could*), `escala_profissional` (disponibilidade operacional) e `territorio_cobertura` (validação geográfica condicionada). Os campos `paragem.geom_planeada` e `paragem.coordenada_registada_em` destinam-se a preservar a localização utilizada no planeamento. As entidades e campos condicionados dependem de decisão da equipa e de validação das respetivas regras.
+**Dimensão proposta:** **33 entidades e 260 atributos**, incluindo `mensagem` (funcionalidade *Could*), `escala_profissional` (disponibilidade operacional) e `territorio_cobertura` (validação geográfica condicionada). Os campos `paragem.geom_planeada` e `paragem.coordenada_registada_em` destinam-se a preservar a localização utilizada no planeamento. As entidades e campos condicionados dependem de decisão da equipa e de validação das respetivas regras.
 
 
 ### 1.1. Decisões da reunião de 28/10 e impacto no modelo
@@ -70,7 +70,7 @@ A documentação final dos requisitos distingue pedidos de interface de obrigaç
 
 ### 3.1. Modelo ER conceptual **completo** — notação de Chen
 
-Este é o **diagrama conceptual global da proposta**, com as **32 entidades** presentes no dicionário e **39 associações**. Usa retângulos para as entidades e losangos para os relacionamentos, segundo uma adaptação da notação de Chen. O GitHub gera o desenho a partir do código Mermaid, sem ficheiros de imagem; para relações mais legíveis consulta também os diagramas por domínio abaixo.
+Este é o **diagrama conceptual global da proposta**, com as **33 entidades** presentes no dicionário e **40 associações**. Usa retângulos para as entidades e losangos para os relacionamentos, segundo uma adaptação da notação de Chen. O GitHub gera o desenho a partir do código Mermaid, sem ficheiros de imagem; para relações mais legíveis consulta também os diagramas por domínio abaixo.
 
 
 ```mermaid
@@ -98,6 +98,7 @@ equipa_membro["Pertença à equipa"]:::entidade
 escala_profissional["Escala profissional"]:::entidade
 viatura["Viatura"]:::entidade
 viatura_indisponibilidade["Indisponibilidade viatura"]:::entidade
+viatura_bloqueio["Bloqueio de viatura"]:::entidade
 volta["Volta"]:::entidade
 volta_profissional["Tripulação da volta"]:::entidade
 paragem["Paragem"]:::entidade
@@ -188,6 +189,8 @@ utilizador --- r37{"EXPORTA (1:N)"}:::relacao
 r37 --- exportacao_algoritmo
 utilizador --- r38{"COMUNICA (1:N)"}:::relacao
 r38 --- mensagem
+viatura --- r39{"BLOQUEIA AGENDA (1:N)"}:::relacao
+r39 --- viatura_bloqueio
 ```
 
 
@@ -217,6 +220,7 @@ As cardinalidades seguintes indicam as relações de negócio **propostas**. Qua
 | `escala_profissional` | Escalado em | `equipa` | N:1 |
 | `equipa` | Utiliza habitualmente | `viatura` | N:0..1 |
 | `viatura` | Tem indisponibilidade | `viatura_indisponibilidade` | 1:N |
+| `viatura` | Tem bloqueio de agenda | `viatura_bloqueio` | 1:N |
 | `equipa` | Executa volta | `volta` | 1:N |
 | `viatura` | É atribuída | `volta` | 1:N |
 | `volta` | Contém | `paragem` | 1:N |
@@ -306,7 +310,7 @@ flowchart LR
 
 ### 3.4. Modelo ER relacional completo — tabelas, atributos, PK/FK e cardinalidades
 
-Este diagrama representa **as 32 tabelas propostas**, os seus **252 atributos** e todas as relações de **chave estrangeira (FK)** definidas no dicionário de dados. Ao contrário do diagrama conceptual de Chen, cada retângulo corresponde aqui a uma **tabela relacional** e as ligações utilizam a notação **Crow’s Foot**.
+Este diagrama representa **as 33 tabelas propostas**, os seus **260 atributos** e todas as relações de **chave estrangeira (FK)** definidas no dicionário de dados. Ao contrário do diagrama conceptual de Chen, cada retângulo corresponde aqui a uma **tabela relacional** e as ligações utilizam a notação **Crow’s Foot**.
 
 **Como ler:** `PK` é a chave primária; `FK` identifica uma chave estrangeira; `UK` indica unicidade adicional. Os tipos no diagrama aparecem sem comprimento ou precisão (por exemplo, `varchar` em vez de `varchar(120)`), exclusivamente para facilitar a renderização. **Os tipos exatos, `NOT NULL`, valores por omissão e restrições estão especificados na secção 6 — Dicionário de dados.** O nome junto da linha corresponde à coluna FK na tabela dependente.
 
@@ -486,6 +490,17 @@ erDiagram
         varchar descricao
         integer criada_por FK
         timestamptz criada_em
+    }
+
+    VIATURA_BLOQUEIO {
+        integer id PK
+        integer viatura_id FK
+        date data_inicio
+        date data_fim
+        varchar tipo
+        text motivo
+        integer criado_por FK
+        timestamptz criado_em
     }
 
     PROFISSIONAL {
@@ -683,6 +698,8 @@ erDiagram
     UTILIZADOR ||--o{ ATRIBUICAO_EQUIPA_RESPONSAVEL : "registada_por"
     VIATURA ||--o{ VIATURA_INDISPONIBILIDADE : "viatura_id"
     UTILIZADOR ||--o{ VIATURA_INDISPONIBILIDADE : "criada_por"
+    VIATURA ||--o{ VIATURA_BLOQUEIO : "viatura_id"
+    UTILIZADOR o|--o{ VIATURA_BLOQUEIO : "criado_por"
     UTILIZADOR o|--o| PROFISSIONAL : "utilizador_id"
     FUNCAO_PROFISSIONAL ||--o{ PROFISSIONAL : "funcao_id"
     VIATURA o|--o{ EQUIPA : "viatura_habitual_id"
@@ -926,6 +943,11 @@ erDiagram
         integer viatura_id FK
         integer criada_por FK
     }
+    VIATURA_BLOQUEIO {
+        integer id PK
+        integer viatura_id FK
+        integer criado_por FK
+    }
     UTILIZADOR o|--o| PROFISSIONAL : "utilizador_id"
     FUNCAO_PROFISSIONAL ||--o{ PROFISSIONAL : "funcao_profissional"
     EQUIPA ||--o{ EQUIPA_MEMBRO : "equipa"
@@ -935,6 +957,8 @@ erDiagram
     VIATURA o|--o{ EQUIPA : "viatura_habitual_id"
     VIATURA ||--o{ VIATURA_INDISPONIBILIDADE : "viatura"
     UTILIZADOR ||--o{ VIATURA_INDISPONIBILIDADE : "criada_por"
+    VIATURA ||--o{ VIATURA_BLOQUEIO : "viatura"
+    UTILIZADOR o|--o{ VIATURA_BLOQUEIO : "criado_por"
 ```
 
 
@@ -1090,6 +1114,7 @@ erDiagram
 | `duracao_padrao_complexidade` | Duração padrão de uma visita por nível de complexidade, com histórico. | `nivel_complexidade`, `utilizador` |
 | `viatura` | Viatura da unidade, com as características necessárias ao planeamento (lugares, depósito, autonomia, revisões). | Sem FK direta |
 | `viatura_indisponibilidade` | Períodos em que uma viatura não pode ser usada (revisão, reparação, outro). | `viatura`, `utilizador` |
+| `viatura_bloqueio` | Bloqueios de agenda de uma viatura por intervalo de dias (manutenção ou indisponibilidade pontual), usados para a excluir da Agenda/painel de construção de rota nesses dias. | `viatura`, `utilizador` |
 | `profissional` | Profissional de saúde com a sua função clínica. | `utilizador`, `funcao_profissional` |
 | `equipa` | Equipa com código próprio (A, B, C, …) e viatura habitual opcional. | `viatura` |
 | `equipa_membro` | Composição de uma equipa ao longo do tempo: que profissional pertence a que equipa e em que período. | `equipa`, `profissional` |
@@ -1139,7 +1164,7 @@ erDiagram
 
 ## 5. Modelo físico proposto e opções de implementação
 
-O modelo lógico define **32 entidades e 252 atributos** para discussão, com tipos PostgreSQL, chaves, relações e mecanismos de integridade propostos. A implementação deverá ser realizada através de migrações versionadas, conforme o RNF28. A inclusão de uma entidade no modelo conceptual não significa que a respetiva interface tenha prioridade *Must*.
+O modelo lógico define **33 entidades e 260 atributos** para discussão, com tipos PostgreSQL, chaves, relações e mecanismos de integridade propostos. A implementação deverá ser realizada através de migrações versionadas, conforme o RNF28. A inclusão de uma entidade no modelo conceptual não significa que a respetiva interface tenha prioridade *Must*.
 
 | Elemento do desenho | Decisão e justificação | Requisitos |
 |---|---|---|
@@ -1150,7 +1175,7 @@ O modelo lógico define **32 entidades e 252 atributos** para discussão, com ti
 | `local.geom` | Utilizar `geography(Point,4326)` com índice GiST; para extrair longitude/latitude, converter em geometria com `ST_X(geom::geometry)` e `ST_Y(geom::geometry)` | RF04, RNF11, RNF27 |
 | `mensagem` | Entidade de suporte opcional; a sua implementação funcional depende da priorização do RF36 (*Could*) | RF36 |
 | Extensões PostgreSQL | **`postgis`** (tipos e índices geográficos); **`btree_gist`** (restrições `EXCLUDE` que combinam igualdade e intervalos, como `ex_volta_viatura_sem_sobreposicao` ou `ex_escala_profissional_sem_sobreposicao`); **`pg_trgm`** (índice `ix_utente_nome_trgm`, pesquisa de utentes por nome com sugestões). Ativadas na migração `0001` (o PostGIS também em `db/init/`) | RF01, RF21, RF50, RNF09, RNF11, RNF12 |
-| Vistas de leitura | `vw_utente_ficha` (ficha com campos derivados: idade, prioridade e complexidade atuais, PPS, equipa responsável em vigor e última visita concluída; exclui `situacao_clinica` e `notas`); `vw_calendario_unidade` (voltas e indisponibilidades de viaturas); `vw_calendario_visitas` (uma linha por visita, com a volta e os participantes); `vw_local_cobertura` (pertença a perímetros aprovados; `NULL` sem perímetro aprovado ou sem coordenadas). Não são tabelas: não alteram as 32 entidades nem os 252 atributos | RF02, RF04, RF08, RF19, RF30, RF33, RF48, RNF22, RNF27 |
+| Vistas de leitura | `vw_utente_ficha` (ficha com campos derivados: idade, prioridade e complexidade atuais, PPS, equipa responsável em vigor e última visita concluída; inclui `situacao_clinica` e `notas` desde a migração `0005`, que corrigiu a vista para deixar de os omitir — a omissão fazia o `PUT /utentes/{id}` apagá-los por nunca serem devolvidos pelo `GET`); `vw_calendario_unidade` (voltas e indisponibilidades de viaturas; não inclui ainda `viatura_bloqueio`, criada posteriormente na migração `0006` — ver 6.2); `vw_calendario_visitas` (uma linha por visita, com a volta e os participantes); `vw_local_cobertura` (pertença a perímetros aprovados; `NULL` sem perímetro aprovado ou sem coordenadas). Não são tabelas: não alteram as 33 entidades nem os 260 atributos | RF02, RF04, RF08, RF19, RF30, RF33, RF48, RNF22, RNF27 |
 | Catálogo `nivel_urgencia` | Cinco níveis do mockup (`U0`, `U1`, `U2`, `NU1`, `NU2`), revistos com a docente, com `prazo_max_sem_visita_dias` por definir. Os níveis iniciais A/B/C/NU (hipótese abandonada) ficam inativos (migração `0004`), preservando o histórico de triagens. O significado operacional dos rótulos em dias e os prazos ficam por confirmar com a ULSBA | RF10, RF11, RF13, RF15, RNF08 |
 
 **Critério de implementação:** após validação do modelo, as regras que abrangem várias entidades devem ser implementadas em transações e, quando necessário, com restrições ou triggers da base de dados. As migrações devem ser criadas e versionadas juntamente com as alterações ao diagrama e ao dicionário (RNF28).
@@ -1172,9 +1197,9 @@ O modelo lógico define **32 entidades e 252 atributos** para discussão, com ti
 
 *P0* = obrigatório para a consistência dos fluxos *Must*; *P1* = necessário para a implementação fiável ou para confirmação de regras pendentes. Estas são **regras e propostas de validação**, não resultados de testes já executados.
 
-## 6. Dicionário de dados — 32 entidades e 252 atributos
+## 6. Dicionário de dados — 33 entidades e 260 atributos
 
-O dicionário de dados detalha as **32 entidades e 252 atributos do modelo proposto**, incluindo `mensagem` (*Could*) e os elementos condicionados `escala_profissional`, `territorio_cobertura`, `paragem.geom_planeada` e `paragem.coordenada_registada_em`. Identifica os tipos, nulabilidade, chaves, relações e validações previstas. A aprovação do desenho não equivale à implementação das restrições em PostgreSQL.
+O dicionário de dados detalha as **33 entidades e 260 atributos do modelo proposto**, incluindo `mensagem` (*Could*) e os elementos condicionados `escala_profissional`, `territorio_cobertura`, `paragem.geom_planeada` e `paragem.coordenada_registada_em`. Identifica os tipos, nulabilidade, chaves, relações e validações previstas. A aprovação do desenho não equivale à implementação das restrições em PostgreSQL.
 
 ### 6.1. Utentes, locais e avaliação clínica
 
@@ -1522,6 +1547,32 @@ Períodos em que uma viatura não pode ser usada (revisão, reparação, outro).
 
 - `ck_viatura_indisp_intervalo`: O fim é posterior ao início.
 - `ex_viatura_indisp_sem_sobreposicao`: A mesma viatura não tem duas indisponibilidades sobrepostas.
+
+#### `viatura_bloqueio`
+
+Bloqueio de agenda de uma viatura por intervalo de dias (manutenção ou indisponibilidade pontual), usado para a excluir automaticamente da Agenda/painel de construção de rota nesses dias. Introduzida na migração `0006_viatura_bloqueio.sql`, posterior ao modelo inicial.
+
+**Rastreabilidade:** RF20, RF48, RF50. **Sensibilidade:** Dados operacionais (sem dados pessoais).
+
+| Coluna | Tipo PostgreSQL | Propriedades | Descrição |
+|---|---|---|---|
+| `id` | `integer` | PK, NN, IDENTITY (`SERIAL`) | Identificador técnico (chave primária gerada pela base de dados). |
+| `viatura_id` | `integer` | FK → `viatura`, NN, `ON DELETE CASCADE` | Viatura bloqueada. Eliminada automaticamente se a viatura for apagada. |
+| `data_inicio` | `date` | NN | Primeiro dia do bloqueio (data civil, sem hora). |
+| `data_fim` | `date` | NN | Último dia do bloqueio (data civil, sem hora); pode coincidir com `data_inicio` (bloqueio de um único dia). |
+| `tipo` | `varchar(30)` | NN | Tipo de bloqueio: `MANUTENCAO` ou `INDISPONIBILIDADE`, restringido por `CHECK` (sem tipo enumerado dedicado, ao contrário de `viatura_indisponibilidade.tipo`). |
+| `motivo` | `text` | NULL permitido | Descrição livre do motivo do bloqueio. |
+| `criado_por` | `integer` | FK → `utilizador`, NULL permitido | Utilizador que registou o bloqueio. |
+| `criado_em` | `timestamptz` | NN, DEF `now()` | Instante do registo. |
+
+**Regras de integridade previstas:**
+
+- `ck_viatura_bloqueio_datas`: `data_fim >= data_inicio`.
+- `CHECK` (sem nome dedicado) sobre `tipo`: restringe o valor a `MANUTENCAO` ou `INDISPONIBILIDADE`.
+
+**Índices previstos:** `idx_viatura_bloqueio_viatura_datas` (`viatura_id`, `data_inicio`, `data_fim`).
+
+**Nota de implementação:** ao contrário de `viatura_indisponibilidade`, não existe uma restrição `EXCLUDE` que impeça bloqueios sobrepostos para a mesma viatura, nem o trigger de confirmação de volta (`trg_volta_validar_confirmacao`) verifica esta tabela; a exclusão da viatura na Agenda é feita pela camada de aplicação. Ponto a validar com a equipa antes de se assumir equivalente a `viatura_indisponibilidade` para efeitos de confirmação de voltas.
 
 #### `profissional`
 
@@ -1924,7 +1975,7 @@ Os valores seguintes foram propostos para tipar dados e evitar variantes livres.
 | RF17 | visita, volta | Agregações Should |
 | RF18 | utente, local | Frontend Should |
 | RF19 | volta, paragem, visita, equipa | API/calendário |
-| RF20 | viatura, viatura_indisponibilidade, volta | API disponibilidade |
+| RF20 | viatura, viatura_indisponibilidade, viatura_bloqueio, volta | API disponibilidade |
 | RF21 | volta, visita, equipa_membro, escala_profissional, participantes | Transações e conflitos |
 | RF22 | avaliacao_triagem, visita, local | Heurística Should |
 | RF23 | visita | Estado pendente Should |
@@ -1952,7 +2003,7 @@ Os valores seguintes foram propostos para tipar dados e evitar variantes livres.
 | RF45 | ocorrencia, tipo_ocorrencia, auditoria | API autoria e permissões |
 | RF46 | visita, parametro_sistema | Alerta Should |
 | RF47 | volta, visita, ocorrencia, auditoria | Replaneamento Should |
-| RF48 | viatura, viatura_indisponibilidade | Gestão avançada Should |
+| RF48 | viatura, viatura_indisponibilidade, viatura_bloqueio | Gestão avançada Should |
 | RF49 | utilizador, profissional, equipa, atribuicao_equipa_responsavel | API âmbito obrigatório |
 | RF50 | volta, paragem, visita, viatura, escala_profissional | API confirmação e conflitos |
 | RF51 | volta, visita, ocorrencia | Impressão Should |
