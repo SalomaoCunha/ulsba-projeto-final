@@ -11,16 +11,20 @@
 | `init/01-postgis.sql` | Ativa a extensão PostGIS na primeira inicialização de um volume PostgreSQL vazio. |
 | `migrations/0001_modelo_inicial.sql` | Modelo relacional inicial: 30 tabelas, 18 ENUM, relações, índices, triggers e vistas. |
 | `migrations/0002_extensoes_modelo_documentado.sql` | Adiciona `escala_profissional`, `territorio_cobertura` e o snapshot geográfico de `paragem`. |
-| `migrations/0003_integridade_operacional.sql` | Reforça as regras de integridade de voltas, visitas, recursos, participantes e retificações. |
+| `migrations/0003_integridade_operacional.sql` | Reforça as regras de integridade de voltas, visitas, recursos, participantes e retificações (triggers adiados até ao commit). |
 | `migrations/0004_ajuste_niveis_urgencia.sql` | Desativa os níveis provisórios A/B/C/NU e introduz U0, U1, U2, NU1 e NU2. |
-| `migrations/0005_remover_zonas_ficticias_das_equipas.sql` | Remove designações territoriais fictícias das equipas de demonstração. |
+| `migrations/0005_expor_situacao_clinica_notas.sql` | Corrige `vw_utente_ficha`, que nunca expunha `situacao_clinica`/`notas` (o `PUT /utentes/{id}` apagava-os sem querer). |
+| `migrations/0006_viatura_bloqueio.sql` | Nova tabela `viatura_bloqueio`: impedimentos/manutenção de uma viatura por intervalo de dias. |
+| `migrations/0007_remover_zonas_ficticias_das_equipas.sql` | Remove designações territoriais fictícias das equipas de demonstração. |
+| `migrations/0008_backfill_volta_profissional.sql` | Preenche `volta_profissional` em voltas antigas que nunca tiveram tripulação registada (impedia-as de serem confirmadas). |
+| `migrations/0009_recalcular_horarios_visitas_antigas.sql` | Recalcula horários sequenciais de visitas em voltas antigas que tinham todas o mesmo horário "congelado". |
 | `migrate/Dockerfile` e `migrate/runner.py` | Serviço Docker `db-migrate` que aplica apenas as migrações pendentes e mantém o histórico de versões. |
 | `migrate/test_runner.py` | Testes do mecanismo de migrações. |
 | `tests/0001_verificacao_postgis.sql` | Verificação SQL do modelo e do PostGIS; reverte os dados temporários com `ROLLBACK`. |
 | `tests/0002_verificacao_seed_rf40.sql` | Verificação SQL dos dados fictícios semeados (RF40); reverte os dados temporários com `ROLLBACK`. |
 
 
-**Após as cinco migrações:** 32 tabelas de domínio, 252 atributos, 18 ENUM e cinco níveis de urgência ativos. O migrador acrescenta a tabela técnica `public.schema_migrations`, que não pertence às 32 tabelas de domínio.
+**Após as nove migrações:** 33 tabelas de domínio (as 32 originais + `viatura_bloqueio`), 18 ENUM e cinco níveis de urgência ativos. O migrador acrescenta a tabela técnica `public.schema_migrations`, que não pertence às tabelas de domínio.
 
 A documentação do modelo e dos requisitos encontra-se em [`docs/modelo-dados.md`](../docs/modelo-dados.md) e [`docs/requisitos.md`](../docs/requisitos.md).
 
@@ -44,7 +48,7 @@ docker compose up -d --build
 O Docker segue esta sequência:
 
 1. Inicia `db` (PostgreSQL/PostGIS) e aguarda que esteja disponível.
-2. Executa `db-migrate`, aplicando `0001` → `0002` → `0003` → `0004` → `0005`, ou apenas as versões pendentes.
+2. Executa `db-migrate`, aplicando `0001` → ... → `0009`, ou apenas as versões pendentes.
 3. Inicia o backend FastAPI após a conclusão bem-sucedida das migrações.
 4. Inicia o frontend.
 
@@ -71,7 +75,7 @@ FROM public.schema_migrations
 ORDER BY version;
 ```
 
-Numa instalação nova, devem existir as versões 1 a 5 com `origem = 'migrate'`. Para verificar os níveis de urgência:
+Numa instalação nova, devem existir as versões 1 a 9 com `origem = 'migrate'`. Para verificar os níveis de urgência:
 
 ```sql
 SELECT codigo, designacao, ordem, ativo
@@ -147,6 +151,6 @@ Após as migrações, executa:
 docker compose exec -T db sh -c 'psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /db-tests/0001_verificacao_postgis.sql'
 ```
 
-O teste verifica, entre outros aspetos, as 32 tabelas de domínio, os 252 atributos, os 18 ENUM, o SRID 4326 e algumas restrições geográficas e operacionais. Os dados criados durante a verificação são revertidos por `ROLLBACK`.
+O teste verifica, entre outros aspetos, as 32 tabelas de domínio da proposta inicial (lista fixa, anterior à migração 0006), os 252 atributos, os 18 ENUM, o SRID 4326 e algumas restrições geográficas e operacionais. Os dados criados durante a verificação são revertidos por `ROLLBACK`. **Em aberto:** o teste ainda não cobre a tabela `viatura_bloqueio` (migração 0006) nem as correções das migrações 0007-0009.
 
 Este teste **não substitui** testes completos de regras de negócio, concorrência, autenticação ou auditoria da API.

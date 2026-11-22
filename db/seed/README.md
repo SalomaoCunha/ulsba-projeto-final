@@ -15,7 +15,7 @@ As coordenadas são aproximadas às localidades; **não identificam domicílios 
 
 ## Pré-requisitos
 
-Docker Desktop instalado, `.env` configurado e projeto iniciado **na raiz do repositório**. O serviço `db-migrate` aplica automaticamente as migrações `0001`–`0005` antes do backend.
+Docker Desktop instalado, `.env` configurado e projeto iniciado **na raiz do repositório**. O serviço `db-migrate` aplica automaticamente as migrações `0001`–`0009` antes do backend.
 
 ```powershell
 docker compose up -d --build
