@@ -307,6 +307,20 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     return {"id": volta_id}
 
 
+def _mensagem_conflito_confirmacao(erro: psycopg.Error) -> str:
+    # ex_volta_viatura_sem_sobreposicao / ex_volta_equipa_sem_sobreposicao
+    # (migração 0001) só se aplicam a voltas CONFIRMADA/EM_CURSO — por isso
+    # só disparam agora, ao confirmar, não na criação em RASCUNHO. Ao
+    # contrário dos triggers DEFERRABLE INITIALLY DEFERRED, uma violação de
+    # EXCLUDE dá erro imediato no próprio INSERT/UPDATE, não só no commit.
+    texto = str(erro)
+    if "ex_volta_viatura_sem_sobreposicao" in texto:
+        return "Esta viatura já está confirmada noutra volta com horário sobreposto nesta data."
+    if "ex_volta_equipa_sem_sobreposicao" in texto:
+        return "Esta equipa já está confirmada noutra volta com horário sobreposto nesta data."
+    return texto.split("\n", 1)[0]
+
+
 def _commit_ou_erro(conn):
     # get_conn() só faz commit quando a dependência do FastAPI é fechada, o
     # que acontece DEPOIS da resposta HTTP já ter sido enviada ao cliente —
@@ -335,14 +349,19 @@ def confirmar(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(
     if volta["estado"] != "RASCUNHO":
         raise HTTPException(status_code=400, detail="Só é possível confirmar uma volta em rascunho")
 
-    conn.execute(
-        """
-        UPDATE volta
-        SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
-        WHERE id = %s
-        """,
-        (utilizador["id"], volta_id),
-    )
+    try:
+        conn.execute(
+            """
+            UPDATE volta
+            SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+            WHERE id = %s
+            """,
+            (utilizador["id"], volta_id),
+        )
+    except psycopg.Error as erro:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro)) from erro
+
     _commit_ou_erro(conn)
 
     return obter(volta_id, conn, utilizador)
@@ -399,14 +418,18 @@ def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(g
         raise HTTPException(status_code=400, detail="Esta volta já está concluída ou cancelada.")
 
     if volta["estado"] == "RASCUNHO":
-        conn.execute(
-            """
-            UPDATE volta
-            SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
-            WHERE id = %s
-            """,
-            (utilizador["id"], volta_id),
-        )
+        try:
+            conn.execute(
+                """
+                UPDATE volta
+                SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+                WHERE id = %s
+                """,
+                (utilizador["id"], volta_id),
+            )
+        except psycopg.Error as erro:
+            conn.rollback()
+            raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro)) from erro
 
     _concluir_visitas_pendentes(volta_id, conn)
 
