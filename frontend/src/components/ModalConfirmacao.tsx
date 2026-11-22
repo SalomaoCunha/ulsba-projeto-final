@@ -2,12 +2,21 @@ import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
 
 interface Props {
+  // Controla a visibilidade do modal.
   aberto: boolean;
+  // Título apresentado no cabeçalho do modal.
   titulo: string;
+  // Texto/elemento de aviso principal (aceita React.ReactNode para permitir
+  // formatação, p.ex. destacar o nome da entidade a apagar em negrito).
   mensagem: React.ReactNode;
+  // Texto do botão de confirmação; por omissão assume uma ação de apagar.
   textoConfirmar?: string;
+  // Texto do botão enquanto a ação está em curso (ex.: "A apagar...").
   textoAProcessar?: string;
+  // true enquanto o pedido ao backend está em curso — desativa ambos os botões.
   aProcessar?: boolean;
+  // Permite desativar só o botão de confirmar (ex.: falta preencher um campo
+  // obrigatório em `children`), sem bloquear o "Cancelar".
   confirmarDesabilitado?: boolean;
   children?: React.ReactNode;
   onConfirmar: () => void;

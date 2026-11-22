@@ -6,10 +6,15 @@ import type {
 } from '../types/viatura';
 import { apiFetch } from './apiClient';
 
+// Este serviço funciona com um fallback local: se a API de viaturas falhar (ex.: endpoint
+// ainda não implementado no backend ou indisponível), os dados são lidos/escritos em
+// localStorage para que a funcionalidade continue a funcionar no frontend de forma isolada.
 const STORAGE_VIATURAS = 'ulsba_viaturas_local_v1';
 const STORAGE_DEPOSITOS = 'ulsba_viaturas_depositos_v1';
 const STORAGE_BLOQUEIOS = 'ulsba_viaturas_bloqueios_v1';
 
+// Conjunto de viaturas de exemplo usado para popular o armazenamento local
+// na primeira utilização (quando ainda não existe nada guardado).
 const VIATURAS_FICTICIAS: Viatura[] = [
   {
     id: 1,
@@ -55,6 +60,8 @@ const VIATURAS_FICTICIAS: Viatura[] = [
   },
 ];
 
+// Lê do localStorage o mapa {viaturaId: capacidade do depósito}. Isto existe em separado
+// das viaturas porque a API pode não devolver este campo (ver uso em getViaturas).
 function lerDepositosLocais(): Record<number, string> {
   try {
     const raw = localStorage.getItem(STORAGE_DEPOSITOS);
@@ -64,6 +71,7 @@ function lerDepositosLocais(): Record<number, string> {
   }
 }
 
+// Guarda (ou remove, se vazio) a capacidade do depósito de uma viatura no localStorage.
 function guardarDepositoLocal(viaturaId: number, deposito?: string | null) {
   const mapa = lerDepositosLocais();
   if (deposito && deposito.trim()) {
@@ -74,6 +82,8 @@ function guardarDepositoLocal(viaturaId: number, deposito?: string | null) {
   localStorage.setItem(STORAGE_DEPOSITOS, JSON.stringify(mapa));
 }
 
+// Lê as viaturas guardadas em localStorage; se não existir nada ainda (ou o
+// conteúdo estiver corrompido), inicializa com as viaturas fictícias.
 function lerViaturasLocais(): Viatura[] {
   try {
     const raw = localStorage.getItem(STORAGE_VIATURAS);
@@ -92,6 +102,7 @@ function guardarViaturasLocais(lista: Viatura[]) {
   localStorage.setItem(STORAGE_VIATURAS, JSON.stringify(lista));
 }
 
+// Lê os bloqueios (ex.: períodos de manutenção/indisponibilidade) guardados localmente.
 function lerBloqueiosLocais(): BloqueioViatura[] {
   try {
     const raw = localStorage.getItem(STORAGE_BLOQUEIOS);
@@ -105,6 +116,8 @@ function guardarBloqueiosLocais(lista: BloqueioViatura[]) {
   localStorage.setItem(STORAGE_BLOQUEIOS, JSON.stringify(lista));
 }
 
+// Aplica os filtros (viatura, intervalo de datas) à lista de bloqueios guardada
+// localmente — espelha a filtragem que, com a API disponível, seria feita no backend.
 function filtrarBloqueios(
   lista: BloqueioViatura[],
   filtros?: FiltrosBloqueiosViatura,
@@ -117,6 +130,7 @@ function filtrarBloqueios(
   });
 }
 
+// Verifica se uma viatura tem algum bloqueio que cubra o dia indicado (formato ISO).
 export function viaturaBloqueadaNoDia(
   bloqueios: BloqueioViatura[],
   viaturaId: number,
@@ -127,6 +141,9 @@ export function viaturaBloqueadaNoDia(
   );
 }
 
+// Lista as viaturas: tenta primeiro a API; se a capacidade do depósito não vier
+// preenchida (campo ainda não suportado no backend), completa-se com o valor
+// guardado localmente. Em caso de falha da API, usa por completo o fallback local.
 export async function getViaturas(): Promise<Viatura[]> {
   try {
     const dados = await apiFetch<Viatura[]>('/viaturas');
@@ -142,6 +159,8 @@ export async function getViaturas(): Promise<Viatura[]> {
   }
 }
 
+// Cria uma viatura: tenta a API e, se falhar, cria localmente com um id gerado
+// incrementalmente (máximo dos ids existentes + 1).
 export async function createViatura(novaViatura: Omit<Viatura, 'id'>): Promise<Viatura> {
   try {
     const criada = await apiFetch<Viatura>('/viaturas', {
@@ -171,6 +190,7 @@ export async function createViatura(novaViatura: Omit<Viatura, 'id'>): Promise<V
   }
 }
 
+// Atualiza uma viatura: tenta a API e, se falhar, atualiza apenas o registo local.
 export async function updateViatura(viaturaAtualizada: Viatura): Promise<Viatura> {
   try {
     const atualizada = await apiFetch<Viatura>(`/viaturas/${viaturaAtualizada.id}`, {
@@ -199,6 +219,9 @@ export async function updateViatura(viaturaAtualizada: Viatura): Promise<Viatura
   }
 }
 
+// Lista bloqueios de viaturas, com filtros opcionais. Quando a chamada sem filtros
+// tem sucesso, atualiza a cópia local completa (serve de cache para o fallback);
+// se a API falhar, filtra a cópia local para simular o comportamento do backend.
 export async function getBloqueiosViaturas(
   filtros?: FiltrosBloqueiosViatura,
 ): Promise<BloqueioViatura[]> {
@@ -224,6 +247,8 @@ export async function getBloqueiosViaturas(
   }
 }
 
+// Cria um bloqueio (ex.: manutenção) para uma viatura num intervalo de datas.
+// Se data_fim não for indicada, assume-se igual a data_inicio (bloqueio de um só dia).
 export async function criarBloqueioViatura(
   viaturaId: number,
   dados: NovoBloqueioViatura,
@@ -258,6 +283,8 @@ export async function criarBloqueioViatura(
   }
 }
 
+// Remove um bloqueio de viatura. Tenta sempre remover também localmente,
+// mesmo que a chamada à API falhe, para manter a cópia local consistente.
 export async function removerBloqueioViatura(bloqueioId: number): Promise<void> {
   try {
     await apiFetch<void>(`/viaturas/bloqueios/${bloqueioId}`, {

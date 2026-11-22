@@ -1,5 +1,6 @@
 // --- Prioridade ---
 
+// Valores possíveis de prioridade de um utente, tal como vêm da API/base de dados.
 export type PrioridadeValor = 
   | 'Urgente 0 dias'
   | 'Urgente 1 dia'
@@ -7,6 +8,8 @@ export type PrioridadeValor =
   | 'Não urgente 1'
   | 'Não urgente 2';
 
+  // Configuração de apresentação para um nível de prioridade: ordem de triagem,
+  // texto, ícone (classe Bootstrap Icons) e cores (fundo, texto, "dot") a aplicar na UI.
   export interface NivelPrioridade {
     valor: PrioridadeValor;
     ordem: number;
@@ -17,6 +20,8 @@ export type PrioridadeValor =
     corDot: string;
   }
 
+// Lista ordenada (da prioridade mais urgente para a menos urgente) com a configuração
+// visual de cada nível de prioridade. As cores usam variáveis CSS definidas globalmente.
 export const NIVEIS_PRIORIDADE: NivelPrioridade[] = [
   {
     valor: 'Urgente 0 dias',
@@ -66,8 +71,10 @@ export const NIVEIS_PRIORIDADE: NivelPrioridade[] = [
 ]; 
 
 // --- Complexidade ---
+// Valores possíveis de complexidade de um utente, tal como vêm da API/base de dados.
 export type ComplexidadeValor = 'Altamente complexo' | 'Complexo' | 'Não complexo';
 
+// Configuração de apresentação para um nível de complexidade: texto e cores (fundo/texto) na UI.
 export interface NivelComplexidade {
     valor: ComplexidadeValor;
     label: string;
@@ -75,6 +82,7 @@ export interface NivelComplexidade {
     corTexto: string;
 }
 
+// Lista com a configuração visual de cada nível de complexidade.
 export const NIVEIS_COMPLEXIDADE: NivelComplexidade[] = [
   {
     valor: 'Altamente complexo',
@@ -99,11 +107,13 @@ export const NIVEIS_COMPLEXIDADE: NivelComplexidade[] = [
 
 // -- Helpers --
 
+// Devolve a configuração visual (label, ícone, cores) correspondente a um valor de prioridade.
 export function getNivelPrioridade(valor: string): NivelPrioridade | undefined {
     return NIVEIS_PRIORIDADE.find(n => n.valor === valor)
 }
 
 
+// Devolve a configuração visual (label, cores) correspondente a um valor de complexidade.
 export function getNivelComplexidade(valor: string): NivelComplexidade | undefined {
     return NIVEIS_COMPLEXIDADE.find(n => n.valor === valor)
 }

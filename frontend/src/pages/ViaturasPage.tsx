@@ -44,6 +44,8 @@ const LABEL_TIPO_BLOQUEIO: Record<TipoBloqueioViatura, string> = {
   INDISPONIBILIDADE: 'Indisponibilidade pontual',
 };
 
+// Calcula a data da próxima revisão a partir da última revisão + periodicidade
+// (em meses). Devolve "—" se algum dos dois dados não estiver preenchido.
 const calcularProximaRevisao = (viatura: Viatura) => {
   if (!viatura.data_ultima_revisao || !viatura.periodicidade_revisao_meses) {
     return '—';
@@ -53,17 +55,25 @@ const calcularProximaRevisao = (viatura: Viatura) => {
   return data.toLocaleDateString('pt-PT');
 };
 
+// Formata uma data ISO (yyyy-MM-dd ou timestamp completo) para dd/mm/aaaa,
+// sem passar por Date/timezone — evita que uma data "pura" (sem hora) mude
+// de dia por causa da conversão para o timezone local do browser.
 const formatarDataPt = (dataIso: string) => {
   const [ano, mes, dia] = dataIso.slice(0, 10).split('-');
   if (!ano || !mes || !dia) return dataIso;
   return `${dia}/${mes}/${ano}`;
 };
 
+// Converte uma data (ou null/undefined) para o formato yyyy-MM-dd que os
+// inputs type="date" esperam.
 const formatarDataParaInput = (dataStr?: string | null) => {
   if (!dataStr) return '';
   return dataStr.slice(0, 10);
 };
 
+// Gestão de frota: lista de viaturas com os respetivos dados (combustível,
+// autonomia, revisões, equipa associada) e dois modais — um para criar/editar
+// uma viatura, outro para gerir os bloqueios/impedimentos por dia de cada viatura.
 const ViaturasPage: React.FC = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [equipas, setEquipas] = useState<Equipa[]>([]);
@@ -93,6 +103,9 @@ const ViaturasPage: React.FC = () => {
 
   const navigate = useNavigate();
 
+  // Carrega viaturas, bloqueios e equipas em paralelo. Usa allSettled (em vez
+  // de all) para que a falha de um dos pedidos não impeça os outros dois de
+  // preencher o ecrã.
   useEffect(() => {
     comAtrasoMinimo(
       Promise.allSettled([
@@ -103,6 +116,9 @@ const ViaturasPage: React.FC = () => {
     ).finally(() => setCarregando(false));
   }, []);
 
+  // Lista de equipas para o select do modal de edição. Se o backend ainda
+  // não tiver equipas carregadas (ou devolver lista vazia), cai-se para as
+  // três equipas fixas A/B/C como alternativa de recurso.
   const codigosEquipas =
     equipas.length > 0
       ? equipas.map((eq) => ({ codigo: eq.codigo, label: `Equipa ${eq.codigo}` }))
@@ -116,6 +132,7 @@ const ViaturasPage: React.FC = () => {
     return equipaCodigo ? `Equipa ${equipaCodigo}` : 'Sem equipa atribuída';
   };
 
+  // Badge colorido conforme o estado da viatura (ativa/em revisão/inativa).
   const getBadgeEstado = (estado: EstadoViatura) => {
     const estilos: Record<EstadoViatura, string> = {
       OPERACIONAL: 'bg-success-subtle text-success border-success-subtle',
@@ -129,9 +146,13 @@ const ViaturasPage: React.FC = () => {
     );
   };
 
+  // Conta bloqueios ainda em vigor ou futuros (ignora os que já terminaram),
+  // usado para mostrar o indicador "N bloqueios" junto ao estado da viatura.
   const contarBloqueiosFuturos = (viaturaId: number) =>
     bloqueios.filter((b) => b.viatura_id === viaturaId && b.data_fim >= hojeIso).length;
 
+  // Abre o modal de edição em modo criação, pré-preenchido com valores
+  // por omissão razoáveis (id 0 é só um marcador — nunca é enviado ao backend).
   const abrirModalNova = () => {
     setModoCriacao(true);
     setViaturaEmEdicao({
@@ -150,6 +171,8 @@ const ViaturasPage: React.FC = () => {
     });
   };
 
+  // Abre o modal de edição com uma cópia da viatura (para não mutar o estado
+  // da lista diretamente enquanto o utilizador edita os campos).
   const abrirModalEdicao = (viatura: Viatura) => {
     setModoCriacao(false);
     setViaturaEmEdicao({ ...viatura });
@@ -160,6 +183,10 @@ const ViaturasPage: React.FC = () => {
     setModoCriacao(false);
   };
 
+  // Apaga a viatura. Se o backend detetar que a viatura tem voltas associadas,
+  // não a apaga de facto — marca-a como Inativa em alternativa — por isso o
+  // resultado tem de ser inspecionado para decidir que atualização fazer à
+  // lista local e que aviso mostrar ao utilizador.
   const apagarViatura = async (viatura: Viatura) => {
     setAApagarId(viatura.id);
     setAvisoApagar(null);
@@ -185,6 +212,8 @@ const ViaturasPage: React.FC = () => {
     }
   };
 
+  // Abre o modal de bloqueios para a viatura indicada, repondo o formulário
+  // de "novo bloqueio" para o estado inicial (data de hoje, sem motivo).
   const abrirModalBloqueios = (viatura: Viatura) => {
     setViaturaBloqueiosModal(viatura);
     setNovoBloqueioInicio(hojeIso);
@@ -199,6 +228,9 @@ const ViaturasPage: React.FC = () => {
     setErroBloqueio(null);
   };
 
+  // Submete o formulário do modal de criação/edição de viatura. Em modo
+  // criação descarta o id (0, só um marcador local) antes de enviar o
+  // payload, porque o id real é atribuído pelo backend.
   const handleGuardarViatura = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!viaturaEmEdicao) return;
@@ -219,6 +251,9 @@ const ViaturasPage: React.FC = () => {
     }
   };
 
+  // Regista um novo bloqueio/impedimento para a viatura do modal. Valida que
+  // a data de início foi indicada e que a data de fim (se vazia, assume-se
+  // igual à de início — bloqueio de um único dia) não é anterior ao início.
   const handleAdicionarBloqueio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!viaturaBloqueiosModal) return;
@@ -263,9 +298,12 @@ const ViaturasPage: React.FC = () => {
     }
   };
 
+  // Lista filtrada pelo estado selecionado nos botões de filtro acima da tabela.
   const viaturasFiltradas =
     filtroEstado === 'TODAS' ? viaturas : viaturas.filter((v) => v.estado === filtroEstado);
 
+  // Bloqueios da viatura atualmente aberta no modal de impedimentos,
+  // ordenados por data de início.
   const bloqueiosDaViaturaModal = viaturaBloqueiosModal
     ? bloqueios
         .filter((b) => b.viatura_id === viaturaBloqueiosModal.id)
@@ -351,6 +389,9 @@ const ViaturasPage: React.FC = () => {
             </thead>
             <tbody className="border-top-0">
               {viaturasFiltradas.map((viatura) => {
+                // bloqueadaHoje: a viatura tem um bloqueio a cobrir o dia de hoje
+                // (badge vermelho "Bloqueada hoje"). totalBloqueios: contagem de
+                // bloqueios atuais/futuros, mostrada como link para o modal de impedimentos.
                 const bloqueadaHoje = viaturaBloqueadaNoDia(bloqueios, viatura.id, hojeIso);
                 const totalBloqueios = contarBloqueiosFuturos(viatura.id);
 

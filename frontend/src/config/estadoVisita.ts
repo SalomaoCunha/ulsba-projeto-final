@@ -1,3 +1,4 @@
+// Texto a mostrar na interface para cada estado de uma visita (paragem de uma volta).
 export const LABEL_ESTADO_VISITA: Record<string, string> = {
   PENDENTE: 'Pendente',
   PLANEADA: 'Planeada',
@@ -6,6 +7,7 @@ export const LABEL_ESTADO_VISITA: Record<string, string> = {
   CANCELADA: 'Cancelada',
 };
 
+// Cor associada a cada estado de visita, usada em badges/indicadores visuais.
 export const COR_ESTADO_VISITA: Record<string, string> = {
   PENDENTE: '#adb5bd',
   PLANEADA: '#0d6efd',

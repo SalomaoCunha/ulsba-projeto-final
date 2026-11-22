@@ -1,6 +1,8 @@
 import type { Ocorrencia } from '../types/ocorrencia';
 import { apiFetch } from './apiClient';
 
+// Forma real da resposta da API (snake_case) para uma ocorrência (registo de evento/incidente
+// associado a uma volta ou visita, ex.: atraso, imprevisto, observação).
 interface OcorrenciaDTO {
   id: number;
   volta_id: number | null;
@@ -14,6 +16,7 @@ interface OcorrenciaDTO {
   autor_nome: string;
 }
 
+// Converte o DTO (snake_case, como vem da API) para o tipo Ocorrencia (camelCase) usado no frontend.
 function mapearOcorrencia(dto: OcorrenciaDTO): Ocorrencia {
   return {
     id: dto.id,
@@ -29,6 +32,8 @@ function mapearOcorrencia(dto: OcorrenciaDTO): Ocorrencia {
   };
 }
 
+// Lista ocorrências filtradas por volta e/ou visita. Pelo menos um dos filtros deve
+// normalmente ser fornecido para não devolver todas as ocorrências do sistema.
 export async function getOcorrencias(filtro: { voltaId?: number; visitaId?: number }): Promise<Ocorrencia[]> {
   const parametros = new URLSearchParams();
   if (filtro.voltaId !== undefined) parametros.set('volta_id', String(filtro.voltaId));

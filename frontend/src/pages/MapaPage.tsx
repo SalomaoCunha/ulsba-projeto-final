@@ -12,10 +12,14 @@ interface ResultadoValidacao {
   valido: boolean;
   lat: number | null;
   lng: number | null;
-  trocadas: boolean;
+  trocadas: boolean; // true quando lat/lng parecem estar trocadas entre si (ver abaixo)
   mensagem: string | null;
 }
 
+// Valida o texto introduzido para latitude/longitude ao marcar/corrigir a
+// localização de um utente, garantindo que o ponto cai dentro de Portugal
+// continental. Devolve sempre um objeto com o resultado e, quando inválido,
+// uma mensagem explicativa pronta a mostrar ao utilizador.
 function validarCoordenadasPortugal(latTexto: string, lngTexto: string): ResultadoValidacao {
   if (!latTexto.trim() || !lngTexto.trim()) {
     return {
@@ -40,6 +44,12 @@ function validarCoordenadasPortugal(latTexto: string, lngTexto: string): Resulta
     };
   }
 
+  // Deteta o erro comum de trocar latitude com longitude: verifica se o valor
+  // dado como "lng" cai nos limites válidos de latitude e o valor dado como
+  // "lat" cai nos limites válidos de longitude — ou seja, se os dois valores
+  // estiverem trocados entre si, o resultado ainda assim cairia dentro de
+  // Portugal continental. Quando isso acontece, avisa-se o utilizador em vez
+  // de aceitar silenciosamente coordenadas incorretas.
   if (
     lng >= LIMITES_PORTUGAL_CONTINENTAL.latitudeMinima &&
     lng <= LIMITES_PORTUGAL_CONTINENTAL.latitudeMaxima &&
@@ -81,6 +91,10 @@ function validarCoordenadasPortugal(latTexto: string, lngTexto: string): Resulta
   return { valido: true, lat, lng, trocadas: false, mensagem: null };
 }
 
+// Página do Mapa de Utentes: mostra os utentes georreferenciados no Leaflet,
+// permite filtrá-los (RF16/RF17) e, em "modo de edição" (RF04), marcar ou
+// corrigir manualmente as coordenadas de um utente — por formulário ou
+// clicando num ponto do mapa.
 const MapaPage: React.FC = () => {
   const [utentes, setUtentes] = useState<Utente[]>([]);
   const [filtros, setFiltros] = useState<FiltrosUtentes>(filtrosVazios);
@@ -102,6 +116,8 @@ const MapaPage: React.FC = () => {
       .finally(() => setCarregando(false));
   }, []);
 
+  // Lista de utentes já filtrada (RF16/RF17); é esta lista — e não `utentes`
+  // diretamente — que alimenta o mapa e os contadores abaixo.
   const utentesFiltrados = filtrarUtentes(utentes, filtros);
 
   // Contadores alinhados com o conjunto visível (RF16 e RF17)
@@ -115,12 +131,20 @@ const MapaPage: React.FC = () => {
     return p.includes('não urgente') || p.includes('nao urgente');
   }).length;
 
+  // Revalida as coordenadas sempre que o texto digitado muda, para dar
+  // feedback imediato (campo inválido, mensagem de erro, botão de troca).
   const validacao = validarCoordenadasPortugal(latTexto, lngTexto);
+  // Ponto a mostrar no mapa como pré-visualização da nova localização,
+  // apenas quando os valores digitados já são numéricos (mesmo que ainda
+  // não validem como estando dentro de Portugal continental).
   const pontoEdicao =
     validacao.lat !== null && validacao.lng !== null
       ? { lat: validacao.lat, lng: validacao.lng }
       : null;
 
+  // Entra em modo de edição já com um utente escolhido (ex.: a partir de um
+  // clique num marcador do mapa) e pré-preenche o formulário com as suas
+  // coordenadas atuais.
   const abrirEdicaoParaUtente = (utente: Utente) => {
     setModoEdicao(true);
     setUtenteSelecionadoId(String(utente.id));
@@ -130,6 +154,9 @@ const MapaPage: React.FC = () => {
     setSucessoMsg(null);
   };
 
+  // Liga/desliga o painel de edição de coordenadas. Ao abrir, se ainda não
+  // houver nenhum utente selecionado, pré-seleciona o primeiro da lista para
+  // que o formulário não apareça vazio.
   const alternarModoEdicao = () => {
     if (modoEdicao) {
       setModoEdicao(false);
@@ -147,6 +174,9 @@ const MapaPage: React.FC = () => {
     }
   };
 
+  // Ao trocar o utente selecionado no formulário, repõe os campos de
+  // latitude/longitude com as coordenadas já guardadas para esse utente
+  // (ou vazios, se ainda não tiver nenhuma).
   const handleTrocarUtente = (novoId: string) => {
     setUtenteSelecionadoId(novoId);
     setErroApi(null);
@@ -161,6 +191,8 @@ const MapaPage: React.FC = () => {
     }
   };
 
+  // Chamado pelo MapaLeaflet quando o utilizador clica num ponto do mapa em
+  // modo de edição: preenche os campos de texto com as coordenadas clicadas.
   const handleSelecionarPontoMapa = (lat: number, lng: number) => {
     setLatTexto(String(lat));
     setLngTexto(String(lng));
@@ -168,12 +200,18 @@ const MapaPage: React.FC = () => {
     setSucessoMsg(null);
   };
 
+  // Atalho para corrigir o erro de latitude/longitude trocadas detetado pela
+  // validação, sem o utilizador ter de reescrever os valores manualmente.
   const handleTrocarLatLng = () => {
     setLatTexto(lngTexto);
     setLngTexto(latTexto);
     setErroApi(null);
   };
 
+  // Submete as coordenadas validadas para a API e, em caso de sucesso,
+  // recarrega toda a lista de utentes (RF06) — necessário porque outros
+  // utentes podem partilhar o mesmo local/morada e por isso o seu ponto no
+  // mapa também pode ter mudado.
   const handleGuardarCoordenadas = async (e: React.FormEvent) => {
     e.preventDefault();
     setErroApi(null);

@@ -5,6 +5,10 @@ import { useEffect } from 'react';
 import type { ParagemDetalhe } from '../types/volta';
 import { getNivelPrioridade } from '@/config/niveis';
 
+// Força o Leaflet a recalcular o tamanho do mapa sempre que o seu contentor
+// muda de dimensão (ex.: painel lateral a abrir/fechar). Sem isto o mapa
+// pode ficar com tiles cortados, porque o Leaflet mede o contentor só uma
+// vez, antes do layout da página estabilizar.
 const AjustarTamanhoMapa: React.FC = () => {
   const map = useMap();
 
@@ -22,9 +26,13 @@ const AjustarTamanhoMapa: React.FC = () => {
 };
 
 interface Props {
+  // Paragens da volta, já ordenadas pelo backend (campo `ordem`); cada
+  // paragem pode agrupar várias visitas no mesmo local.
   paragens: ParagemDetalhe[];
 }
 
+// Cria um pino numerado (número da ordem da paragem na rota) na cor da
+// urgência mais prioritária das visitas dessa paragem.
 const criarIconeNumerado = (numero: number, cor: string) => {
   const svgIcon = `
     <div style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.4)); position: relative;">
@@ -59,7 +67,12 @@ const corDaParagem = (paragem: ParagemDetalhe) => {
   return maisUrgente.urgenciaCor ?? '#0d6efd';
 };
 
+// Mapa que desenha o percurso de uma volta já criada: um pino numerado por
+// paragem, ligados por uma polyline tracejada (linha reta entre pontos, não
+// o percurso rodoviário real).
 const MapaPercursoVolta: React.FC<Props> = ({ paragens }) => {
+  // O type guard garante ao TypeScript que, a partir daqui, lat/lng não são
+  // null — necessário porque nem todas as paragens têm coordenadas válidas.
   const paragensComCoordenadas = paragens.filter(
     (p): p is ParagemDetalhe & { lat: number; lng: number } => p.lat !== null && p.lng !== null,
   );

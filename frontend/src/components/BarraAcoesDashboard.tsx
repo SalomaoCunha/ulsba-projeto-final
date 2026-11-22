@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Barra de ações do topo do Dashboard: agrupa os botões de navegação rápida
+// (gerar rota ótima, ver lista de utentes) e um resumo estatístico dos
+// utentes. Não recebe props — é um bloco estático de UI, sem lógica própria.
 const BarraAcoesDashboard: React.FC = () => {
   const navigate = useNavigate(); // Ferramenta do React para navegar entre páginas
 
@@ -25,7 +28,9 @@ const BarraAcoesDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Lado Direito: Estatísticas Dinâmicas */}
+        {/* Lado Direito: Estatísticas Dinâmicas
+            Nota: os valores (24, 12, 12) estão fixos no JSX — ainda não vêm
+            de dados reais do backend. */}
         <div className="d-flex flex-wrap gap-4 text-muted small align-items-center">
           
           <div className="d-flex align-items-center gap-2">

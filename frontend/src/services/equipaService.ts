@@ -1,10 +1,12 @@
 import type { DadosEquipa, Equipa, ProfissionalEquipa } from '../types/equipa';
 import { apiFetch } from './apiClient';
 
+// Lista todas as equipas (ativas e, dependendo do backend, também as desativadas).
 export async function getEquipas(): Promise<Equipa[]> {
   return apiFetch<Equipa[]>('/equipas');
 }
 
+// Lista os profissionais disponíveis para integrar equipas (para seleção em formulários).
 export async function getProfissionaisEquipa(): Promise<ProfissionalEquipa[]> {
   return apiFetch<ProfissionalEquipa[]>('/equipas/profissionais');
 }

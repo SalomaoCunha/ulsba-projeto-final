@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../services/apiClient';
 
+// Página de autenticação. Os campos vêm pré-preenchidos com uma conta de teste
+// (coordenador) só para facilitar o desenvolvimento/demonstração — não há aqui
+// nenhuma validação de credenciais no frontend, isso é feito pelo backend.
 export default function LoginPage() {
   const [email, setEmail] = useState('coordenador.teste@ulsba.invalid');
   const [password, setPassword] = useState('Teste@1234');
@@ -9,6 +12,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Submete as credenciais ao endpoint de login; se a API devolver um token,
+  // guarda-o no localStorage (é lido pelo apiClient em pedidos seguintes) e
+  // navega para a página principal. Em caso de erro mostra a mensagem da API.
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');

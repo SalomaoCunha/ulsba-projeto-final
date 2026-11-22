@@ -1,5 +1,6 @@
 import type { Utente } from '../types/utente';
 
+// Conjunto de filtros aplicáveis à listagem de utentes (todos opcionais/nulos = sem filtro).
 export interface FiltrosUtentes {
   prioridade: string | null;
   complexidade: string | null;
@@ -11,6 +12,7 @@ export interface FiltrosUtentes {
   dataAte: string;
 }
 
+// Estado inicial/"sem filtros" de FiltrosUtentes, usado para repor a listagem completa.
 export const filtrosVazios: FiltrosUtentes = {
   prioridade: null,
   complexidade: null,
@@ -21,6 +23,9 @@ export const filtrosVazios: FiltrosUtentes = {
   dataAte: '',
 };
 
+// Aplica o conjunto de FiltrosUtentes a uma lista de utentes, devolvendo apenas os
+// que cumprem todas as condições ativas (prioridade, complexidade, estado, equipa,
+// localidades e intervalo de datas da última visita).
 export function filtrarUtentes(utentes: Utente[], filtros: FiltrosUtentes): Utente[] {
   return utentes.filter((u) => {
     if (filtros.prioridade && u.prioridade !== filtros.prioridade) {

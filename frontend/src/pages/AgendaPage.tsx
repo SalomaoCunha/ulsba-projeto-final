@@ -28,8 +28,13 @@ import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 import { formatarHora } from '../utils/formatarHora';
 import PainelConstrucaoRota from '../components/PainelConstrucaoRota';
 
+// Localizador do react-big-calendar baseado em date-fns, configurado com o
+// locale pt-PT (necessário para nomes de meses/dias e para o cálculo correto
+// do início da semana).
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales: { 'pt-PT': pt } });
 
+// Traduções dos textos fixos da UI do react-big-calendar (a biblioteca não
+// traduz automaticamente, só o locale das datas vem do date-fns acima).
 const MENSAGENS_PT = {
   date: 'Data',
   time: 'Hora',
@@ -65,8 +70,15 @@ const COR_ESTADO_VISITA: Record<EstadoVisita, string> = {
   CANCELADA: '#dc3545',
 };
 
+// As três perspetivas da agenda (RF19): por unidade (todas as voltas, filtráveis
+// por equipa/viatura/estado), por profissional (voltas de um profissional
+// específico, que pode pertencer a várias equipas) ou por utente (as visitas
+// domiciliárias desse utente, independentemente de quem as realiza).
 type VistaAgenda = 'unidade' | 'profissional' | 'utente';
 
+// Opção de profissional construída a partir dos membros de todas as equipas,
+// já com a lista de códigos de equipa a que pertence (um profissional pode
+// estar em mais do que uma equipa).
 interface ProfissionalOpcao {
   id: number;
   nome: string;
@@ -74,6 +86,10 @@ interface ProfissionalOpcao {
   equipasCodigos: string[];
 }
 
+// União discriminada dos três tipos de "evento" que podem aparecer no
+// calendário: uma volta completa (vista Unidade/Profissional), uma visita
+// isolada a um utente (vista Utente) ou um bloqueio de viatura (manutenção ou
+// indisponibilidade), que é sobreposto ao calendário independentemente da vista.
 type EventoAgenda =
   | {
       tipo: 'volta';
@@ -105,6 +121,10 @@ type EventoAgenda =
       resource: BloqueioViatura;
     };
 
+// Componente de renderização customizada de cada evento dentro das células do
+// calendário (passado a <Calendar components={{ event: ... }}>). O conteúdo
+// mostrado varia com o tipo de evento: bloqueio de viatura, visita a utente
+// ou volta completa.
 function EventoCalendario({ event }: EventProps<EventoAgenda>) {
   if (event.tipo === 'bloqueio_viatura') {
     const tipoLabel = event.resource.tipo === 'MANUTENCAO' ? 'Manutenção' : 'Indisponível';
@@ -141,6 +161,9 @@ function EventoCalendario({ event }: EventProps<EventoAgenda>) {
   );
 }
 
+// Barra de navegação customizada do calendário (substitui a toolbar padrão do
+// react-big-calendar), com apenas os botões de mês anterior/seguinte e o
+// rótulo do mês atual — não há seletor de vista porque só se usa a vista "month".
 function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoAgenda>) {
   return (
     <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
@@ -155,12 +178,23 @@ function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoAgenda>) {
   );
 }
 
+// Página de Agenda: calendário mensal de voltas/visitas com três perspetivas
+// (Unidade/Profissional/Utente — RF19), filtros por equipa/viatura/profissional/
+// utente/estado, sobreposição de bloqueios de viaturas e um modal de detalhe
+// do dia selecionado que também permite agendar uma nova volta (via
+// PainelConstrucaoRota).
 const AgendaPage = () => {
   const [searchParams] = useSearchParams();
+  // Permite abrir a agenda já filtrada/posicionada numa vista específica a
+  // partir de um link externo (ex.: "ver agenda deste profissional" a partir
+  // da página de Equipas, ou "ver agenda desta viatura").
   const viaturaIdInicial = searchParams.get('viaturaId');
   const profissionalIdInicial = searchParams.get('profissionalId');
   const utenteIdInicial = searchParams.get('utenteId');
 
+  // A vista inicial é inferida a partir dos parâmetros da URL: se vier um
+  // utenteId, abre-se logo na vista Utente; senão, se vier um profissionalId,
+  // na vista Profissional; caso contrário, a vista padrão é Unidade.
   const vistaInicial: VistaAgenda = utenteIdInicial
     ? 'utente'
     : profissionalIdInicial
@@ -194,6 +228,9 @@ const AgendaPage = () => {
   const [diaSelecionado, setDiaSelecionado] = useState<Date | null>(null);
   const [mostrarFormularioNovaVolta, setMostrarFormularioNovaVolta] = useState(false);
 
+  // Intervalo [início, fim] do mês atualmente visível no calendário, usado
+  // como filtro de datas em todos os pedidos à API. Só muda quando o mês
+  // muda (dataAtual), não a cada render.
   const intervalo = useMemo(() => ({
     dataInicio: format(startOfMonth(dataAtual), 'yyyy-MM-dd'),
     dataFim: format(endOfMonth(dataAtual), 'yyyy-MM-dd'),
@@ -201,6 +238,9 @@ const AgendaPage = () => {
 
   const navigate = useNavigate();
 
+  // Carrega uma única vez, ao montar a página, os dados de referência
+  // (equipas, viaturas, utentes) usados para preencher os filtros — estes não
+  // dependem do mês nem da vista selecionada.
   useEffect(() => {
     comAtrasoMinimo(Promise.allSettled([
       getEquipas().then(setEquipas),
@@ -219,6 +259,8 @@ const AgendaPage = () => {
     [viaturas, viaturaId],
   );
 
+  // Mapa id -> matrícula, usado para mostrar a matrícula nos bloqueios de
+  // viatura (que só trazem o id) sem ter de procurar na lista a cada render.
   const mapaMatriculas = useMemo(() => {
     const mapa = new Map<number, string>();
     for (const v of viaturas) {
@@ -227,6 +269,11 @@ const AgendaPage = () => {
     return mapa;
   }, [viaturas]);
 
+  // Lista de profissionais para o filtro da vista Profissional, construída a
+  // partir dos membros de todas as equipas (não existe um endpoint próprio
+  // de "profissionais"). Um mesmo profissional pode aparecer como membro em
+  // várias equipas, por isso agrega-se por id e acumulam-se todos os códigos
+  // de equipa a que pertence, em vez de duplicar a entrada.
   const profissionais = useMemo<ProfissionalOpcao[]>(() => {
     const mapa = new Map<number, ProfissionalOpcao>();
     for (const equipa of equipas) {
@@ -259,6 +306,12 @@ const AgendaPage = () => {
     [utentes, utenteId],
   );
 
+  // Recarrega os dados principais do calendário de acordo com a vista ativa:
+  // na vista Utente pede visitas (filtradas por utente/estado de visita); nas
+  // outras duas pede voltas, aplicando o filtro de equipa só na vista Unidade
+  // e o de profissional só na vista Profissional (os dois nunca se aplicam
+  // ao mesmo tempo). É um useCallback porque é chamado tanto pelo useEffect
+  // de sincronização como manualmente depois de criar uma nova volta.
   const recarregarDadosVista = useCallback(() => {
     if (vista === 'utente') {
       return getVisitasAgenda({
@@ -281,6 +334,11 @@ const AgendaPage = () => {
       .catch((erro) => console.error('Falha ao carregar voltas:', erro));
   }, [vista, intervalo, equipaId, profissionalId, viaturaId, estadoVolta, utenteId, estadoVisita]);
 
+  // Carrega, independentemente da vista e dos filtros, TODAS as voltas e
+  // bloqueios de viaturas do mês. Isto é necessário porque o
+  // PainelConstrucaoRota (agendar nova volta) precisa de conhecer todas as
+  // voltas/bloqueios do mês para detetar conflitos de agenda, mesmo que a
+  // vista atual esteja filtrada a uma equipa ou profissional específico.
   const recarregarVoltasEBloqueiosDoMes = useCallback(() => {
     return Promise.all([
       getVoltas(intervalo)
@@ -292,20 +350,29 @@ const AgendaPage = () => {
     ]);
   }, [intervalo]);
 
+  // Dispara recarregarDadosVista sempre que a vista, o mês ou algum dos
+  // filtros mudar (todos esses são dependências de recarregarDadosVista).
   useEffect(() => {
     recarregarDadosVista();
   }, [recarregarDadosVista]);
 
+  // Dispara recarregarVoltasEBloqueiosDoMes apenas quando o mês muda — estes
+  // dados não dependem da vista nem dos filtros (ver comentário acima).
   useEffect(() => {
     recarregarVoltasEBloqueiosDoMes();
   }, [recarregarVoltasEBloqueiosDoMes]);
 
+  // Troca de vista: limpa a seleção de dia e esconde o formulário de nova
+  // volta, para não deixar o modal aberto numa vista que já não corresponde.
   const mudarVista = (novaVista: VistaAgenda) => {
     setVista(novaVista);
     setDiaSelecionado(null);
     setMostrarFormularioNovaVolta(false);
   };
 
+  // Bloqueios de viatura a sobrepor ao calendário: não fazem sentido na vista
+  // Utente (que não tem noção de viatura), e quando há uma viatura filtrada
+  // mostram-se só os bloqueios dessa viatura.
   const bloqueiosVisiveisNoCalendario = useMemo(() => {
     if (vista === 'utente') return [];
     if (viaturaId !== undefined) {
@@ -314,6 +381,10 @@ const AgendaPage = () => {
     return bloqueiosViaturas;
   }, [vista, viaturaId, bloqueiosViaturas]);
 
+  // Converte os dados carregados (voltas, visitas, bloqueios) no formato de
+  // evento genérico que o react-big-calendar espera (com start/end como Date).
+  // Na vista Utente usa-se apenas as visitas; nas outras, combinam-se as
+  // voltas com os bloqueios de viatura visíveis.
   const eventos = useMemo<EventoAgenda[]>(() => {
     if (vista === 'utente') {
       return visitas.map((visita) => ({
@@ -346,6 +417,9 @@ const AgendaPage = () => {
         id: bloqueio.id,
         title: `${matricula} bloqueada`,
         start: parse(bloqueio.data_inicio, 'yyyy-MM-dd', new Date()),
+        // endOfDay porque a data_fim do bloqueio é um dia inteiro (sem hora);
+        // sem isto o evento terminaria à meia-noite desse dia e pareceria não
+        // cobrir o último dia do bloqueio no calendário.
         end: endOfDay(parse(bloqueio.data_fim, 'yyyy-MM-dd', new Date())),
         matricula,
         resource: bloqueio,
@@ -355,6 +429,10 @@ const AgendaPage = () => {
     return [...eventosVoltas, ...eventosBloqueios];
   }, [vista, voltas, visitas, bloqueiosVisiveisNoCalendario, mapaMatriculas]);
 
+  // Define a cor/estilo de cada evento no calendário (eventPropGetter): os
+  // bloqueios de viatura usam um estilo tracejado distinto (laranja para
+  // manutenção, vermelho para indisponibilidade pontual) para se distinguirem
+  // claramente das voltas/visitas, que usam a cor do seu próprio estado.
   const aoEstilizarEvento = useCallback((evento: EventoAgenda) => {
     if (evento.tipo === 'bloqueio_viatura') {
       const manutencao = evento.resource.tipo === 'MANUTENCAO';
@@ -373,6 +451,11 @@ const AgendaPage = () => {
     };
   }, []);
 
+  // Define o estilo de fundo de cada célula de dia do calendário
+  // (dayPropGetter): quando há uma viatura filtrada e essa viatura está
+  // bloqueada nesse dia, pinta a célula inteira com um tom claro
+  // correspondente ao tipo de bloqueio, para dar destaque visual ao dia
+  // mesmo antes de olhar para os eventos individuais.
   const aoEstilizarDia = useCallback(
     (dataDia: Date) => {
       if (vista === 'utente' || viaturaId === undefined) return {};
@@ -390,6 +473,10 @@ const AgendaPage = () => {
     [vista, viaturaId, bloqueiosViaturas],
   );
 
+  // As três listas seguintes alimentam o modal de detalhe do dia
+  // selecionado (diaSelecionado): voltas e visitas desse dia (uma delas é
+  // usada dependendo da vista) e os bloqueios de viatura que o cobrem.
+
   const voltasDoDia = useMemo(() => {
     if (!diaSelecionado) return [];
     return voltas.filter((volta) => isSameDay(new Date(volta.partidaPrevista ?? volta.data), diaSelecionado));
@@ -405,11 +492,17 @@ const AgendaPage = () => {
   const bloqueiosDoDia = useMemo(() => {
     if (!diaSelecionado) return [];
     const diaIso = format(diaSelecionado, 'yyyy-MM-dd');
+    // Bloqueio "cobre" o dia selecionado quando o dia cai entre o início e o
+    // fim do bloqueio (inclusive), não apenas quando coincide com um dos
+    // extremos — por isso a comparação é por intervalo e não por igualdade.
     return bloqueiosVisiveisNoCalendario.filter(
       (b) => b.data_inicio <= diaIso && b.data_fim >= diaIso,
     );
   }, [diaSelecionado, bloqueiosVisiveisNoCalendario]);
 
+  // Abre o modal de detalhe de um dia (clique numa célula do calendário ou
+  // num evento de bloqueio) e garante que não aparece logo o formulário de
+  // nova volta de uma seleção de dia anterior.
   const abrirDia = (data: Date) => {
     setDiaSelecionado(data);
     setMostrarFormularioNovaVolta(false);
@@ -419,6 +512,8 @@ const AgendaPage = () => {
     return <EcraCarregamento mensagem="A ligar ao servidor. Na primeira vez pode demorar um pouco mais (o servidor estava a dormir)." />;
   }
 
+  // Texto de subtítulo mostrado no topo da página, resumindo a vista e os
+  // filtros ativos em cada uma das três perspetivas.
   const descricaoContextoAtual =
     vista === 'unidade'
       ? `Vista Unidade · ${equipaAtiva ? `Equipa ${equipaAtiva.codigo}` : 'Todas as equipas'} · ${viaturaAtiva ? `Viatura ${viaturaAtiva.matricula}` : 'Todas as viaturas'}`
@@ -583,6 +678,9 @@ const AgendaPage = () => {
             date={dataAtual}
             onNavigate={setDataAtual}
             onSelectEvent={(evento) => {
+              // Clicar num bloqueio de viatura abre o modal de detalhe do
+              // dia (não há página própria de "bloqueio"); clicar numa
+              // volta ou visita navega para o detalhe dessa volta.
               if (evento.tipo === 'bloqueio_viatura') {
                 abrirDia(evento.start);
                 return;
@@ -598,6 +696,8 @@ const AgendaPage = () => {
           />
         </div>
 
+        {/* Legenda de cores: estados de visita na vista Utente, ou estados de
+            volta + indicação de viatura bloqueada nas outras vistas */}
         <div className="d-flex flex-wrap gap-3 mt-3 small text-muted">
           {vista === 'utente' ? (
             (Object.keys(LABEL_ESTADO_VISITA) as EstadoVisita[]).map((chave) => (
@@ -645,6 +745,7 @@ const AgendaPage = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {/* Aviso de viaturas bloqueadas neste dia (não aplicável à vista Utente) */}
           {vista !== 'utente' && bloqueiosDoDia.length > 0 && (
             <div className="mb-3">
               <div className="small fw-semibold text-danger mb-1">
@@ -671,6 +772,12 @@ const AgendaPage = () => {
             </div>
           )}
 
+          {/* Corpo do modal do dia: na vista Utente mostra sempre a lista de
+              visitas desse dia. Nas outras vistas, mostra a lista de voltas
+              existentes — a menos que não haja nenhuma, ou que o utilizador
+              tenha pedido explicitamente para agendar mais uma
+              (mostrarFormularioNovaVolta), caso em que aparece o formulário
+              de construção de rota. */}
           {vista === 'utente' ? (
             visitasDoDia.length === 0 ? (
               <p className="text-muted small mb-0">
@@ -702,6 +809,10 @@ const AgendaPage = () => {
           ) : voltasDoDia.length === 0 || mostrarFormularioNovaVolta ? (
             diaSelecionado && (
               <PainelConstrucaoRota
+                // A key inclui dia/equipa/viatura para forçar o React a
+                // remontar o painel (e assim repor o seu estado interno do
+                // formulário) sempre que estes mudarem, em vez de reutilizar
+                // uma instância com dados de um contexto diferente.
                 key={`${format(diaSelecionado, 'yyyy-MM-dd')}-${equipaId ?? 'todas'}-${viaturaId ?? 'todas'}`}
                 data={diaSelecionado}
                 equipas={equipas}
@@ -711,6 +822,10 @@ const AgendaPage = () => {
                 viaturaIdInicial={viaturaId}
                 utentes={utentes}
                 voltasDoMes={voltasDoMes}
+                // Após criar a volta com sucesso, fecha o modal e recarrega
+                // tanto os dados da vista atual como as voltas/bloqueios do
+                // mês, para que o calendário e qualquer novo agendamento já
+                // reflitam a volta recém-criada.
                 onCriada={() => {
                   setDiaSelecionado(null);
                   setMostrarFormularioNovaVolta(false);

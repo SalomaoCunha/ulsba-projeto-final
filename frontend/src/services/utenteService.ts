@@ -55,11 +55,13 @@ function mapearUtente(dto: UtenteDTO): Utente {
   };
 }
 
+// Lista todos os utentes, já convertidos para o formato usado no frontend.
 export async function getUtentes(): Promise<Utente[]> {
   const dtos = await apiFetch<UtenteDTO[]>('/utentes');
   return dtos.map(mapearUtente);
 }
 
+// Obtém a ficha completa de um utente pelo id.
 export async function getUtenteById(id: string): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>(`/utentes/${id}`);
   return mapearUtente(dto);
@@ -78,6 +80,8 @@ export interface NovoUtentePayload {
   notas?: string;
 }
 
+// Cria um novo utente a partir dos dados do formulário, convertendo para snake_case
+// antes de enviar à API e devolvendo já o Utente completo (com id e campos derivados).
 export async function createUtente(dados: NovoUtentePayload): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>('/utentes', {
     method: 'POST',
@@ -113,6 +117,8 @@ export async function updateUtente(utenteAtualizado: Utente): Promise<Utente> {
   return mapearUtente(dto);
 }
 
+// Atualiza as coordenadas (lat/lng) do local associado a este utente — usado,
+// por exemplo, quando o utilizador ajusta manualmente a posição no mapa.
 export async function atualizarCoordenadasUtente(
   utenteId: Utente['id'],
   lat: number,
@@ -125,6 +131,7 @@ export async function atualizarCoordenadasUtente(
   return mapearUtente(dto);
 }
 
+// Atualiza as coordenadas de um local diretamente (sem passar por um utente específico).
 export async function atualizarCoordenadasLocal(
   localId: number,
   lat: number,
@@ -161,6 +168,7 @@ export async function alterarEquipaResponsavel(utenteId: Utente['id'], equipaId:
 
 // Ativar/inativar são endpoints próprios (não o PUT normal) porque geram um
 // registo no histórico de transições de estado do utente.
+// Reativa um utente previamente inativo/referenciado, registando o motivo no histórico.
 export async function ativarUtente(utenteId: Utente['id'], motivo: string): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteId}/ativar`, {
     method: 'PUT',
@@ -169,6 +177,7 @@ export async function ativarUtente(utenteId: Utente['id'], motivo: string): Prom
   return mapearUtente(dto);
 }
 
+// Inativa um utente (ex.: óbito, alta, transferência), registando o motivo no histórico.
 export async function inativarUtente(utenteId: Utente['id'], motivo: string): Promise<Utente> {
   const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteId}/inativar`, {
     method: 'PUT',

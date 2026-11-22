@@ -31,6 +31,11 @@ const AjustarTamanhoMapa: React.FC = () => {
   return null;
 };
 
+// Componente "sem UI" que só existe para ligar o evento de clique do mapa
+// (useMapEvents só funciona dentro do contexto do MapContainer, por isso não
+// pode ser um simples addEventListener no componente principal). Quando
+// `ativo` (modo de edição de coordenadas), cada clique arredonda as
+// coordenadas a 6 casas decimais e reporta-as ao componente pai.
 const CapturarCliqueMapa: React.FC<{
   ativo: boolean;
   onClique?: (lat: number, lng: number) => void;
@@ -46,6 +51,11 @@ const CapturarCliqueMapa: React.FC<{
   return null;
 };
 
+// Centra/anima o mapa sobre um ponto (usado durante a edição de coordenadas,
+// para o utilizador ver sempre o pino que está a posicionar). Ignora (0,0) —
+// que normalmente indica "sem coordenadas ainda" — e qualquer ponto fora dos
+// limites válidos de latitude/longitude, para não dar panTo para posições
+// absurdas.
 const CentrarEmPonto: React.FC<{ ponto?: { lat: number; lng: number } | null }> = ({ ponto }) => {
   const map = useMap();
 
@@ -61,10 +71,17 @@ const CentrarEmPonto: React.FC<{ ponto?: { lat: number; lng: number } | null }> 
 };
 
 interface Props {
+  // Utentes a desenhar no mapa (só os que tiverem lat/lng são mostrados).
   utentes: Utente[];
+  // Se definido, mostra só os utentes com esta prioridade (ver PainelPrioridades).
   filtroAtivo?: string | null;
+  // Ativa o modo de marcação de coordenadas: mostra o pino arrastável/aviso
+  // flutuante e liga a captura de cliques no mapa.
   modoEdicao?: boolean;
+  // Coordenadas do pino em edição (novo local ou correção de um existente).
   pontoEdicao?: { lat: number; lng: number } | null;
+  // Indica se `pontoEdicao` está dentro de uma área/validação aceitável
+  // (ex.: dentro do concelho esperado); controla a cor do pino (azul/vermelho).
   pontoEdicaoValido?: boolean;
   // Distingue um ponto só pré-preenchido (p.ex. o centro de Beja por omissão
   // ao criar um novo local) de um ponto que o utilizador já clicou/arrastou
@@ -80,6 +97,8 @@ interface Props {
   onToggleFiltros?: () => void;
 }
 
+// Pino padrão de utente: cor conforme a prioridade (cinzento se a prioridade
+// não tiver um nível conhecido).
 const criarIconePersonalizado = (prioridade: string) => {
   const cor = getNivelPrioridade(prioridade)?.corDot ?? '#6c757d';
 
@@ -100,8 +119,14 @@ const criarIconePersonalizado = (prioridade: string) => {
   });
 };
 
+// Estado visual do pino de edição: 'pendente' (posição ainda não confirmada
+// pelo utilizador, p.ex. centro de Beja por omissão), 'valido' (coordenadas
+// aceitáveis) ou 'invalido' (fora da área esperada).
 type EstadoPinoEdicao = 'pendente' | 'valido' | 'invalido';
 
+// Pino maior e com contorno tracejado (quando pendente) usado durante a
+// marcação/correção de coordenadas, para se distinguir claramente dos
+// pinos normais de utentes.
 const criarIconeEdicao = (estado: EstadoPinoEdicao) => {
   const cor = estado === 'valido' ? '#0d6efd' : estado === 'invalido' ? '#dc3545' : '#adb5bd';
   const tracejado = estado === 'pendente' ? 'stroke-dasharray="1.5,1.2"' : '';
@@ -123,6 +148,10 @@ const criarIconeEdicao = (estado: EstadoPinoEdicao) => {
   });
 };
 
+// Mapa principal da aplicação (Dashboard/edição de morada): mostra um pino
+// por utente, coloridos pela prioridade, com legenda e popups. Em
+// `modoEdicao`, mostra ainda um pino arrastável para marcar/corrigir
+// coordenadas de um local.
 const MapaLeaflet: React.FC<Props> = ({
   utentes,
   filtroAtivo,
@@ -135,6 +164,11 @@ const MapaLeaflet: React.FC<Props> = ({
   onIniciarEdicaoUtente,
   onToggleFiltros,
 }) => {
+  // Centro inicial do mapa: coordenadas aproximadas de Beja (área de
+  // cobertura da ULSBA). O MapContainer só usa este valor na primeira
+  // renderização — mudanças a este `center` não voltam a mover o mapa
+  // (é controlado depois pelo ZoomControl/pan do utilizador ou pelo
+  // componente CentrarEmPonto).
   const center: [number, number] = [38.015, -7.863];
 
   // Filtra por prioridade (se ativo) e ignora registos sem coordenadas
@@ -142,6 +176,9 @@ const MapaLeaflet: React.FC<Props> = ({
     filtroAtivo ? utentes.filter((ut) => ut.prioridade === filtroAtivo) : utentes
   ).filter((ut): ut is Utente & { lat: number; lng: number } => ut.lat !== null && ut.lng !== null);
 
+  // Só desenha o pino de edição se as coordenadas forem números válidos e
+  // estiverem dentro dos limites geográficos possíveis (evita desenhar um
+  // pino "nulo" em NaN ou fora do mundo).
   const pontoEdicaoDesenhavel =
     pontoEdicao &&
     !Number.isNaN(pontoEdicao.lat) &&
@@ -151,6 +188,9 @@ const MapaLeaflet: React.FC<Props> = ({
     pontoEdicao.lng >= -180 &&
     pontoEdicao.lng <= 180;
 
+  // Pino não confirmado tem sempre prioridade visual "pendente", independente
+  // de ser válido ou não — só depois de confirmado é que mostra a cor real
+  // de válido/inválido.
   const estadoPinoEdicao: EstadoPinoEdicao = !pontoEdicaoConfirmado
     ? 'pendente'
     : pontoEdicaoValido
@@ -266,6 +306,10 @@ const MapaLeaflet: React.FC<Props> = ({
             icon={criarIconeEdicao(estadoPinoEdicao)}
             draggable
             eventHandlers={{
+              // Ao soltar o pino arrastado, reporta a nova posição ao
+              // componente pai do mesmo modo que um clique no mapa
+              // (CapturarCliqueMapa) — mantém as duas formas de marcar o
+              // ponto (clicar ou arrastar) sincronizadas com o mesmo callback.
               dragend: (e) => {
                 const marker = e.target as L.Marker;
                 const pos = marker.getLatLng();
