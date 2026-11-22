@@ -16,9 +16,12 @@ import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 interface FormularioEquipa {
   codigo: string;
   designacao: string;
-  membros: number[];
+  membros: number[]; // ids dos profissionais selecionados como membros da equipa
 }
 
+// Página de gestão de Equipas: lista as equipas existentes em cartões (com os
+// seus membros e viaturas associadas), permite criar/editar equipas num modal
+// e apagar (ou desativar, se tiver histórico) uma equipa.
 const EquipasPage: React.FC = () => {
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
@@ -38,6 +41,10 @@ const EquipasPage: React.FC = () => {
   const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
   const [equipaParaApagar, setEquipaParaApagar] = useState<Equipa | null>(null);
 
+  // Carrega em paralelo as equipas, as viaturas (para as associar por
+  // equipa_codigo) e a lista de profissionais disponíveis para seleção de
+  // membros. Usa allSettled para que a falha de uma chamada não impeça as
+  // outras de carregar; a falha em profissionais fica também visível no form.
   useEffect(() => {
     comAtrasoMinimo(
       Promise.allSettled([
@@ -53,14 +60,18 @@ const EquipasPage: React.FC = () => {
     ).finally(() => setCarregando(false));
   }, []);
 
+  // Viaturas atualmente atribuídas a esta equipa (associação feita pelo
+  // código da equipa, não pelo id).
   const viaturasDaEquipa = (equipa: Equipa) => {
     return viaturas.filter((viatura) => viatura.equipa_codigo === equipa.codigo);
   };
 
+  // Viaturas sem qualquer equipa atribuída, mostradas num cartão separado.
   const viaturasSemEquipa = () => {
     return viaturas.filter((viatura) => viatura.equipa_codigo === null);
   };
 
+  // Abre o modal em modo "criação": limpa o formulário e o id de edição.
   const abrirNovaEquipa = () => {
     setEquipaEditandoId(null);
     setDadosFormulario({ codigo: '', designacao: '', membros: [] });
@@ -68,6 +79,8 @@ const EquipasPage: React.FC = () => {
     setModalAberto(true);
   };
 
+  // Abre o modal em modo "edição": pré-preenche o formulário com os dados
+  // atuais da equipa, incluindo os ids dos membros já associados.
   const abrirEdicaoEquipa = (equipa: Equipa) => {
     setEquipaEditandoId(equipa.id);
     setDadosFormulario({
@@ -79,6 +92,9 @@ const EquipasPage: React.FC = () => {
     setModalAberto(true);
   };
 
+  // Apaga a equipa; se o backend indicar que não foi mesmo apagada (porque
+  // tem histórico associado), marca-a localmente como inativa e avisa o
+  // utilizador, em vez de a remover da lista.
   const apagarEquipa = async (equipa: Equipa) => {
     setAApagarId(equipa.id);
     setAvisoApagar(null);
@@ -104,12 +120,16 @@ const EquipasPage: React.FC = () => {
     }
   };
 
+  // Fecha o modal, exceto enquanto um guardar estiver em curso (evita fechar
+  // a meio de um pedido à API).
   const fecharModal = () => {
     if (aGuardar) return;
     setModalAberto(false);
     setErroEquipa(null);
   };
 
+  // Adiciona ou remove um profissional da lista de membros selecionados no
+  // formulário, conforme o checkbox correspondente é marcado/desmarcado.
   const alternarMembro = (profissionalId: number, selecionado: boolean) => {
     setDadosFormulario((atual) => ({
       ...atual,
@@ -119,6 +139,10 @@ const EquipasPage: React.FC = () => {
     }));
   };
 
+  // Valida e submete o formulário: normaliza o código (maiúsculas, sem
+  // espaços) e decide entre criar ou atualizar consoante exista ou não um
+  // id de equipa em edição. Atualiza a lista local sem precisar de recarregar
+  // tudo do servidor, inserindo a equipa nova já ordenada por código.
   const guardarEquipa = async (evento: React.FormEvent) => {
     evento.preventDefault();
     const codigo = dadosFormulario.codigo.trim().toUpperCase();
@@ -275,6 +299,10 @@ const EquipasPage: React.FC = () => {
         </div>
       )}
 
+      {/* Modal de criação/edição de equipa, construído manualmente com classes
+          Bootstrap (em vez do componente <Modal> do react-bootstrap) para
+          poder fechar ao clicar fora (onMouseDown no overlay) enquanto o
+          formulário interno continua a propagar os seus próprios cliques. */}
       {modalAberto && (
         <div
           className="modal d-block"
@@ -283,6 +311,8 @@ const EquipasPage: React.FC = () => {
           aria-labelledby="modal-equipa-titulo"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 1050 }}
           onMouseDown={(evento) => {
+            // Só fecha se o clique for diretamente no overlay (currentTarget),
+            // não num clique que começou dentro do conteúdo do modal.
             if (evento.target === evento.currentTarget) fecharModal();
           }}
         >
@@ -352,6 +382,9 @@ const EquipasPage: React.FC = () => {
                                   className="form-check-input mt-0"
                                   type="checkbox"
                                   checked={selecionado}
+                                  // Um profissional inativo só fica desativado (não selecionável)
+                                  // se ainda não for membro; se já estiver selecionado, mantém-se
+                                  // editável para que seja possível remover a associação.
                                   disabled={!profissional.ativo && !selecionado}
                                   onChange={(evento) =>
                                     alternarMembro(profissional.id, evento.target.checked)

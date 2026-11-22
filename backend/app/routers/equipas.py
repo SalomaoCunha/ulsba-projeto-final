@@ -7,6 +7,13 @@ from app.schemas import EquipaCriarEditar, EquipaResumo, ProfissionalEquipaResum
 
 router = APIRouter(prefix="/equipas", tags=["equipas"])
 
+# Base da listagem/detalhe de equipas: uma linha por equipa + membro atual.
+# equipa_membro guarda o histórico de pertença a equipas (quem esteve numa
+# equipa e quando saiu), por isso o JOIN só traz o membro "em vigor" através
+# de valido_ate IS NULL (membros que já saíram ficam com valido_ate
+# preenchido e são excluídos aqui). Os LEFT JOIN garantem que uma equipa sem
+# membros ainda aparece (com membro_id a NULL), em vez de desaparecer da
+# listagem.
 _CAMPOS_EQUIPA = """
     SELECT e.id, e.codigo, e.designacao, e.ativa,
            p.id AS membro_id, p.nome AS membro_nome, f.designacao AS funcao
@@ -18,6 +25,12 @@ _CAMPOS_EQUIPA = """
 
 
 def _agrupar_equipas(linhas):
+    # _CAMPOS_EQUIPA devolve uma linha por (equipa, membro) por causa do JOIN
+    # a equipa_membro — uma equipa com 3 membros aparece em 3 linhas com os
+    # mesmos dados de equipa repetidos. Esta função agrupa essas linhas de
+    # volta num dicionário por equipa, com os membros juntos numa lista
+    # "membros" (vazia se a equipa não tiver nenhum, caso em que membro_id
+    # vem a NULL do LEFT JOIN).
     equipas: dict[int, dict] = {}
     for linha in linhas:
         equipa_id = linha["id"]
@@ -39,6 +52,9 @@ def _agrupar_equipas(linhas):
 
 
 def _obter_equipa(equipa_id: int, conn):
+    # Recarrega uma única equipa (com membros atuais) depois de uma
+    # criação/edição, para a resposta do endpoint refletir sempre o estado
+    # gravado na BD e não os dados ainda em memória do pedido.
     linhas = conn.execute(
         _CAMPOS_EQUIPA + " WHERE e.id = %s ORDER BY e.codigo, p.nome",
         (equipa_id,),
@@ -48,6 +64,13 @@ def _obter_equipa(equipa_id: int, conn):
 
 
 def _sincronizar_membros(equipa_id: int, profissional_ids: list[int], conn):
+    # Ajusta a composição da equipa para corresponder exatamente à lista
+    # `profissional_ids` pedida (usado tanto na criação como na edição):
+    # calcula a diferença entre os membros atuais e os pretendidos e só
+    # aplica essa diferença (adiciona quem falta, remove quem já não deve
+    # estar lá), em vez de apagar tudo e reinserir — isso preservaria
+    # incorretamente o histórico de pertença (valido_ate) dos membros que
+    # não mudaram.
     if len(profissional_ids) != len(set(profissional_ids)):
         raise HTTPException(status_code=400, detail="A lista de membros contém duplicados.")
 
@@ -67,6 +90,11 @@ def _sincronizar_membros(equipa_id: int, profissional_ids: list[int], conn):
     remover = atuais - pretendidos
 
     if adicionar:
+        # Valida que todos os profissionais a adicionar existem e estão
+        # ativos — compara o conjunto pedido com o conjunto que a query
+        # confirma como ativo; se algum pedido não aparecer aqui (inexistente
+        # ou inativo), `ativos != adicionar` deteta a diferença sem precisar
+        # de identificar qual falhou.
         ativos = {
             linha["id"]
             for linha in conn.execute(
@@ -81,6 +109,9 @@ def _sincronizar_membros(equipa_id: int, profissional_ids: list[int], conn):
             )
 
     if remover:
+        # Remoção lógica: fecha o período de pertença (valido_ate = now())
+        # em vez de apagar a linha, para o histórico de "quem esteve nesta
+        # equipa e durante quanto tempo" se manter consultável.
         conn.execute(
             """
             UPDATE equipa_membro
@@ -101,6 +132,9 @@ def _sincronizar_membros(equipa_id: int, profissional_ids: list[int], conn):
 
 
 def _normalizar_codigo(codigo: str) -> str:
+    # Códigos de equipa são sempre guardados em maiúsculas e sem espaços
+    # extra, para que o índice único (codigo) não trate "e1" e "E1" como
+    # equipas diferentes.
     normalizado = codigo.strip().upper()
     if not normalizado:
         raise HTTPException(status_code=400, detail="O código da equipa é obrigatório.")
@@ -108,6 +142,8 @@ def _normalizar_codigo(codigo: str) -> str:
 
 
 def _normalizar_designacao(designacao: str | None) -> str | None:
+    # Uma designação em branco é tratada como "não definida" (NULL), não
+    # como uma string vazia.
     if designacao is None:
         return None
     return designacao.strip() or None
@@ -115,6 +151,9 @@ def _normalizar_designacao(designacao: str | None) -> str | None:
 
 @router.get("", response_model=list[EquipaResumo])
 def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Quem tem vista_geral (coordenação) vê todas as equipas; quem não tem
+    # só vê as equipas de que é atualmente membro (subquery por
+    # utilizador_id -> profissional -> equipa_membro em vigor).
     if utilizador["vista_geral"]:
         linhas = conn.execute(_CAMPOS_EQUIPA + " ORDER BY e.codigo, p.nome").fetchall()
     else:
@@ -134,6 +173,9 @@ def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user))
 
 @router.get("/profissionais", response_model=list[ProfissionalEquipaResumo])
 def listar_profissionais(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Lista todos os profissionais (ativos e inativos, ativos primeiro) para
+    # preencher o seletor de membros ao criar/editar uma equipa — não filtra
+    # por equipa, é a lista "candidata" completa.
     return conn.execute(
         """
         SELECT p.id, p.nome, f.designacao AS funcao, p.ativo
@@ -150,6 +192,10 @@ def criar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Cria a equipa e a sua composição inicial de membros numa única
+    # transação: se _sincronizar_membros falhar (ex.: membro inativo), o
+    # INSERT da equipa é revertido também, evitando equipas "fantasma" sem
+    # membros válidos.
     try:
         with conn.transaction():
             equipa_id = conn.execute(
@@ -175,6 +221,9 @@ def editar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Atualiza os dados da equipa e resincroniza a lista de membros com a
+    # enviada no pedido (dados.membros é a lista completa pretendida, não um
+    # delta) — tudo dentro da mesma transação.
     try:
         with conn.transaction():
             cursor = conn.execute(
@@ -206,6 +255,9 @@ def apagar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Devolve {"apagada": True/False, "desativada": True/False} para o
+    # frontend poder distinguir uma remoção definitiva de uma simples
+    # desativação e ajustar a mensagem mostrada ao utilizador.
     equipa = conn.execute("SELECT id FROM equipa WHERE id = %s", (equipa_id,)).fetchone()
     if equipa is None:
         raise HTTPException(status_code=404, detail="Equipa não encontrada.")

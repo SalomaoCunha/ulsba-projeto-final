@@ -16,6 +16,9 @@ import LoginPage from './pages/LoginPage';
 import VoltaDetalhePage from './pages/VoltaDetalhePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// Componente raiz da aplicação: define todas as rotas da SPA.
+// ProtectedRoute garante que só utilizadores autenticados acedem às páginas dentro de
+// MainLayout (menu lateral + topo); sem sessão válida, redireciona para /login.
 export default function App() {
   return (
     <BrowserRouter>

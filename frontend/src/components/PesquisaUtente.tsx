@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import type { Utente } from '../types/utente';
 
 interface Props {
+  // Lista completa de utentes, usada localmente para calcular as sugestões
+  // dos dois campos de pesquisa (não é filtrada aqui para fins de exibição).
   utentes: Utente[];
+  // Chamado com o termo de pesquisa (número de utente ou nome) quando o
+  // utilizador confirma a pesquisa — pelo ícone de lupa ou ao escolher uma sugestão.
   onPesquisar: (termo: string) => void;
 }
 
+// Cartão com dois campos de pesquisa independentes (por número de utente e
+// por nome), cada um com a sua própria lista de sugestões em dropdown.
 const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
   const [numero, setNumero] = useState('');
   const [nome, setNome] = useState('');
@@ -18,6 +24,8 @@ const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
   const [mostrarDropNome, setMostrarDropNome] = useState(false);
 
   // --- Lógica para o campo do Número ---
+  // Filtra localmente os utentes cujo número contém o texto digitado e
+  // mostra a lista de sugestões; campo vazio esconde o dropdown.
   const handleNumChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNumero(val);
@@ -31,6 +39,7 @@ const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
   };
 
   // --- Lógica para o campo do Nome ---
+  // Igual ao campo do número, mas filtra por nome e ignora maiúsculas/minúsculas.
   const handleNomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNome(val);
@@ -44,6 +53,9 @@ const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
   };
 
   // --- Lógica ao clicar numa das sugestões ---
+  // Preenche ambos os campos com os dados do utente escolhido, fecha as
+  // duas listas de sugestões e dispara a pesquisa pelo número de utente
+  // (identificador mais fiável que o nome, que pode ter duplicados).
   const selecionarUtente = (ut: Utente) => {
     setNumero(ut.numeroUtente);
     setNome(ut.nome);
@@ -71,7 +83,9 @@ const PesquisaUtente: React.FC<Props> = ({ utentes, onPesquisar }) => {
               value={numero}
               onChange={handleNumChange}
               onFocus={() => numero.trim() && setMostrarDropNum(true)}
-              // Usamos setTimeout para dar tempo de clicar na lista antes dela fechar
+              // Usamos setTimeout para dar tempo de clicar na lista antes dela fechar.
+              // Sem este atraso, o onBlur do input dispara antes do onClick do
+              // botão da sugestão, e a lista desaparece antes do clique ser registado.
               onBlur={() => setTimeout(() => setMostrarDropNum(false), 200)}
             />
             <span 

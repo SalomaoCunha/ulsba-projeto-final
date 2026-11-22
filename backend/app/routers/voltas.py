@@ -30,6 +30,15 @@ DURACAO_VISITA_PADRAO_MIN = 30
 
 
 def _obter_hora_limite_beja(conn) -> time:
+    # Hora-limite de regresso a Beja (RF19/RF39) é um parâmetro de sistema
+    # configurável, não uma constante fixa no código. parametro_sistema
+    # guarda histórico de valores (várias linhas com valido_desde
+    # diferentes); por isso filtra-se por "valido_desde <= now()" e
+    # escolhe-se o mais recente (valido_desde DESC) — o valor em vigor
+    # agora, não todo o histórico. 'HORARIO_FIM_VISITAS' é um nome de chave
+    # legado que ainda pode existir em bases de dados mais antigas; a
+    # ordenação por CASE garante que, se ambas as chaves existirem,
+    # 'HORA_LIMITE_REGRESSO_BEJA' (o nome atual) tem sempre prioridade.
     row = conn.execute(
         """
         SELECT valor
@@ -47,12 +56,19 @@ def _obter_hora_limite_beja(conn) -> time:
             partes = str(row["valor"]).strip().split(":")
             return time(int(partes[0]), int(partes[1]))
         except (ValueError, IndexError):
+            # Valor gravado em formato inesperado (não "HH:MM") — cai para o
+            # padrão em vez de rebentar o pedido inteiro por um parâmetro
+            # mal configurado.
             pass
 
     return HORA_LIMITE_BEJA_PADRAO
 
 
 def _carregar_visitas_para_ajuste(volta_id: int, conn) -> list[VisitaAgendaItem]:
+    # Carrega todas as visitas da volta (de todas as paragens) no formato
+    # VisitaAgendaItem esperado pelas funções de ajuste de horário do
+    # serviço horarios_volta — a conversão linha SQL -> dataclass fica aqui
+    # para o serviço continuar sem depender do formato das queries.
     linhas = conn.execute(
         """
         SELECT vis.id AS visita_id,
@@ -95,6 +111,11 @@ def listar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Lista voltas no intervalo [data_inicio, data_fim], com filtros
+    # opcionais por equipa/viatura/profissional/estado. O filtro por
+    # profissional_id é indireto: não há profissional_id na tabela volta,
+    # por isso traduz-se para "a equipa da volta tem este profissional como
+    # membro em vigor" via subquery a equipa_membro.
     base = """
         SELECT v.id, v.data, v.designacao, v.estado,
                v.equipa_id, e.codigo AS equipa_codigo,
@@ -129,6 +150,9 @@ def listar(
         condicoes.append("v.estado=%s")
         parametros.append(estado)
 
+    # Scoping por permissão: sem vista_geral, só vê voltas de equipas de que
+    # é membro atual — mesmo padrão usado em equipas.listar() e em
+    # listar_visitas() abaixo.
     if not utilizador["vista_geral"]:
         condicoes.append("""
         v.equipa_id IN (
@@ -154,6 +178,14 @@ def listar_visitas(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Agenda de visitas (não de voltas): uma linha por visita individual,
+    # para calendários/listas onde a unidade relevante é "quem vai a casa
+    # de quem e quando", não a volta inteira. equipa_executante_id permite
+    # que uma visita concreta seja reatribuída a uma equipa diferente da
+    # equipa da volta (ex. troca pontual) — por isso o "dono" da visita para
+    # efeitos de filtro/scoping é sempre COALESCE(vis.equipa_executante_id,
+    # v.equipa_id): usa a equipa específica da visita se existir, senão cai
+    # para a equipa da volta.
     base = """
         SELECT vis.id AS visita_id,
                v.id AS volta_id,
@@ -222,12 +254,20 @@ def listar_visitas(
 
 @router.post("", status_code=201)
 def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Cria uma volta já em RASCUNHO (fica pendente de confirmação — ver
+    # confirmar() abaixo) a partir de uma lista de utentes a visitar: agrupa
+    # os utentes por local (várias visitas no mesmo local tornam-se uma
+    # única paragem), gera o horário sequencial de cada visita e já atribui
+    # a equipa inteira como escala por omissão.
     utentes = conn.execute(
         "SELECT id, local_id FROM utente WHERE id = ANY(%s)",
         (dados.utente_ids,),
     ).fetchall()
     local_por_utente = {u["id"]: u["local_id"] for u in utentes}
 
+    # Agrupa os utentes pelo local onde vivem: utentes no mesmo local_id
+    # partilham uma única paragem física (não faz sentido criar duas
+    # paragens para a mesma morada).
     agrupado: dict[int, list[int]] = {}
 
     # A ordem das paragens segue a ordem de dados.utente_ids (ordem de
@@ -237,6 +277,9 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     for utente_id in dados.utente_ids:
         local_id = local_por_utente.get(utente_id)
         if local_id is None:
+            # Utente inexistente ou sem local associado — não entra em
+            # nenhuma paragem (silenciosamente ignorado, não gera erro 404
+            # para não bloquear a criação da volta por um único id inválido).
             continue
 
         if local_id not in agrupado:
@@ -497,6 +540,14 @@ def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(g
 
 @router.get("/{volta_id}")
 def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Ficha completa de uma volta: dados da volta + todas as paragens (com
+    # coordenadas para o mapa) + todas as visitas de cada paragem + um
+    # resumo calculado (durações, distâncias, alertas de coerência,
+    # hora-limite de Beja) produzido pelo serviço horarios_volta. Também é
+    # reutilizado como função auxiliar (não só como endpoint): confirmar(),
+    # concluir(), registar_horarios_reais_volta/visita() e
+    # cancelar_visita() chamam-na diretamente no final para devolver a
+    # ficha já atualizada, em vez de duplicar esta query de leitura.
     volta = conn.execute(
         """
         SELECT v.id, v.data, v.designacao, v.estado,
@@ -543,6 +594,9 @@ def obter(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_
 
     paragens = {}
 
+    # A query devolve uma linha por (paragem, visita) — mesmo padrão de
+    # _agrupar_equipas em equipas.py: agrupa-se aqui por paragem_id, com as
+    # visitas de cada paragem juntas numa lista.
     for linha in linhas:
         paragem_id = linha["paragem_id"]
 
@@ -606,6 +660,12 @@ def registar_horarios_reais_volta(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Regista a hora real de saída e/ou de regresso da volta. Registar a
+    # saída real tardia desencadeia o ajuste em cascata de todas as visitas
+    # ainda planeadas (via ajustar_por_atraso_saida) e, se a volta ainda só
+    # estava CONFIRMADA, transita-a automaticamente para EM_CURSO — o
+    # mesmo pedido que regista a saída real já é o "arranque" da volta, sem
+    # precisar de um passo explícito separado.
     if dados.partida_real is None and dados.regresso_real is None:
         raise HTTPException(
             status_code=400,
@@ -624,6 +684,8 @@ def registar_horarios_reais_volta(
     if volta is None:
         raise HTTPException(status_code=404, detail="Volta não encontrada")
 
+    # Campos não enviados no pedido mantêm o valor já gravado (permite
+    # atualizar só a saída, só o regresso, ou os dois).
     nova_partida_real = dados.partida_real if dados.partida_real is not None else volta["partida_real"]
     novo_regresso_real = dados.regresso_real if dados.regresso_real is not None else volta["regresso_real"]
 
@@ -653,7 +715,13 @@ def registar_horarios_reais_volta(
 
         novo_regresso_previsto = ajuste.novo_regresso_previsto
 
-        # Atualiza por ordem inversa para nunca provocar sobreposição transitória no trigger de participantes
+        # Atualiza por ordem inversa para nunca provocar sobreposição transitória no trigger de participantes.
+        # Ao avançar os horários previstos um a um na ordem normal (primeiro a visita mais antiga), existiria
+        # um instante em que essa visita já teria o novo horário (mais tarde) enquanto a visita seguinte ainda
+        # teria o horário antigo — uma sobreposição momentânea que o trigger de validação poderia apanhar
+        # indevidamente. Atualizando de trás para a frente, a visita mais tardia muda primeiro para um horário
+        # que já não colide com nenhuma outra, e cada UPDATE seguinte nunca cria sobreposição com o que já foi
+        # atualizado.
         for v_ajustada in reversed(ajuste.visitas_ajustadas):
             conn.execute(
                 """
@@ -665,6 +733,8 @@ def registar_horarios_reais_volta(
                 (v_ajustada.inicio_previsto, v_ajustada.fim_previsto, v_ajustada.visita_id),
             )
 
+    # Transição automática CONFIRMADA -> EM_CURSO: registar uma saída real
+    # é, por si só, a confirmação de que a volta já começou.
     novo_estado = volta["estado"]
     if volta["estado"] == "CONFIRMADA" and nova_partida_real is not None:
         novo_estado = "EM_CURSO"
@@ -692,6 +762,11 @@ def registar_horarios_reais_visita(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Regista o início e/ou fim real de uma visita concreta e propaga o
+    # atraso daí resultante para as visitas seguintes da mesma volta (via
+    # ajustar_por_atraso_visita). Também trata, nesta única chamada, a
+    # transição de estado da visita (PLANEADA -> EM_CURSO -> CONCLUIDA) e a
+    # exigência de participantes mínimos antes de poder concluir.
     if dados.inicio_real is None and dados.fim_real is None:
         raise HTTPException(
             status_code=400,
@@ -730,7 +805,8 @@ def registar_horarios_reais_visita(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    # Atualiza visitas afetadas em ordem inversa para evitar sobreposição transitória
+    # Atualiza visitas afetadas em ordem inversa para evitar sobreposição
+    # transitória — mesma razão explicada em registar_horarios_reais_volta.
     for v_ajustada in reversed(ajuste.visitas_ajustadas):
         conn.execute(
             """
@@ -747,13 +823,16 @@ def registar_horarios_reais_visita(
     novo_estado = alvo.estado
 
     if novo_fim_real is not None:
-        # Garante a integridade da migração 0003: só passa a CONCLUIDA se houver participantes
+        # Garante a integridade da migração 0003: só passa a CONCLUIDA se houver participantes.
         part_count = conn.execute(
             "SELECT count(*) AS total FROM visita_participante WHERE visita_id = %s",
             (visita_id,),
         ).fetchone()["total"]
 
         if part_count == 0:
+            # Sem participantes registados explicitamente, assume-se a
+            # composição da equipa da volta inteira (volta_profissional) —
+            # mesma lógica de fallback usada em _concluir_visitas_pendentes.
             conn.execute(
                 """
                 INSERT INTO visita_participante (visita_id, profissional_id)
@@ -772,8 +851,14 @@ def registar_horarios_reais_visita(
         if part_count > 0:
             novo_estado = "CONCLUIDA"
         elif novo_estado == "PLANEADA":
+            # Mesmo sem conseguir garantir participantes (ex. equipa sem
+            # membros), um fim real já registado significa, no mínimo, que
+            # a visita está em curso — não deve continuar como PLANEADA.
             novo_estado = "EM_CURSO"
     elif novo_inicio_real is not None and novo_estado == "PLANEADA":
+        # Só o início real foi registado (ainda sem fim) — a visita passa a
+        # EM_CURSO; ck_participacao_minima só se aplica a CONCLUIDA, por
+        # isso aqui não é preciso garantir participantes já.
         novo_estado = "EM_CURSO"
 
     conn.execute(
@@ -787,6 +872,8 @@ def registar_horarios_reais_visita(
         (novo_inicio_real, novo_fim_real, novo_estado, visita_id),
     )
 
+    # Propaga o novo regresso previsto da volta só se o atraso desta visita
+    # efetivamente o alterou (atraso zero deixa o regresso previsto intacto).
     if ajuste.novo_regresso_previsto != volta["regresso_previsto"]:
         conn.execute(
             "UPDATE volta SET regresso_previsto = %s WHERE id = %s",
@@ -804,6 +891,10 @@ def cancelar_visita(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Cancela uma visita individual (não a volta toda) com motivo
+    # obrigatório — não ajusta horários de outras visitas: uma visita
+    # cancelada simplesmente deixa de contar para os cálculos do resumo
+    # (ver calcular_resumo_volta, que ignora visitas CANCELADA).
     visita = conn.execute(
         """
         SELECT vis.id, vis.estado

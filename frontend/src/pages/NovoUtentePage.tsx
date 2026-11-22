@@ -21,8 +21,13 @@ const TIPOS_LOCAL: { codigo: TipoLocalCodigo; label: string }[] = [
   { codigo: 'BASE', label: 'Base' },
 ];
 
+// Ponto de partida do mapa ao criar um novo local: Beja (sede da ULSBA),
+// usado só como centro inicial — tem de ser confirmado/ajustado pelo utilizador.
 const PONTO_INICIAL = { lat: 38.016, lng: -7.872 };
 
+// Dados do formulário para criar um novo local diretamente nesta ficha
+// (quando o utente ainda não tem nenhum local registado, ou se escolhe
+// criar um novo em vez de escolher um existente).
 interface DadosLocalFormulario {
   tipo: TipoLocalCodigo;
   nome: string;
@@ -33,6 +38,9 @@ interface DadosLocalFormulario {
   contactoTelefonico: string;
 }
 
+// Formulário de registo de um novo utente. Para além dos dados pessoais,
+// permite escolher um local já existente ou criar um novo local (morada +
+// coordenadas no mapa) sem saír desta página.
 const NovoUtentePage: React.FC = () => {
   const navigate = useNavigate();
   const [locais, setLocais] = useState<Local[]>([]);
@@ -41,8 +49,12 @@ const NovoUtentePage: React.FC = () => {
   const [aGuardar, setAGuardar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [erroLocal, setErroLocal] = useState<string | null>(null);
+  // Alterna entre "escolher local existente" (false) e "criar novo local
+  // nesta ficha" (true) — true por omissão se ainda não existir nenhum local.
   const [modoCriarLocal, setModoCriarLocal] = useState(false);
   const [pontoLocal, setPontoLocal] = useState(PONTO_INICIAL);
+  // O pino do mapa começa por não estar confirmado: é preciso o utilizador
+  // clicar/arrastar no mapa para validar a localização antes de poder guardar.
   const [pontoLocalConfirmado, setPontoLocalConfirmado] = useState(false);
   const [dadosLocal, setDadosLocal] = useState<DadosLocalFormulario>({
     tipo: 'DOMICILIO',
@@ -65,6 +77,9 @@ const NovoUtentePage: React.FC = () => {
     notas: '',
   });
 
+  // Carrega as listas de referência (locais existentes e concelhos) usadas
+  // nos selects do formulário. Se ainda não existir nenhum local no sistema,
+  // entra-se logo em modo "criar local" porque não há nada para escolher.
   useEffect(() => {
     Promise.all([getLocais(), getConcelhos()])
       .then(([locaisCarregados, concelhosCarregados]) => {
@@ -79,11 +94,17 @@ const NovoUtentePage: React.FC = () => {
       .finally(() => setCarregandoReferencias(false));
   }, []);
 
+  // Atualiza um campo genérico dos dados do utente (inputs/selects/textarea
+  // partilham este handler porque o `name` do elemento coincide com a chave do estado).
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setErro(null);
   };
 
+  // Equivalente ao handleChange, mas para os campos do novo local. Sempre que
+  // a morada/código postal/localidade/concelho mudam, a confirmação do pino
+  // no mapa é invalidada — o ponto anterior já não corresponde à morada atual
+  // e tem de ser reconfirmado antes de se poder guardar.
   const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setDadosLocal((atual) => ({
@@ -96,6 +117,8 @@ const NovoUtentePage: React.FC = () => {
     }
   };
 
+  // Troca de "escolher local existente" para "criar novo local", repondo o
+  // formulário de local e o pino do mapa ao estado inicial.
   const iniciarCriacaoLocal = () => {
     setModoCriarLocal(true);
     setPontoLocal(PONTO_INICIAL);
@@ -103,6 +126,10 @@ const NovoUtentePage: React.FC = () => {
     setErroLocal(null);
   };
 
+  // Validação do formulário de novo local antes de submeter — cobre os
+  // campos obrigatórios e garante que a localização no mapa foi confirmada
+  // e cai dentro de Portugal continental (evita locais com coordenadas
+  // trocadas ou fora da área de atuação da ULSBA).
   const validarLocal = (): string | null => {
     if (!dadosLocal.morada.trim()) return 'Indica a morada do local.';
     if (!dadosLocal.localidade.trim()) return 'Indica a localidade do local.';
@@ -119,8 +146,13 @@ const NovoUtentePage: React.FC = () => {
     return null;
   };
 
+  // Usado para colorir o pino no mapa (válido/inválido) mesmo antes de confirmar.
   const pontoLocalValido = coordenadasEmPortugalContinental(pontoLocal.lat, pontoLocal.lng);
 
+  // Submissão do formulário: primeiro garante que há um local válido (escolhido
+  // ou a criar), depois cria o local em falta (se aplicável) e só então cria o
+  // utente já associado a esse local. Os dois passos são feitos em sequência
+  // porque o utente precisa do ID do local que acabou de ser criado.
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -157,6 +189,9 @@ const NovoUtentePage: React.FC = () => {
         };
         const criado = await createLocal(payloadLocal);
         localId = criado.id;
+        // Atualiza a lista local de locais e passa o formulário para modo
+        // "escolher local existente", já com o local recém-criado selecionado —
+        // evita um novo pedido ao servidor só para repovoar o select.
         const localSelecionado: Local = {
           id: criado.id,
           tipo: payloadLocal.tipo,
@@ -170,6 +205,8 @@ const NovoUtentePage: React.FC = () => {
         setModoCriarLocal(false);
       }
 
+      // Guarda de segurança — nunca deveria acontecer dado as validações
+      // acima, mas evita criar um utente sem local associado.
       if (localId === undefined) {
         throw new Error('Escolhe ou cria o local onde o utente se encontra.');
       }

@@ -12,23 +12,48 @@ import type { Volta } from '../types/volta';
 import type { Utente } from '../types/utente';
 
 interface Props {
+  // Dia para o qual se está a construir a volta (vem do calendário da página pai).
   data: Date;
+  // Todas as equipas (o painel filtra as que já têm volta nesse dia).
   equipas: Equipa[];
+  // Pré-seleciona uma equipa ao abrir o painel (ex.: utilizador clicou numa
+  // equipa específica no calendário); só é aplicada se essa equipa ainda
+  // estiver disponível nesse dia.
   equipaIdInicial?: number;
+  // Todas as viaturas da frota (o painel filtra as indisponíveis nesse dia).
   viaturas: Viatura[];
+  // Bloqueios/impedimentos de viaturas (manutenção, avaria, etc.) usados
+  // para calcular quais viaturas estão realmente livres no dia escolhido.
   bloqueiosViaturas: BloqueioViatura[];
+  // Pré-seleciona uma viatura ao abrir o painel, com a mesma lógica da equipa.
   viaturaIdInicial?: number;
+  // Todos os utentes (o painel filtra para os Ativos e aplica os critérios
+  // de seleção/ordenação descritos abaixo).
   utentes: Utente[];
+  // Todas as voltas do mês corrente, usadas só para saber o que já está
+  // ocupado nesse dia (equipas e viaturas já escaladas).
   voltasDoMes: Volta[];
+  // Chamado depois de a volta ser criada com sucesso no backend, para a
+  // página pai poder recarregar a lista/calendário.
   onCriada: () => void;
 }
 
+// Ponto de partida e regresso de todas as voltas (sede/base operacional em
+// Beja). Usado como origem da pré-visualização de rota e como referência de
+// proximidade quando ainda não há nenhum utente selecionado.
 const BASE_BEJA: { lat: number; lng: number; nome: string } = {
   lat: 38.016,
   lng: -7.872,
   nome: 'Base Beja',
 };
 
+// Distância em linha reta (fórmula de Haversine) entre dois pontos, em km,
+// arredondada a 1 casa decimal. Devolve null se alguma coordenada for
+// inválida/ausente ou se o segundo ponto for exatamente (0,0) — convenção
+// usada no projeto para "sem coordenadas registadas", distinta de uma
+// coordenada real perto do equador/meridiano de referência.
+// É só uma estimativa para orientar a escolha de utentes e a pré-
+// visualização — não corresponde à distância real percorrida por estrada.
 function calcularDistanciaKm(
   lat1?: number | null,
   lng1?: number | null,
@@ -62,6 +87,9 @@ function calcularDistanciaKm(
   return Number((2 * r * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
 }
 
+// Extrai as coordenadas de um utente como par [lat, lng], ou null se não
+// tiver coordenadas válidas registadas (mesma convenção de (0,0) = "sem
+// coordenadas" usada em `calcularDistanciaKm`).
 function obterCoordenadas(utente: Utente): [number, number] | null {
   if (
     utente.lat === null ||
@@ -75,6 +103,9 @@ function obterCoordenadas(utente: Utente): [number, number] | null {
   return [utente.lat, utente.lng];
 }
 
+// Número de dias desde a última visita registada; null se não houver data
+// ou se a data for inválida. Usado no critério de ordenação "mais tempo sem
+// visita" e no aviso visual de utentes há muito sem visita (>= 14 dias).
 function diasSemVisita(ultimaVisita?: string | null): number | null {
   if (!ultimaVisita) return null;
   const dt = parseISO(ultimaVisita);
@@ -82,6 +113,12 @@ function diasSemVisita(ultimaVisita?: string | null): number | null {
   return Math.max(0, differenceInCalendarDays(new Date(), dt));
 }
 
+// Ajusta o enquadramento (zoom/centro) do mini-mapa de pré-visualização da
+// rota sempre que a lista de pontos muda: com 2+ pontos enquadra todos
+// (fitBounds), com 1 só centra nele, e sem nenhum mostra a Base de Beja.
+// Também corre no mount e observa o tamanho do contentor (tal como no
+// MapaLeaflet/MapaPercursoVolta) porque este painel vive dentro de um
+// offcanvas/modal cujo tamanho real só é conhecido depois do primeiro render.
 function AjustarVistaPrevia({ pontos }: { pontos: [number, number][] }) {
   const map = useMap();
 
@@ -107,6 +144,14 @@ function AjustarVistaPrevia({ pontos }: { pontos: [number, number][] }) {
   return null;
 }
 
+// Formulário guiado (wizard em passos, não em páginas separadas) para
+// agendar uma nova volta num dia escolhido: 1) escolher equipa ativa e
+// livre nesse dia, 2) escolher viatura sem impedimentos nesse dia, 3)
+// escolher os utentes a visitar (com critérios de apoio — prioridade,
+// tempo sem visita, proximidade — e filtro por localidade), 4) pré-ver o
+// percurso num mapa, e por fim confirmar e criar a volta no backend. Os
+// passos 2-4 só ficam disponíveis depois de completado o anterior
+// (`passoDesbloqueado`), para impedir uma volta sem meios para ser feita.
 const PainelConstrucaoRota = ({
   data,
   equipas,
@@ -119,11 +164,15 @@ const PainelConstrucaoRota = ({
   onCriada,
 }: Props) => {
   const diaIso = format(data, 'yyyy-MM-dd');
+  // Voltas desse dia específico que ainda contam como "ocupação" real —
+  // uma volta CANCELADA não bloqueia a equipa/viatura para uma nova volta.
   const voltasDesseDia = useMemo(
     () => voltasDoMes.filter((v) => v.data === diaIso && v.estado !== 'CANCELADA'),
     [voltasDoMes, diaIso],
   );
 
+  // Só entram equipas ativas que ainda não têm nenhuma volta nesse dia —
+  // cada equipa só pode fazer uma volta por dia.
   const equipasDisponiveis = useMemo(
     () =>
       equipas.filter(
@@ -133,6 +182,8 @@ const PainelConstrucaoRota = ({
     [equipas, voltasDesseDia],
   );
 
+  // Inicializa com `equipaIdInicial` só se essa equipa ainda estiver
+  // disponível nesse dia; caso contrário cai para a primeira disponível.
   const [equipaId, setEquipaId] = useState<number | undefined>(() => {
     if (equipaIdInicial !== undefined && equipasDisponiveis.some((eq) => eq.id === equipaIdInicial)) {
       return equipaIdInicial;
@@ -146,6 +197,13 @@ const PainelConstrucaoRota = ({
   );
 
   // 2. Viaturas disponíveis reais no dia (desconta bloqueios/impedimentos, estado e voltas marcadas)
+  // Uma viatura só entra em `disponiveis` se passar as três verificações,
+  // por esta ordem de prioridade na mensagem de motivo: (1) não ter um
+  // bloqueio/manutenção agendado para este dia, (2) o seu estado geral ser
+  // OPERACIONAL, e (3) não estar já escalada noutra volta no mesmo dia.
+  // As excluídas vão para `viaturasIndisponiveisDia` com o motivo, para
+  // serem explicadas ao utilizador no formulário (em vez de simplesmente
+  // desaparecerem da lista sem explicação).
   const { viaturasDisponiveis, viaturasIndisponiveisDia } = useMemo(() => {
     const disponiveis: Viatura[] = [];
     const indisponiveis: { viatura: Viatura; motivo: string }[] = [];
@@ -180,6 +238,9 @@ const PainelConstrucaoRota = ({
     return { viaturasDisponiveis: disponiveis, viaturasIndisponiveisDia: indisponiveis };
   }, [viaturas, bloqueiosViaturas, diaIso, voltasDesseDia]);
 
+  // Mesma lógica da equipa, mas sem fallback automático: se a viatura
+  // inicial já não estiver disponível, fica sem viatura escolhida (undefined)
+  // para obrigar o utilizador a escolher explicitamente uma disponível.
   const [viaturaId, setViaturaId] = useState<number | undefined>(() => {
     if (viaturaIdInicial !== undefined && viaturasDisponiveis.some((v) => v.id === viaturaIdInicial)) {
       return viaturaIdInicial;
@@ -196,8 +257,13 @@ const PainelConstrucaoRota = ({
   const equipaDisponivel = equipaSelecionada !== null;
   const viaturaSelecionadaDisponivel =
     viaturaId !== undefined && viaturasDisponiveis.some((viatura) => viatura.id === viaturaId);
+  // A escolha de utentes (passo 3) só é desbloqueada depois de equipa e
+  // viatura estarem ambas definidas e disponíveis nesse dia — evita montar
+  // uma volta sem meios para a executar.
   const passoDesbloqueado = equipaDisponivel && viaturaSelecionadaDisponivel;
 
+  // Localidades únicas entre os utentes Ativos, para o filtro de localidade
+  // do passo 3 (reconstruído sempre que a lista de utentes muda).
   const localidadesDisponiveis = useMemo(() => {
     const conjunto = new Set<string>();
     for (const u of utentes) {
@@ -206,6 +272,9 @@ const PainelConstrucaoRota = ({
     return Array.from(conjunto).sort((a, b) => a.localeCompare(b, 'pt'));
   }, [utentes]);
 
+  // Resolve a lista de IDs selecionados (`selecionados`) para os objetos
+  // Utente completos, na mesma ordem em que foram selecionados — essa ordem
+  // é depois usada como a sequência da rota (ver `coordenadasRota`).
   const utentesSelecionados = useMemo(
     () => {
       const porId = new Map(utentes.map((utente) => [Number(utente.id), utente]));
@@ -217,6 +286,10 @@ const PainelConstrucaoRota = ({
   );
 
   // Ponto de referência: último utente selecionado com coordenadas ou Base de Beja.
+  // Serve de base ao critério de ordenação "Mais próximo" (PROXIMIDADE) —
+  // à medida que se vão selecionando utentes, a lista reordena-se para
+  // sugerir sempre o próximo mais próximo do último que foi adicionado,
+  // simulando a construção incremental de um percurso.
   const pontoReferencia = useMemo(() => {
     const ultimo = [...utentesSelecionados].reverse().find((utente) => obterCoordenadas(utente));
     const coordenadas = ultimo ? obterCoordenadas(ultimo) : null;
@@ -226,6 +299,12 @@ const PainelConstrucaoRota = ({
     return { lat: BASE_BEJA.lat, lng: BASE_BEJA.lng, label: BASE_BEJA.nome };
   }, [utentesSelecionados]);
 
+  // Lista de utentes elegíveis (passo 3) já com os critérios de apoio à
+  // escolha calculados e ordenados. Só considera utentes Ativos e, se
+  // houver filtro de localidade, respeita-o. Recalcula sempre que mudam os
+  // utentes, o filtro de localidade, o critério de ordenação escolhido ou o
+  // ponto de referência (que por sua vez muda a cada seleção/remoção de
+  // utente, por depender de `utentesSelecionados`).
   const utentesComCriterios = useMemo(() => {
     return utentes
       .filter(
@@ -236,6 +315,9 @@ const PainelConstrucaoRota = ({
       .map((u) => {
         const dias = diasSemVisita(u.ultimaVisita);
         const distRef = calcularDistanciaKm(pontoReferencia.lat, pontoReferencia.lng, u.lat, u.lng);
+        // Posição do nível de prioridade na escala de urgência (quanto menor
+        // a "ordem", mais urgente); 99 é um valor de recurso para
+        // prioridades sem nível configurado, para ficarem sempre no fim.
         const ordemPrioridade = getNivelPrioridade(u.prioridade)?.ordem ?? 99;
         return {
           utente: u,
@@ -245,18 +327,29 @@ const PainelConstrucaoRota = ({
         };
       })
       .sort((a, b) => {
+        // Critério "Mais dias sem visita": ordena só por dias sem visita
+        // (desc.), com a prioridade como desempate; utentes sem data de
+        // última visita (9999) vão para o topo, por serem o caso mais crítico.
         if (ordenacaoUtentes === 'MAIS_TEMPO_SEM_VISITA') {
           const diasA = a.diasSemVisita ?? 9999;
           const diasB = b.diasSemVisita ?? 9999;
           if (diasB !== diasA) return diasB - diasA;
           return a.ordemPrioridade - b.ordemPrioridade;
         }
+        // Critério "Mais próximo": ordena pela distância em linha reta ao
+        // `pontoReferencia` (o último utente selecionado, ou a Base de Beja
+        // se ainda não houver seleção), com a prioridade como desempate;
+        // utentes sem coordenadas (9999) ficam no fim.
         if (ordenacaoUtentes === 'PROXIMIDADE') {
           const dA = a.distRefKm ?? 9999;
           const dB = b.distRefKm ?? 9999;
           if (dA !== dB) return dA - dB;
           return a.ordemPrioridade - b.ordemPrioridade;
         }
+        // Critério por omissão "Prioridade + há mais tempo": primeiro por
+        // prioridade (mais urgente primeiro), e dentro da mesma prioridade,
+        // por quem está há mais tempo sem visita — é o critério pensado
+        // para equilibrar urgência clínica com equidade no acompanhamento.
         if (a.ordemPrioridade !== b.ordemPrioridade) {
           return a.ordemPrioridade - b.ordemPrioridade;
         }
@@ -267,6 +360,8 @@ const PainelConstrucaoRota = ({
   }, [utentes, localidadesSelecionadas, ordenacaoUtentes, pontoReferencia]);
 
   // Agrupamento por localidade para visualização de ida e regresso
+  // (conta quantos utentes selecionados há em cada localidade, para o
+  // resumo em badges antes da pré-visualização da rota).
   const resumoPorLocalidade = useMemo(() => {
     const mapa = new Map<string, { localidade: string; totalSelecionados: number }>();
     for (const u of utentesSelecionados) {
@@ -282,20 +377,31 @@ const PainelConstrucaoRota = ({
   }, [utentesSelecionados]);
 
   // Coordenadas da rota em pré-visualização: Base Beja -> utentes selecionados -> Base Beja
+  // A ordem dos pontos segue a ordem de seleção dos utentes (não é
+  // reotimizada geograficamente) — é uma pré-visualização simples da
+  // sequência escolhida, não um cálculo de rota ótima.
   const coordenadasRota = useMemo<[number, number][]>(() => {
     const coordsUtentes: [number, number][] = utentesSelecionados
       .map(obterCoordenadas)
       .filter((coordenadas): coordenadas is [number, number] => coordenadas !== null);
 
+    // Sem nenhum utente com coordenadas válidas não há percurso a desenhar
+    // (evita mostrar só a Base de Beja isolada no mapa).
     if (coordsUtentes.length === 0) return [];
     return [[BASE_BEJA.lat, BASE_BEJA.lng], ...coordsUtentes, [BASE_BEJA.lat, BASE_BEJA.lng]];
   }, [utentesSelecionados]);
 
+  // Utentes selecionados que não entram na pré-visualização por não terem
+  // coordenadas válidas — mostrados como aviso para o utilizador saber que
+  // a estimativa de distância/mapa está incompleta.
   const utentesSemCoordenadas = useMemo(
     () => utentesSelecionados.filter((utente) => obterCoordenadas(utente) === null),
     [utentesSelecionados],
   );
 
+  // Soma das distâncias em linha reta entre pontos consecutivos da rota
+  // (Base -> utente 1 -> utente 2 -> ... -> Base), só para dar uma ordem de
+  // grandeza — não é a distância real por estrada.
   const distanciaEstimadaTotalKm = useMemo(() => {
     if (coordenadasRota.length < 2) return null;
     let soma = 0;
@@ -311,6 +417,9 @@ const PainelConstrucaoRota = ({
     return Number(soma.toFixed(1));
   }, [coordenadasRota]);
 
+  // Alterna a seleção de um utente (checkbox); adicionar insere-o no fim da
+  // lista de selecionados, o que o torna o novo `pontoReferencia` para o
+  // critério de proximidade e o último ponto antes do regresso na pré-visualização.
   const alternarSelecionado = (id: number) => {
     setErroAgendamento(null);
     setSelecionados((atual) =>
@@ -318,6 +427,9 @@ const PainelConstrucaoRota = ({
     );
   };
 
+  // Envia o pedido de criação da volta ao backend com a equipa, viatura e
+  // utentes escolhidos; só é chamado quando o passo está desbloqueado e há
+  // pelo menos um utente selecionado (ver `disabled` no botão em baixo).
   const submeter = async () => {
     if (!passoDesbloqueado || equipaId === undefined || viaturaId === undefined || selecionados.length === 0) return;
     setAEnviar(true);

@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+# Serviço de lógica pura (sem acesso a BD) para o ciclo de horários de uma
+# volta: ajusta o horário previsto das visitas quando há um atraso real
+# registado (na saída da volta ou numa visita em concreto), propagando esse
+# atraso para as paragens seguintes, e calcula o resumo/alertas de
+# coerência de uma volta (durações, distâncias, hora-limite de regresso a
+# Beja). Por ser puro — recebe os dados já carregados e devolve estruturas
+# novas, sem tocar na BD — é a parte mais fácil de testar isoladamente
+# (ver suite de testes), e é por isso que os routers (voltas.py) carregam
+# os dados e delegam o cálculo aqui.
+
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -12,6 +22,9 @@ ESTADOS_VISITA_TERMINAIS = {"CONCLUIDA", "CANCELADA"}
 
 
 def _para_float(valor: Any) -> Optional[float]:
+    # Colunas numeric/decimal da BD chegam via psycopg como Decimal; o resto
+    # do módulo (e o JSON de resposta) trabalha com float, por isso esta
+    # função normaliza ambos os casos (e None) para o mesmo tipo.
     if valor is None:
         return None
     if isinstance(valor, Decimal):
@@ -20,6 +33,13 @@ def _para_float(valor: Any) -> Optional[float]:
 
 
 def _garantir_tz(dt: Optional[datetime]) -> Optional[datetime]:
+    # As colunas timestamptz da BD já chegam com tzinfo definido, mas os
+    # dataclasses deste módulo também podem ser construídos "à mão" (ex. nos
+    # testes, ou com datetimes calculados aqui mesmo) com datetimes naive.
+    # Assume-se que qualquer datetime naive que apareça já representa hora
+    # local de Lisboa, para todas as comparações e aritmética de datas deste
+    # módulo serem feitas de forma consistente (nunca a misturar naive com
+    # aware, o que lançaria TypeError).
     if dt is None:
         return None
     if dt.tzinfo is None:
@@ -28,6 +48,8 @@ def _garantir_tz(dt: Optional[datetime]) -> Optional[datetime]:
 
 
 def _minutos_entre(inicio: datetime, fim: datetime) -> int:
+    # Arredonda ao minuto mais próximo — a precisão de segundos não é
+    # relevante para os relatórios/alertas apresentados ao utilizador.
     return int(round((fim - inicio).total_seconds() / 60))
 
 
@@ -42,6 +64,10 @@ def formatar_minutos_como_duracao(minutos: int) -> str:
 
 @dataclass
 class VisitaAgendaItem:
+    # Representação mínima de uma visita usada pelos algoritmos de
+    # ajuste/propagação de atrasos deste módulo — desacoplada do formato da
+    # linha devolvida pela query SQL (ver _carregar_visitas_para_ajuste em
+    # voltas.py, que faz a conversão linha -> VisitaAgendaItem).
     visita_id: int
     paragem_ordem: int
     estado: str
@@ -53,6 +79,12 @@ class VisitaAgendaItem:
 
 @dataclass
 class ResultadoAjusteHorarios:
+    # Resultado devolvido pelas funções ajustar_por_atraso_*: quanto atraso
+    # (em minutos) foi efetivamente aplicado, qual o novo regresso previsto
+    # da volta, a lista de visitas cujo horário previsto mudou (só as que
+    # mudaram, não todas as da volta — o router usa isto para saber quais
+    # UPDATE fazer), e se/quanto esse novo regresso compromete a
+    # hora-limite de regresso a Beja.
     atraso_aplicado_min: int
     novo_regresso_previsto: Optional[datetime]
     visitas_ajustadas: list[VisitaAgendaItem]
@@ -65,6 +97,9 @@ def construir_limite_beja(
     data_volta: date,
     hora_limite: time = HORA_LIMITE_BEJA_PADRAO,
 ) -> datetime:
+    # Combina a data da volta com a hora-limite configurada (RF19/RF39) num
+    # datetime aware em hora de Lisboa, para poder ser comparado diretamente
+    # com os datetimes (também em timestamptz) de partida/regresso da volta.
     return datetime.combine(data_volta, hora_limite, tzinfo=LISBON_TZ)
 
 
@@ -78,6 +113,9 @@ def avaliar_regresso_beja(
     Avalia se o regresso previsto (ou real) compromete a hora limite em Beja.
     Devolve sempre aviso informativo — nunca bloqueia o registo.
     """
+    # Prefere o regresso real quando já existe (facto consumado, mais fiável
+    # do que a previsão); só usa o previsto enquanto a volta ainda não
+    # regressou de facto.
     referencia = _garantir_tz(regresso_real or regresso_previsto)
     if referencia is None:
         return False, 0, None
@@ -98,6 +136,12 @@ def avaliar_regresso_beja(
 
 
 def _ordenar_visitas(visitas: Iterable[VisitaAgendaItem]) -> list[VisitaAgendaItem]:
+    # Ordena pela sequência real do itinerário: primeiro pela ordem da
+    # paragem, depois pelo início previsto dentro da mesma paragem (visitas
+    # sem início previsto vão para o fim, via datetime.max) e por fim pelo
+    # id como critério de desempate estável. Os algoritmos de propagação de
+    # atraso abaixo dependem desta ordem para saberem quais visitas vêm
+    # "depois" da que sofreu o atraso.
     return sorted(
         visitas,
         key=lambda v: (
@@ -131,16 +175,28 @@ def ajustar_por_atraso_saida(
     if partida_prev is None or nova_partida is None:
         raise ValueError("A volta não tem hora de partida prevista definida.")
 
+    # A referência para calcular o atraso é a mais tardia entre a partida
+    # prevista original e uma partida real já registada anteriormente — isto
+    # evita que uma segunda correção da hora de saída (ex.: o utilizador
+    # engana-se e corrige o valor) conte o atraso a partir do zero outra vez
+    # e desloque as visitas duas vezes.
     referencia_base = partida_prev
     if partida_ant is not None and partida_ant > referencia_base:
         referencia_base = partida_ant
 
+    # Só há atraso a propagar se a nova partida real for posterior à
+    # referência; se for igual ou anterior (ex.: afinal saiu a tempo), não
+    # se desloca nada — delta fica a zero.
     delta = nova_partida - referencia_base if nova_partida > referencia_base else timedelta(0)
     visitas_ordenadas = _ordenar_visitas(visitas)
     ajustadas: list[VisitaAgendaItem] = []
 
     if delta > timedelta(0):
         for v in visitas_ordenadas:
+            # Visitas já terminadas (estado terminal) ou com um fim real já
+            # registado são factos consumados — o atraso na saída da volta
+            # não lhes é aplicado retroativamente, só afeta o que ainda
+            # está planeado.
             if v.estado in ESTADOS_VISITA_TERMINAIS or v.fim_real is not None:
                 continue
             ini_prev = _garantir_tz(v.inicio_previsto)
@@ -201,6 +257,9 @@ def ajustar_por_atraso_visita(
         raise ValueError("Visita não encontrada na volta.")
 
     alvo = visitas_ordenadas[indice_alvo]
+    # Os novos valores (quando vêm None no pedido) mantêm o que já estava
+    # gravado para a visita — permite registar só o início agora e o fim
+    # mais tarde, sem perder o início já registado.
     ini_real = _garantir_tz(novo_inicio_real) if novo_inicio_real is not None else _garantir_tz(alvo.inicio_real)
     fim_real = _garantir_tz(novo_fim_real) if novo_fim_real is not None else _garantir_tz(alvo.fim_real)
 
@@ -219,6 +278,25 @@ def ajustar_por_atraso_visita(
     delta = timedelta(0)
     ajustadas: list[VisitaAgendaItem] = []
 
+    # Dois cenários distintos de atraso, mutuamente exclusivos:
+    #
+    # 1) Já se conhece o fim real da visita (passo final, a visita terminou)
+    #    — o atraso relevante é "quanto o fim real ultrapassou o fim
+    #    previsto" (ou o fim real já registado antes, se for mais tardio —
+    #    mesma lógica de "referência mais tardia" do atraso de saída, para
+    #    uma correção não contar o atraso duas vezes). Este delta propaga-se
+    #    só às visitas seguintes; a própria visita-alvo não entra em
+    #    `ajustadas` porque o seu horário previsto não muda — o que muda é
+    #    só o horário real, que é gravado pelo router fora desta função.
+    #
+    # 2) Ainda só se sabe o início real (visita em curso, fim ainda por
+    #    registar) — o atraso é "quanto o início real ultrapassou o início
+    #    previsto". Neste caso a própria visita-alvo TEM de ser ajustada
+    #    (daí o append explícito a `ajustadas` dentro deste ramo): o seu
+    #    fim previsto desloca-se pelo delta para refletir que, tendo
+    #    começado mais tarde, também deve acabar mais tarde — mas o início
+    #    previsto mantém-se (já passou, não há sentido em "adiar o
+    #    passado") e o fim_real fica None porque ainda não é conhecido.
     if fim_real is not None and fim_prev_alvo is not None:
         ref_fim = fim_prev_alvo
         if fim_real_anterior is not None and fim_real_anterior > ref_fim:
@@ -244,6 +322,10 @@ def ajustar_por_atraso_visita(
             )
 
     if delta > timedelta(0):
+        # Propaga o mesmo delta a todas as visitas que vêm depois da visita
+        # afetada na ordem do itinerário, exceto as que já são factos
+        # consumados (terminadas ou com fim real já registado) — o mesmo
+        # critério usado em ajustar_por_atraso_saida.
         for posterior in visitas_ordenadas[indice_alvo + 1 :]:
             if posterior.estado in ESTADOS_VISITA_TERMINAIS or posterior.fim_real is not None:
                 continue
@@ -298,6 +380,10 @@ def calcular_resumo_volta(
     Calcula os totais da volta (durações e distâncias) e verifica coerência
     de horários e distâncias para prevenir erros operacionais.
     """
+    # `alertas` acumula avisos de inconsistência de dados (nunca bloqueia
+    # nada — isto é só para o GET /voltas/{id} informar quem está a ver a
+    # ficha de que algo parece errado, ex. horários trocados ou distâncias
+    # negativas introduzidas manualmente).
     alertas: list[str] = []
 
     p_prev = _garantir_tz(partida_prevista)
@@ -344,9 +430,13 @@ def calcular_resumo_volta(
 
         for visita in paragem.get("visitas", []):
             if visita.get("visita_id") is None:
+                # Paragem sem nenhuma visita associada (join vazio) — nada a somar.
                 continue
             estado = visita.get("visita_estado")
             if estado == "CANCELADA":
+                # Visitas canceladas não contam para duração/alertas: não
+                # aconteceram, não devem inflacionar totais nem disparar
+                # falsos alertas de sobreposição.
                 continue
 
             v_ini_prev = _garantir_tz(visita.get("inicio_previsto"))
@@ -386,8 +476,17 @@ def calcular_resumo_volta(
                 if r_real is not None and v_fim_real > r_real:
                     alertas.append(f"{nome}: fim real posterior ao regresso real da volta.")
 
+    # Soma das janelas previstas únicas (não da lista de visitas inteira) —
+    # ver o comentário acima de janelas_previstas_unicas.
     duracao_prevista_visitas_min = sum(janelas_previstas_unicas.values())
 
+    # Deteta sobreposições entre visitas consecutivas (já ordenadas por
+    # paragem/início mais acima, em visitas_ativas). Duas visitas na mesma
+    # janela exata (mesma_janela) não contam como sobreposição — é o caso
+    # defensivo acima, visitas que partilham deliberadamente o mesmo
+    # horário. Só há alerta quando a visita seguinte pertence a uma paragem
+    # posterior (ordem maior) mas o seu início ainda cai dentro do intervalo
+    # da anterior — ou seja, horários mal preenchidos/invertidos.
     for anterior, seguinte in zip(visitas_ativas, visitas_ativas[1:]):
         mesma_janela = anterior["inicio"] == seguinte["inicio"] and anterior["fim"] == seguinte["fim"]
         if not mesma_janela and seguinte["ordem"] > anterior["ordem"] and seguinte["inicio"] < anterior["fim"]:
@@ -395,6 +494,10 @@ def calcular_resumo_volta(
                 f"Horário sobreposto ou invertido entre {anterior['nome']} e {seguinte['nome']}."
             )
 
+    # Tempo de deslocação previsto = duração total da volta menos o tempo
+    # ocupado em visitas — o que sobra é assumido como estrada/deslocações
+    # entre paragens. Se sair negativo, as visitas (previstas) não cabem
+    # dentro da janela da volta, o que é um erro de preenchimento.
     tempo_deslocacao_previsto_min: Optional[int] = None
     if duracao_prevista_volta_min is not None:
         tempo_deslocacao_previsto_min = duracao_prevista_volta_min - duracao_prevista_visitas_min
@@ -421,6 +524,10 @@ def calcular_resumo_volta(
     if (
         dist_estimada is not None
         and distancia_paragens_soma_km is not None
+        # Margem de 0.05 km para absorver erros de arredondamento entre a
+        # distância estimada da volta (um valor único) e a soma dos troços
+        # entre paragens (arredondados individualmente) — sem esta margem,
+        # arredondamentos legítimos disparariam o alerta sem haver erro real.
         and dist_estimada + 0.05 < distancia_paragens_soma_km
     ):
         alertas.append(

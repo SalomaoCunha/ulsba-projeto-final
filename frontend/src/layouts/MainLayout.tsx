@@ -3,12 +3,14 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { getUtilizadorAtual, logout } from '../services/authService';
 import type { UtilizadorAtual } from '../services/authService';
 
+// Texto a mostrar para cada perfil de utilizador (o backend devolve o código em maiúsculas).
 const LABEL_PERFIL: Record<string, string> = {
   COORDENADOR: 'Coordenador(a)',
   PROFISSIONAL_SAUDE: 'Profissional de saúde',
   ADMINISTRADOR: 'Administrador(a)',
 };
 
+// Gera as iniciais (primeiro + último nome) a mostrar no avatar circular do utilizador.
 const iniciais = (nome: string) => {
   const partes = nome.trim().split(/\s+/);
   const primeiras = partes[0]?.[0] ?? '';
@@ -16,6 +18,7 @@ const iniciais = (nome: string) => {
   return (primeiras + ultimas).toUpperCase();
 };
 
+// Itens do menu lateral de navegação (caminho, texto e ícone Bootstrap Icons).
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: 'bi-grid-1x2-fill' },
   { path: '/utentes', label: 'Utentes', icon: 'bi-person-fill' },
@@ -30,16 +33,20 @@ const NAV_ITEMS = [
   { path: '/configuracoes', label: 'Configurações', icon: 'bi-gear-fill' },
 ];
 
+// Layout principal da aplicação (menu lateral + barra superior): envolve todas as
+// páginas protegidas via <Outlet /> (ver App.tsx) e carrega os dados do utilizador autenticado.
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  const [menuAberto, setMenuAberto] = useState(false);
-  const [perfilAberto, setPerfilAberto] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false); // menu lateral aberto em ecrãs pequenos (mobile)
+  const [perfilAberto, setPerfilAberto] = useState(false); // dropdown do perfil (canto superior direito) aberto
   const [utilizador, setUtilizador] = useState<UtilizadorAtual | null>(null);
 
+  // Carrega o utilizador autenticado uma única vez, ao montar o layout.
   useEffect(() => {
     getUtilizadorAtual().then(setUtilizador).catch((erro) => console.error('Falha ao carregar utilizador autenticado:', erro));
   }, []);
 
+  // Destaca visualmente o item do menu correspondente à rota atual.
   const getMenuClass = (path: string) => {
     return location.pathname === path ? "side-link side-link-active" : "side-link";
   };

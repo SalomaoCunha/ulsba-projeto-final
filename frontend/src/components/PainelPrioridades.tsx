@@ -2,13 +2,19 @@ import React from 'react';
 import { NIVEIS_PRIORIDADE } from '@/config/niveis';
 
 interface Props {
+  // Prioridade atualmente selecionada para filtrar o mapa (null = sem filtro, mostra todas).
   filtroAtivo: string | null;
+  // Chamado quando o utilizador escolhe/limpa uma prioridade; o componente
+  // pai é que guarda o estado e o usa para filtrar os pinos no MapaLeaflet.
   onAlterarFiltro: (prioridade: string | null) => void;
 }
 
-
+// Painel lateral do Dashboard com a lista de níveis de prioridade/urgência,
+// usado para filtrar visualmente quais utentes aparecem no mapa.
 const PainelPrioridades: React.FC<Props> = ({ filtroAtivo, onAlterarFiltro }) => {
 
+  // Clicar na prioridade já ativa desliga o filtro (toggle); clicar numa
+  // diferente substitui o filtro ativo.
   const handleClick = (prioridade: string) => {
     onAlterarFiltro(filtroAtivo === prioridade ? null : prioridade);
   };

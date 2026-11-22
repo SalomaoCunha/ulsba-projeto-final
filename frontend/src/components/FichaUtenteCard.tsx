@@ -4,13 +4,20 @@ import { getNivelComplexidade } from '@/config/niveis';
 import { formatarData } from '../utils/formatarData';
 
 interface Props {
+  // Utente a mostrar; null mostra apenas o estado vazio ("Selecione um utente...").
   utente: Utente | null;
+  // Chamado ao clicar no botão de editar (lápis) no cabeçalho do cartão.
   onEditar: () => void;
 }
 
+// Junta os campos de endereço num único texto de morada para apresentação.
 const formatarMorada = (utente: Utente) =>
   `${utente.ruaNumero}, ${utente.codigoPostal} ${utente.localidade} (${utente.concelho})`;
 
+// Cartão com a ficha detalhada de um utente (dados pessoais, morada, situação
+// clínica, notas, etc.). É reutilizado tanto no Dashboard como dentro do
+// VerUtenteModal — por isso não sabe nada sobre modais, só mostra dados e
+// delega a edição via `onEditar`.
 const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
   // Se não houver utente selecionado, mostra um ecrã vazio
   if (!utente) {
@@ -103,6 +110,8 @@ const FichaUtenteCard: React.FC<Props> = ({ utente, onEditar }) => {
 };
 
 // Sub-componente auxiliar para manter o código limpo (ESTA É A PARTE QUE FALTAVA)
+// Renderiza um par ícone + rótulo + valor, usado para cada linha de dados da
+// ficha (telefone, morada, última visita, etc.) sem repetir o markup.
 const DetailItem = ({ icon, label, value }: { icon: string, label: string, value: string }) => (
   <div className="d-flex gap-2">
     <i className={`bi ${icon} text-success`}></i>

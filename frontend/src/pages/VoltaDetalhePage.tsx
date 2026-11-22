@@ -18,12 +18,18 @@ import MapaPercursoVolta from '../components/MapaPercursoVolta';
 import ModalConfirmacao from '../components/ModalConfirmacao';
 import { formatarHora } from '../utils/formatarHora';
 
+// Uma visita da volta "achatada" (deixa de estar agrupada por paragem) e
+// enriquecida com a informação da paragem a que pertence — usada para
+// construir a lista plana de visitas mostrada na coluna 1.
 interface VisitaComLocal extends VisitaDetalhe {
   paragemOrdem: number;
   localNome: string | null;
   localMorada: string;
 }
 
+// Extrai só a parte HH:MM de uma data/hora ISO, para preencher um input
+// type="time". Devolve '' se a data for nula/inválida (ex.: horário real
+// ainda não registado).
 function extrairHoraInput(iso?: string | null): string {
   if (!iso) return '';
   const data = new Date(iso);
@@ -33,6 +39,10 @@ function extrairHoraInput(iso?: string | null): string {
   return `${h}:${m}`;
 }
 
+// Combina a data da volta (yyyy-MM-dd) com uma hora HH:MM vinda de um input,
+// devolvendo a data/hora completa em ISO (hora local do browser, convertida
+// para UTC pelo toISOString). Devolve null se a hora estiver vazia ou for
+// inválida, para distinguir "campo não preenchido" de uma hora real.
 function montarIsoLocal(dataVolta: string, horaHHMM: string): string | null {
   if (!horaHHMM.trim()) return null;
   const dt = new Date(`${dataVolta}T${horaHHMM}:00`);
@@ -40,6 +50,8 @@ function montarIsoLocal(dataVolta: string, horaHHMM: string): string | null {
   return dt.toISOString();
 }
 
+// Formata uma duração em minutos como "Xh Ym" (omite as horas quando são 0,
+// omite os minutos quando são 0 e há horas). Devolve "—" quando não há dado.
 function formatarDuracao(minutos?: number | null): string {
   if (minutos === null || minutos === undefined) return '—';
   const horas = Math.floor(minutos / 60);
@@ -48,6 +60,12 @@ function formatarDuracao(minutos?: number | null): string {
   return mins > 0 ? `${horas}h ${mins}m` : `${horas}h`;
 }
 
+// Página de detalhe de uma volta: mostra o percurso planeado (paragens e
+// visitas), o estado da volta no ciclo de vida RASCUNHO → CONFIRMADA →
+// CONCLUIDA (ou CANCELADA), permite confirmar/concluir a volta, registar os
+// horários reais (da volta e de cada visita — com propagação automática de
+// atrasos para as visitas seguintes), cancelar visitas individuais (com
+// motivo obrigatório — RF29) e consultar as ocorrências registadas.
 const VoltaDetalhePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -76,6 +94,9 @@ const VoltaDetalhePage = () => {
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
   const [aCancelarVisita, setACancelarVisita] = useState(false);
 
+  // Carrega o detalhe completo da volta pelo id da rota. Ao chegar, inicializa
+  // os inputs de horário real da volta a partir dos valores já guardados e
+  // seleciona por omissão a primeira visita da primeira paragem.
   useEffect(() => {
     getVoltaDetalhe(Number(id))
       .then((dados) => {
@@ -89,6 +110,10 @@ const VoltaDetalhePage = () => {
       .finally(() => setCarregando(false));
   }, [id]);
 
+  // Depois de ter a volta carregada (ou sempre que ela é substituída, p.ex.
+  // depois de confirmar/concluir/registar horários), vai buscar tanto as
+  // ocorrências gerais da volta como as ocorrências de cada visita
+  // individualmente, agrupando-as num mapa por visitaId para acesso rápido.
   useEffect(() => {
     if (!volta) return;
 
@@ -111,6 +136,9 @@ const VoltaDetalhePage = () => {
       .catch((erro) => console.error('Falha ao carregar ocorrências das visitas:', erro));
   }, [volta]);
 
+  // "Achata" a estrutura paragens → visitas numa lista única de visitas, cada
+  // uma já com a informação da sua paragem anexada — mais simples de percorrer
+  // na coluna 1 (lista) e para encontrar a visita selecionada.
   const visitas: VisitaComLocal[] = volta
     ? volta.paragens.flatMap((paragem) =>
         paragem.visitas.map((visita) => ({
@@ -122,11 +150,17 @@ const VoltaDetalhePage = () => {
       )
     : [];
 
+  // Objeto completo da visita atualmente selecionada na coluna 1 (ou null se
+  // a lista ainda estiver vazia).
   const visitaSelecionada = visitas.find((v) => v.visitaId === visitaSelecionadaId) ?? null;
 
   // Ajusta os campos de hora real quando a visita selecionada muda — durante o
   // render (não num useEffect), como o React recomenda para "adjusting state
   // when a prop changes", para não disparar um ciclo extra de render.
+  // A chave inclui o id da visita e os próprios horários reais (não só o id)
+  // porque "volta" é substituída por um novo objeto sempre que se regista um
+  // horário — sem incluir inicioReal/fimReal na chave, guardar o horário da
+  // visita selecionada não faria os inputs refletir o valor recém-guardado.
   const chaveHoras = visitaSelecionada
     ? `${visitaSelecionada.visitaId}:${visitaSelecionada.inicioReal ?? ''}:${visitaSelecionada.fimReal ?? ''}`
     : '';
@@ -137,6 +171,10 @@ const VoltaDetalhePage = () => {
     setVisitaFimRealHora(visitaSelecionada ? extrairHoraInput(visitaSelecionada.fimReal) : '');
   }
 
+  // Regista a hora real de saída e/ou de regresso da volta. Pelo menos uma
+  // das duas tem de estar preenchida. O backend recalcula automaticamente os
+  // horários previstos das visitas seguintes e do regresso quando a saída
+  // real é mais tarde do que a prevista (ver mensagem de sucesso abaixo).
   const handleGuardarHorariosVolta = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!volta) return;
@@ -172,6 +210,10 @@ const VoltaDetalhePage = () => {
     }
   };
 
+  // Regista a hora real de início e/ou fim da visita selecionada. Tal como
+  // nos horários da volta, um atraso real propaga-se às visitas seguintes e
+  // ao regresso previsto — por isso a volta inteira é substituída pela
+  // resposta do backend, não só a visita alterada.
   const handleGuardarHorariosVisita = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!volta || !visitaSelecionada) return;
@@ -203,6 +245,8 @@ const VoltaDetalhePage = () => {
     }
   };
 
+  // Avança a volta de RASCUNHO para CONFIRMADA. Só aparece o botão
+  // correspondente (ver JSX mais abaixo) enquanto a volta está em RASCUNHO.
   const handleConfirmarVolta = async () => {
     if (!volta) return;
     setMensagemErro(null);
@@ -219,6 +263,11 @@ const VoltaDetalhePage = () => {
     }
   };
 
+  // Marca a volta como CONCLUIDA (fim do ciclo de vida, a par de CANCELADA).
+  // O backend confirma a volta automaticamente se ainda estiver em RASCUNHO,
+  // e fecha com o horário previsto qualquer visita que ainda não tenha sido
+  // registada manualmente nem cancelada — ver o texto do botão "Marcar como
+  // feita" no JSX, que explicita este comportamento ao utilizador.
   const handleConcluirVolta = async () => {
     if (!volta) return;
     setMensagemErro(null);
@@ -235,6 +284,11 @@ const VoltaDetalhePage = () => {
     }
   };
 
+  // Cancela a visita selecionada no modal de confirmação. O motivo é
+  // obrigatório (RF29) — o próprio botão de confirmar no modal fica
+  // desativado enquanto o campo de motivo estiver vazio (ver
+  // confirmarDesabilitado no JSX do ModalConfirmacao), mas a verificação
+  // repete-se aqui como salvaguarda.
   const handleCancelarVisita = async () => {
     if (!volta || !visitaParaCancelar || !motivoCancelamento.trim()) return;
     setMensagemErro(null);
@@ -262,8 +316,14 @@ const VoltaDetalhePage = () => {
   }
 
   const resumo = volta.resumo;
+  // Mostra a distância mais fiável disponível, por ordem de preferência:
+  // real (registada) > estimada (planeamento) > soma das distâncias entre
+  // paragens (cálculo de recurso), ou null se nenhuma estiver disponível.
   const distanciaMostrada = volta.distanciaRealKm ?? volta.distanciaEstimadaKm ?? resumo?.distanciaParagensSomaKm ?? null;
 
+  // Legenda de cores de prioridade/urgência mostrada junto ao mapa — usa um
+  // Map para eliminar duplicados (várias visitas podem partilhar a mesma
+  // urgência) mantendo só um par designação/cor por urgência distinta.
   const legendaPrioridades = Array.from(
     new Map(
       visitas
@@ -291,6 +351,12 @@ const VoltaDetalhePage = () => {
             </div>
 
             <div className="d-flex align-items-center gap-2 flex-shrink-0">
+              {/* Ciclo de vida da volta: RASCUNHO → CONFIRMADA → CONCLUIDA
+                  (ou CANCELADA). O botão "Confirmar volta" só aparece em
+                  RASCUNHO; o botão "Marcar como feita" aparece em qualquer
+                  estado que não seja já final (CONCLUIDA/CANCELADA) e também
+                  serve para confirmar a volta automaticamente se ainda não
+                  tiver sido confirmada (ver texto do title). */}
               {volta.estado === 'RASCUNHO' && (
                 <button
                   className="btn btn-sm btn-primary d-print-none"
@@ -469,7 +535,8 @@ const VoltaDetalhePage = () => {
         {/* Corpo: 3 colunas no desktop, empilhado em mobile */}
         <div className="card-body p-3">
           <div className="row g-3">
-            {/* Coluna 1 — lista de visitas */}
+            {/* Coluna 1 — lista de visitas da volta, por ordem de paragem;
+                clicar numa visita seleciona-a para a coluna 2 (detalhe). */}
             <div className="col-12 col-lg-4">
               <h6 className="fw-bold small text-uppercase text-muted mb-2">
                 Visitas ({visitas.length})
@@ -597,6 +664,10 @@ const VoltaDetalhePage = () => {
                       </form>
                     )}
 
+                  {/* Mesma condição de guarda do formulário de horários reais
+                      acima: só se pode cancelar enquanto a volta e a própria
+                      visita ainda estiverem "abertas". Abre o modal de
+                      confirmação que exige o motivo (RF29). */}
                   {volta.estado !== 'CONCLUIDA' &&
                     volta.estado !== 'CANCELADA' &&
                     visitaSelecionada.visitaEstado !== 'CONCLUIDA' &&
@@ -657,7 +728,8 @@ const VoltaDetalhePage = () => {
             </div>
           </div>
 
-          {/* Ocorrências gerais — largura toda */}
+          {/* Ocorrências gerais da volta (não associadas a uma visita em
+              concreto) — largura toda, por baixo das 3 colunas */}
           <hr className="my-3" />
           <h6 className="fw-bold small text-uppercase text-muted mb-2">
             <i className="bi bi-exclamation-circle me-1"></i> Ocorrências gerais da volta
@@ -688,6 +760,9 @@ const VoltaDetalhePage = () => {
         </div>
       </div>
 
+      {/* Modal de confirmação de cancelamento de visita — o botão de
+          confirmar fica desativado enquanto não houver motivo escrito
+          (confirmarDesabilitado), por ser obrigatório (RF29). */}
       <ModalConfirmacao
         aberto={visitaParaCancelar !== null}
         titulo="Cancelar visita"
@@ -721,6 +796,8 @@ const VoltaDetalhePage = () => {
   );
 };
 
+// Componente auxiliar de apresentação: um ícone num círculo + rótulo/valor,
+// usado nos indicadores do cabeçalho (equipa, viatura, horários, distância, etc.).
 const DetalheItem = ({ icon, label, valor }: { icon: string; label: string; valor: string }) => (
   <div className="d-flex align-items-center gap-2">
     <div

@@ -11,33 +11,55 @@ import type { NivelUrgenciaDTO, NivelComplexidadeDTO } from '../types/nivel';
 import type { Equipa } from '../types/equipa';
 
 interface Props {
+  // Utente a editar (fonte da verdade para inicializar o rascunho local).
   utente: Utente | null;
+  // Controla a visibilidade do modal.
   show: boolean;
+  // Chamado ao fechar o modal sem guardar (botão de fecho, Cancelar).
   onHide: () => void;
+  // Chamado com o utente já atualizado depois de gravar com sucesso (dados
+  // base + eventuais alterações de prioridade/complexidade/equipa/estado).
   onGuardar: (utenteAtualizado: Utente) => void;
 }
 
 const TIPOS_LOCAL: TipoLocal[] = ['Domicílio', 'Lar', 'Unidade de Saúde'];
 
+// Modal de edição da ficha de um utente. Permite alterar dados base (nome,
+// contacto, morada, notas), e também prioridade, complexidade e equipa
+// responsável — estas três últimas têm regras próprias (endpoints e
+// histórico auditável dedicados) por serem alterações clinicamente
+// relevantes, não apenas dados de contacto. Inclui ainda a transição de
+// estado (ativar/inativar o utente), com motivo obrigatório.
 const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar }) => {
   // Inicializa já com a prop `utente` — o componente é remontado (via `key`
   // no DashboardPage/UtentesPage) sempre que o utente a editar muda, por
   // isso não precisamos de useEffect para "sincronizar" isto.
   const [rascunho, setRascunho] = useState<Utente | null>(utente);
+  // Motivo da alteração de prioridade (obrigatório pela regra RF10 — ver `validar`).
   const [motivo, setMotivo] = useState('');
   const [erros, setErros] = useState<string[]>([]);
   const [aGuardar, setAGuardar] = useState(false);
 
+  // Dados de referência carregados do backend para popular os selects
+  // (equipas, níveis de urgência/complexidade) e para saber se o
+  // utilizador autenticado é Coordenador.
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [niveisUrgencia, setNiveisUrgencia] = useState<NivelUrgenciaDTO[]>([]);
   const [niveisComplexidade, setNiveisComplexidade] = useState<NivelComplexidadeDTO[]>([]);
+  // Só o perfil COORDENADOR pode reatribuir a equipa responsável; outros
+  // perfis veem o campo em modo só-leitura (ver `podeEditarEquipa` abaixo).
   const [podeEditarEquipa, setPodeEditarEquipa] = useState(false);
 
+  // Estado do fluxo de ativar/inativar o utente — é um mini-formulário
+  // separado (motivo + confirmação) que aparece dentro do próprio modal.
   const [modoTransicaoEstado, setModoTransicaoEstado] = useState<'ativar' | 'inativar' | null>(null);
   const [motivoTransicao, setMotivoTransicao] = useState('');
   const [aTransitar, setATransitar] = useState(false);
   const [erroTransicao, setErroTransicao] = useState<string | null>(null);
 
+  // Carrega os dados de referência (equipas, níveis, perfil do utilizador)
+  // uma única vez quando o modal monta — não depende de `utente`, por isso
+  // o array de dependências fica vazio.
   useEffect(() => {
     getEquipas().then(setEquipas).catch((erro) => console.error('Falha ao carregar equipas:', erro));
     getNiveisUrgencia().then(setNiveisUrgencia).catch((erro) => console.error('Falha ao carregar níveis de urgência:', erro));
@@ -49,10 +71,15 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
 
   if (!rascunho || !utente) return null;
 
+  // Flags usadas tanto para decidir que pedidos extra fazer ao guardar
+  // (alterarPrioridade/alterarComplexidade/alterarEquipaResponsavel) como
+  // para mostrar/esconder campos condicionais no formulário (ex.: motivo).
   const prioridadeMudou = rascunho.prioridade !== utente.prioridade;
   const complexidadeMudou = rascunho.complexidade !== utente.complexidade;
   const equipaMudou = rascunho.equipaResponsavel !== utente.equipaResponsavel;
 
+  // Validação de campos obrigatórios antes de guardar; devolve a lista de
+  // mensagens de erro a mostrar (lista vazia = formulário válido).
   const validar = (): string[] => {
     const lista: string[] = [];
     if (!rascunho.nome.trim()) lista.push('O nome é obrigatório.');
@@ -67,6 +94,8 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
     return lista;
   };
 
+  // Confirma a ativação/inativação do utente (fluxo separado do "Guardar"
+  // principal, com o seu próprio motivo obrigatório e endpoint dedicado).
   const confirmarTransicaoEstado = async () => {
     if (!motivoTransicao.trim()) {
       setErroTransicao('O motivo é obrigatório.');
@@ -89,6 +118,10 @@ const EditarUtenteModal: React.FC<Props> = ({ utente, show, onHide, onGuardar })
     }
   };
 
+  // Handler principal do botão "Guardar": valida, grava os dados base e,
+  // só para os campos que realmente mudaram, chama os endpoints próprios
+  // de prioridade/complexidade/equipa (cada um gera o seu próprio histórico
+  // auditável no backend).
   const handleGuardar = async () => {
     const errosEncontrados = validar();
     if (errosEncontrados.length > 0) {

@@ -1,3 +1,6 @@
+# Router de gestão de locais (moradas/pontos geográficos). Um `local` é a
+# entidade que guarda a morada e a coordenada; utentes e outras entidades
+# associam-se a um local em vez de duplicarem morada/coordenada.
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
@@ -7,6 +10,8 @@ from app.schemas import CoordenadasAtualizar, LocalCriar, validar_coordenadas_po
 router = APIRouter(prefix="/locais", tags=["locais"])
 
 
+# GET /locais — lista locais ativos, com o nome do concelho já resolvido e
+# lat/lng extraídos do ponto PostGIS.
 @router.get("")
 def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     query = """
@@ -21,11 +26,17 @@ def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user))
     return conn.execute(query).fetchall()
 
 
+# GET /locais/concelhos — lista de concelhos para preencher o campo
+# concelho_id ao criar/editar um local (dados de referência, praticamente
+# estáticos).
 @router.get("/concelhos")
 def listar_concelhos(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     return conn.execute("SELECT id, nome FROM concelho ORDER BY nome").fetchall()
 
 
+# POST /locais — cria um novo local. As coordenadas são opcionais nesta
+# fase (podem ser definidas depois, ex. marcando no mapa, via
+# PUT /locais/{id}/coordenadas).
 @router.post("", status_code=201)
 def criar(dados: LocalCriar, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
     # A tabela `local` não tem coluna criado_por, por isso não passamos
@@ -76,6 +87,8 @@ def criar(dados: LocalCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     return {"id": local_id}
 
 
+# PUT /locais/{local_id}/coordenadas — define/corrige a coordenada de um
+# local já existente (ex. depois de marcar a localização exata no mapa).
 @router.put("/{local_id}/coordenadas")
 def atualizar_coordenadas(
     local_id: int,

@@ -1,11 +1,17 @@
 import React from 'react';
 
 interface Props {
+  // Título da página mostrado no cabeçalho (ex.: nome do módulo ainda não implementado).
   titulo: string;
+  // Texto explicativo apresentado dentro do cartão central.
   descricao: string;
+  // Nome da classe de ícone Bootstrap Icons (ex.: "bi-truck"), sem o prefixo "bi".
   icone: string;
 }
 
+// Página de substituição (placeholder) para módulos ainda em desenvolvimento.
+// É reutilizada em várias rotas só a mudar título/descrição/ícone — não tem
+// lógica própria, é puramente apresentação.
 const EmConstrucaoPage: React.FC<Props> = ({ titulo, descricao, icone }) => {
   return (
     <div className="h-100 d-flex flex-column">

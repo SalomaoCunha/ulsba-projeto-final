@@ -17,6 +17,9 @@ router = APIRouter(prefix="/viaturas", tags=["viaturas"])
 
 
 def _obter_viatura(viatura_id: int, conn):
+    # Recarrega uma única viatura (incluindo a equipa a que está associada
+    # como viatura habitual, se alguma) depois de uma criação/edição, para
+    # a resposta refletir o estado gravado na BD.
     query = """
         SELECT v.id, v.matricula, v.designacao, v.tipo_motorizacao, v.lugares,
                v.autonomia, v.unidade_autonomia, v.estado,
@@ -30,6 +33,13 @@ def _obter_viatura(viatura_id: int, conn):
 
 
 def _associar_equipa(viatura_id: int, equipa_codigo: Optional[str], conn):
+    # A relação "viatura habitual de uma equipa" é guardada do lado da
+    # equipa (equipa.viatura_habitual_id), não da viatura, e é 1:1: uma
+    # viatura só pode ser a habitual de uma equipa de cada vez. Por isso,
+    # antes de associar a equipa pedida, desassocia primeiro qualquer
+    # equipa que atualmente aponte para esta viatura — senão ficariam duas
+    # equipas a reivindicar a mesma viatura habitual. Se equipa_codigo vier
+    # vazio/None, o resultado é simplesmente remover a associação.
     conn.execute(
         "UPDATE equipa SET viatura_habitual_id = NULL WHERE viatura_habitual_id = %s",
         (viatura_id,),
@@ -43,6 +53,9 @@ def _associar_equipa(viatura_id: int, equipa_codigo: Optional[str], conn):
 
 @router.get("", response_model=list[ViaturaResumo])
 def listar(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Lista todas as viaturas da frota, sem distinção por permissão do
+    # utilizador — a frota é informação partilhada, só as voltas/visitas é
+    # que são filtradas por equipa do utilizador.
     query = """
         SELECT v.id, v.matricula, v.designacao, v.tipo_motorizacao, v.lugares,
                v.autonomia, v.unidade_autonomia, v.estado,
@@ -61,6 +74,9 @@ def criar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Cria a viatura e, se for indicado um código de equipa, associa-a já
+    # como viatura habitual dessa equipa — tudo na mesma transação, para a
+    # resposta (via _obter_viatura) já vir com a associação aplicada.
     try:
         with conn.transaction():
             novo_id = conn.execute(
@@ -104,6 +120,14 @@ def listar_bloqueios(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Lista bloqueios (indisponibilidades, ex. manutenção) da frota,
+    # filtráveis por viatura e por um intervalo [data_inicio, data_fim].
+    # O filtro de intervalo é por sobreposição, não por igualdade: um
+    # bloqueio entra na listagem se o seu próprio intervalo
+    # [data_inicio, data_fim] intersectar o intervalo pedido — daí comparar
+    # "data_fim (do bloqueio) >= data_inicio (pedida)" e
+    # "data_inicio (do bloqueio) <= data_fim (pedida)", a condição clássica
+    # de sobreposição de dois intervalos fechados.
     condicoes = []
     parametros = []
 
@@ -136,6 +160,9 @@ def remover_bloqueio(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Remoção definitiva: um bloqueio não tem valor histórico próprio (ao
+    # contrário de uma volta ou de uma pertença a equipa), por isso não há
+    # aqui lógica de desativação, só DELETE direto.
     cursor = conn.execute(
         "DELETE FROM viatura_bloqueio WHERE id = %s",
         (bloqueio_id,),
@@ -151,6 +178,10 @@ def editar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Atualiza os dados da viatura e reaplica a associação à equipa pedida
+    # (dados.equipa_codigo é o estado final pretendido, incluindo "nenhuma
+    # equipa" quando vier vazio/None — _associar_equipa trata isso como
+    # remoção da associação atual).
     try:
         with conn.transaction():
             cursor = conn.execute(
@@ -215,6 +246,10 @@ def apagar(
         conn.execute("UPDATE viatura SET estado = 'INATIVA' WHERE id = %s", (viatura_id,))
         return {"id": viatura_id, "apagada": False, "desativada": True}
 
+    # Viatura sem qualquer volta associada: pode ser apagada de facto.
+    # Antes de apagar, limpa as referências que apontam para ela (a
+    # associação como viatura habitual de uma equipa, e os seus próprios
+    # bloqueios) para o DELETE não falhar por chave estrangeira.
     conn.execute("UPDATE equipa SET viatura_habitual_id = NULL WHERE viatura_habitual_id = %s", (viatura_id,))
     conn.execute("DELETE FROM viatura_bloqueio WHERE viatura_id = %s", (viatura_id,))
     conn.execute("DELETE FROM viatura WHERE id = %s", (viatura_id,))
@@ -228,10 +263,13 @@ def criar_bloqueio(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
+    # Cria um período de indisponibilidade (ex. manutenção) para a viatura.
     existe = conn.execute("SELECT 1 FROM viatura WHERE id = %s", (viatura_id,)).fetchone()
     if existe is None:
         raise HTTPException(status_code=404, detail="Viatura não encontrada")
 
+    # data_fim é opcional no pedido: omitida, assume-se um bloqueio de um
+    # único dia (data_fim = data_inicio).
     data_fim = dados.data_fim or dados.data_inicio
     if data_fim < dados.data_inicio:
         raise HTTPException(

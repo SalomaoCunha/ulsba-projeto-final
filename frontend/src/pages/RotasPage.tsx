@@ -1,6 +1,8 @@
 import React from 'react';
 import EmConstrucaoPage from '../components/EmConstrucaoPage';
 
+// Página placeholder — a otimização de rotas ainda não está implementada
+// (depende de trabalho externo à cadeira de PI), mostra-se só o aviso de "em construção".
 const RotasPage: React.FC = () => (
   <EmConstrucaoPage
     titulo="Rotas"

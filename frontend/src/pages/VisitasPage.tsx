@@ -1,5 +1,8 @@
 import React from 'react';
 
+// Página placeholder — o módulo de Visitas ainda não está implementado,
+// mostra apenas o aviso genérico de "em construção" (a gestão de visitas
+// já existe hoje dentro do detalhe de cada volta, em VoltaDetalhePage).
 const VisitasPage: React.FC = () => {
   return (
     <div className="h-100 d-flex flex-column">

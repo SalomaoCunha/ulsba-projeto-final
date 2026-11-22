@@ -5,16 +5,29 @@ import { NIVEIS_PRIORIDADE, NIVEIS_COMPLEXIDADE } from '@/config/niveis';
 import { filtrosVazios, type FiltrosUtentes } from '../utils/filtrosUtentes';
 
 interface Props {
+  // Lista completa de utentes (não filtrada) — usada só para derivar as
+  // opções disponíveis nos selects (localidades, equipas), não para filtrar.
   utentes: Utente[];
+  // Estado atual dos filtros, controlado pelo componente pai.
   filtros: FiltrosUtentes;
+  // Chamado com o novo objeto de filtros sempre que algum campo muda; o
+  // componente pai é que aplica os filtros à lista de utentes.
   onChange: (filtros: FiltrosUtentes) => void;
 }
 
+// Painel de filtros da lista/mapa de utentes (prioridade, complexidade,
+// estado, equipa, localidade e intervalo de datas da última visita). É um
+// componente controlado: não guarda o estado dos filtros, só o reporta via
+// `onChange` — quem decide o que fazer com eles é o componente pai.
 const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) => {
+  // Atualiza um único campo do objeto de filtros, mantendo os restantes.
   const atualizar = (campo: keyof FiltrosUtentes, valor: string | null) => {
     onChange({ ...filtros, [campo]: valor });
   };
 
+  // Lista de localidades únicas presentes nos utentes, ordenada
+  // alfabeticamente (locale 'pt' para respeitar acentos/ordem portuguesa).
+  // Recalculada só quando `utentes` muda, para não reordenar a cada render.
   const localidadesDisponiveis = useMemo(
     () =>
       Array.from(new Set(utentes.map((u) => u.localidade).filter(Boolean))).sort((a, b) =>
@@ -23,6 +36,8 @@ const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) =
     [utentes],
   );
 
+  // Filtro de localidade é multi-seleção (checkboxes), por isso adiciona/
+  // remove da lista em vez de substituir um único valor como os outros filtros.
   const alternarLocalidade = (localidade: string) => {
     const atuais = filtros.localidades;
     onChange({
