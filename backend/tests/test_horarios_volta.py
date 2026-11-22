@@ -400,6 +400,15 @@ class _FakeConn:
             },
         ]
 
+    def commit(self):
+        # No-op: este fake não tem transação real para fechar. Existe para
+        # que os endpoints que chamam _commit_ou_erro(conn) (ex. registo de
+        # horários reais) funcionem neste teste sem precisar de uma BD real.
+        pass
+
+    def rollback(self):
+        pass
+
     def execute(self, query: str, params=()):
         q = " ".join(query.split()).upper()
 

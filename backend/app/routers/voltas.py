@@ -750,6 +750,12 @@ def registar_horarios_reais_volta(
         """,
         (nova_partida_real, novo_regresso_real, novo_regresso_previsto, novo_estado, volta_id),
     )
+    # Esta volta está tipicamente CONFIRMADA/EM_CURSO quando se regista uma
+    # saída real — por isso os triggers adiados de integridade (migração
+    # 0003, ex. trg_visita_revalidar_volta) só disparam mesmo aqui, no
+    # commit, não nos UPDATE acima. Sem isto, uma violação ficava invisível
+    # ao cliente (ver bug já corrigido em confirmar()/concluir()).
+    _commit_ou_erro(conn)
 
     return obter(volta_id, conn, utilizador)
 
@@ -879,6 +885,13 @@ def registar_horarios_reais_visita(
             "UPDATE volta SET regresso_previsto = %s WHERE id = %s",
             (ajuste.novo_regresso_previsto, volta_id),
         )
+
+    # Mesma razão do _commit_ou_erro em registar_horarios_reais_volta: esta
+    # visita pertence normalmente a uma volta CONFIRMADA/EM_CURSO, por isso
+    # trg_visita_revalidar_volta (adiado, migração 0003) só valida aqui, no
+    # commit — sem isto, uma violação (ex. horário fora do intervalo da
+    # volta) ficava invisível ao cliente.
+    _commit_ou_erro(conn)
 
     return obter(volta_id, conn, utilizador)
 
