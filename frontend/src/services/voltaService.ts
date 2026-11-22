@@ -287,3 +287,15 @@ export async function concluirVolta(voltaId: number): Promise<VoltaDetalhe> {
   const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${voltaId}/concluir`, { method: 'PUT' });
   return mapearVoltaDetalhe(dto);
 }
+
+export async function cancelarVisita(
+  voltaId: number,
+  visitaId: number,
+  motivo: string,
+): Promise<VoltaDetalhe> {
+  const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${voltaId}/visitas/${visitaId}/cancelar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo }),
+  });
+  return mapearVoltaDetalhe(dto);
+}

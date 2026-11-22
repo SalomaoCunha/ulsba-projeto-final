@@ -273,6 +273,10 @@ class UtenteAtivar(BaseModel):
     data_transicao: Optional[date] = None
 
 
+class VisitaCancelar(BaseModel):
+    motivo: str
+
+
 # ocorrencia
 class OcorrenciaCriar(BaseModel):
     volta_id: Optional[int] = None

@@ -9,11 +9,13 @@ import {
   registarHorariosReaisVolta,
   confirmarVolta,
   concluirVolta,
+  cancelarVisita,
 } from '../services/voltaService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import { LABEL_ESTADO_VISITA, COR_ESTADO_VISITA } from '../config/estadoVisita';
 import EcraCarregamento from '../components/EcraCarregamento';
 import MapaPercursoVolta from '../components/MapaPercursoVolta';
+import ModalConfirmacao from '../components/ModalConfirmacao';
 import { formatarHora } from '../utils/formatarHora';
 
 interface VisitaComLocal extends VisitaDetalhe {
@@ -68,6 +70,11 @@ const VoltaDetalhePage = () => {
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [aAtualizarEstado, setAAtualizarEstado] = useState(false);
+
+  // Cancelar visita (exige motivo — RF29)
+  const [visitaParaCancelar, setVisitaParaCancelar] = useState<VisitaComLocal | null>(null);
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [aCancelarVisita, setACancelarVisita] = useState(false);
 
   useEffect(() => {
     getVoltaDetalhe(Number(id))
@@ -225,6 +232,24 @@ const VoltaDetalhePage = () => {
       setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível concluir a volta.');
     } finally {
       setAAtualizarEstado(false);
+    }
+  };
+
+  const handleCancelarVisita = async () => {
+    if (!volta || !visitaParaCancelar || !motivoCancelamento.trim()) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setACancelarVisita(true);
+    try {
+      const atualizada = await cancelarVisita(volta.id, visitaParaCancelar.visitaId, motivoCancelamento.trim());
+      setVolta(atualizada);
+      setMensagemSucesso(`Visita de ${visitaParaCancelar.utenteNome} cancelada.`);
+      setVisitaParaCancelar(null);
+      setMotivoCancelamento('');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível cancelar a visita.');
+    } finally {
+      setACancelarVisita(false);
     }
   };
 
@@ -572,6 +597,20 @@ const VoltaDetalhePage = () => {
                       </form>
                     )}
 
+                  {volta.estado !== 'CONCLUIDA' &&
+                    volta.estado !== 'CANCELADA' &&
+                    visitaSelecionada.visitaEstado !== 'CONCLUIDA' &&
+                    visitaSelecionada.visitaEstado !== 'CANCELADA' && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm w-100 mb-3 d-print-none"
+                        onClick={() => setVisitaParaCancelar(visitaSelecionada)}
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Cancelar visita
+                      </button>
+                    )}
+
                   <h6 className="fw-bold small text-uppercase text-muted mb-2">
                     <i className="bi bi-chat-left-text me-1"></i> Ocorrências da visita
                   </h6>
@@ -648,6 +687,36 @@ const VoltaDetalhePage = () => {
           </button>
         </div>
       </div>
+
+      <ModalConfirmacao
+        aberto={visitaParaCancelar !== null}
+        titulo="Cancelar visita"
+        mensagem={
+          visitaParaCancelar && (
+            <>
+              Cancelar a visita de <strong>{visitaParaCancelar.utenteNome}</strong>? Indica o motivo
+              (obrigatório).
+            </>
+          )
+        }
+        textoConfirmar="Cancelar visita"
+        textoAProcessar="A cancelar..."
+        aProcessar={aCancelarVisita}
+        confirmarDesabilitado={!motivoCancelamento.trim()}
+        onConfirmar={handleCancelarVisita}
+        onCancelar={() => {
+          setVisitaParaCancelar(null);
+          setMotivoCancelamento('');
+        }}
+      >
+        <textarea
+          className="form-control form-control-sm mt-2"
+          rows={2}
+          placeholder="Ex: Utente indisponível, internamento, pedido de adiamento..."
+          value={motivoCancelamento}
+          onChange={(e) => setMotivoCancelamento(e.target.value)}
+        />
+      </ModalConfirmacao>
     </div>
   );
 };

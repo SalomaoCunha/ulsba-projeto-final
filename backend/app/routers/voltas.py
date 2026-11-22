@@ -9,6 +9,7 @@ from app.db import get_conn
 from app.routers.auth import get_current_user
 from app.schemas import (
     VisitaAgendaResumo,
+    VisitaCancelar,
     VisitaHorariosReaisAtualizar,
     VoltaCriar,
     VoltaHorariosReaisAtualizar,
@@ -249,6 +250,27 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     # horário de verão (DST).
     partida = datetime.combine(dados.data, time(9, 30), tzinfo=LISBOA)
     regresso = datetime.combine(dados.data, time(16, 0), tzinfo=LISBOA)
+
+    # Janela horária (RF19/RF39): rejeita criar uma volta cujas visitas, a
+    # DURACAO_VISITA_PADRAO_MIN cada a partir da partida, já ultrapassariam a
+    # hora-limite de regresso a Beja. Ao contrário do atraso registado numa
+    # volta já em curso (esse só avisa, nunca bloqueia — já aconteceu e tem de
+    # poder ser registado na mesma), aqui ainda há tempo de ajustar o plano
+    # antes de o confirmar, por isso faz sentido recusar já.
+    total_visitas = sum(len(utente_ids) for utente_ids in agrupado.values())
+    hora_limite = _obter_hora_limite_beja(conn)
+    limite = datetime.combine(dados.data, hora_limite, tzinfo=LISBOA)
+    fim_previsto_total = partida + timedelta(minutes=total_visitas * DURACAO_VISITA_PADRAO_MIN)
+    if fim_previsto_total > limite:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Com {total_visitas} visita(s) de {DURACAO_VISITA_PADRAO_MIN} min cada, esta volta só "
+                f"terminaria às {fim_previsto_total.strftime('%H:%M')}, depois da hora-limite de regresso "
+                f"a Beja ({hora_limite.strftime('%H:%M')}). Reduz o número de utentes ou cria mais do que "
+                f"uma volta."
+            ),
+        )
 
     volta_id = conn.execute(
         """
@@ -770,5 +792,45 @@ def registar_horarios_reais_visita(
             "UPDATE volta SET regresso_previsto = %s WHERE id = %s",
             (ajuste.novo_regresso_previsto, volta_id),
         )
+
+    return obter(volta_id, conn, utilizador)
+
+
+@router.put("/{volta_id}/visitas/{visita_id}/cancelar")
+def cancelar_visita(
+    volta_id: int,
+    visita_id: int,
+    dados: VisitaCancelar,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    visita = conn.execute(
+        """
+        SELECT vis.id, vis.estado
+        FROM visita vis
+        JOIN paragem p ON p.id = vis.paragem_id
+        WHERE p.volta_id = %s AND vis.id = %s
+        """,
+        (volta_id, visita_id),
+    ).fetchone()
+    if visita is None:
+        raise HTTPException(status_code=404, detail="Visita não encontrada nesta volta")
+    if visita["estado"] in ("CONCLUIDA", "CANCELADA"):
+        raise HTTPException(
+            status_code=400,
+            detail="Só é possível cancelar uma visita planeada ou em curso",
+        )
+    if not dados.motivo.strip():
+        raise HTTPException(status_code=400, detail="Indica o motivo do cancelamento")
+
+    conn.execute(
+        "UPDATE visita SET estado = 'CANCELADA', motivo_cancelamento = %s WHERE id = %s",
+        (dados.motivo.strip(), visita_id),
+    )
+    # fn_validar_volta_atual (trigger DEFERRABLE, migração 0003) exige pelo
+    # menos uma visita não cancelada numa volta CONFIRMADA/EM_CURSO/CONCLUIDA
+    # — cancelar a última visita ativa dessas volta só é detetado aqui, no
+    # commit, daí usar o mesmo _commit_ou_erro das outras transições de estado.
+    _commit_ou_erro(conn)
 
     return obter(volta_id, conn, utilizador)
