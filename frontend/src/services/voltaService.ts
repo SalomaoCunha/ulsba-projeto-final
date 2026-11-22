@@ -273,3 +273,29 @@ export async function registarHorariosReaisVisita(
   );
   return mapearVoltaDetalhe(dto);
 }
+
+// confirmar/concluir são passos próprios do ciclo de vida da volta: a BD
+// exige confirmada_por/confirmada_em preenchidos para qualquer estado além
+// de RASCUNHO/CANCELADA (ck_volta_confirmada_completa), por isso não dá
+// para "saltar" direto para concluída sem passar por confirmar primeiro.
+export async function confirmarVolta(voltaId: number): Promise<VoltaDetalhe> {
+  const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${voltaId}/confirmar`, { method: 'PUT' });
+  return mapearVoltaDetalhe(dto);
+}
+
+export async function concluirVolta(voltaId: number): Promise<VoltaDetalhe> {
+  const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${voltaId}/concluir`, { method: 'PUT' });
+  return mapearVoltaDetalhe(dto);
+}
+
+export async function cancelarVisita(
+  voltaId: number,
+  visitaId: number,
+  motivo: string,
+): Promise<VoltaDetalhe> {
+  const dto = await apiFetch<VoltaDetalheDTO>(`/voltas/${voltaId}/visitas/${visitaId}/cancelar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo }),
+  });
+  return mapearVoltaDetalhe(dto);
+}

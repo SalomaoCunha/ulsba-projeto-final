@@ -7,11 +7,15 @@ import {
   getVoltaDetalhe,
   registarHorariosReaisVisita,
   registarHorariosReaisVolta,
+  confirmarVolta,
+  concluirVolta,
+  cancelarVisita,
 } from '../services/voltaService';
 import { LABEL_ESTADO_VOLTA, COR_ESTADO_VOLTA } from '../config/estadoVolta';
 import { LABEL_ESTADO_VISITA, COR_ESTADO_VISITA } from '../config/estadoVisita';
 import EcraCarregamento from '../components/EcraCarregamento';
 import MapaPercursoVolta from '../components/MapaPercursoVolta';
+import ModalConfirmacao from '../components/ModalConfirmacao';
 import { formatarHora } from '../utils/formatarHora';
 
 interface VisitaComLocal extends VisitaDetalhe {
@@ -65,6 +69,12 @@ const VoltaDetalhePage = () => {
 
   const [mensagemErro, setMensagemErro] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [aAtualizarEstado, setAAtualizarEstado] = useState(false);
+
+  // Cancelar visita (exige motivo — RF29)
+  const [visitaParaCancelar, setVisitaParaCancelar] = useState<VisitaComLocal | null>(null);
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [aCancelarVisita, setACancelarVisita] = useState(false);
 
   useEffect(() => {
     getVoltaDetalhe(Number(id))
@@ -152,7 +162,7 @@ const VoltaDetalhePage = () => {
       setRegressoRealHora(extrairHoraInput(atualizada.regressoReal));
       setMensagemSucesso(
         atualizada.resumo && atualizada.resumo.atrasoSaidaMin > 0
-          ? `Saída real registada (+${atualizada.resumo.atrasoSaidaMin} min). Os horários previstos seguintes e o regresso foram ajustados automaticamente.`
+          ? `Saída real registada (+${formatarDuracao(atualizada.resumo.atrasoSaidaMin)}). Os horários previstos seguintes e o regresso foram ajustados automaticamente.`
           : 'Horários reais da volta guardados com sucesso.',
       );
     } catch (erro) {
@@ -190,6 +200,56 @@ const VoltaDetalhePage = () => {
       setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível guardar os horários da visita.');
     } finally {
       setAGuardarVisita(false);
+    }
+  };
+
+  const handleConfirmarVolta = async () => {
+    if (!volta) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setAAtualizarEstado(true);
+    try {
+      const atualizada = await confirmarVolta(volta.id);
+      setVolta(atualizada);
+      setMensagemSucesso('Volta confirmada com sucesso.');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível confirmar a volta.');
+    } finally {
+      setAAtualizarEstado(false);
+    }
+  };
+
+  const handleConcluirVolta = async () => {
+    if (!volta) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setAAtualizarEstado(true);
+    try {
+      const atualizada = await concluirVolta(volta.id);
+      setVolta(atualizada);
+      setMensagemSucesso('Volta marcada como concluída.');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível concluir a volta.');
+    } finally {
+      setAAtualizarEstado(false);
+    }
+  };
+
+  const handleCancelarVisita = async () => {
+    if (!volta || !visitaParaCancelar || !motivoCancelamento.trim()) return;
+    setMensagemErro(null);
+    setMensagemSucesso(null);
+    setACancelarVisita(true);
+    try {
+      const atualizada = await cancelarVisita(volta.id, visitaParaCancelar.visitaId, motivoCancelamento.trim());
+      setVolta(atualizada);
+      setMensagemSucesso(`Visita de ${visitaParaCancelar.utenteNome} cancelada.`);
+      setVisitaParaCancelar(null);
+      setMotivoCancelamento('');
+    } catch (erro) {
+      setMensagemErro(erro instanceof Error ? erro.message : 'Não foi possível cancelar a visita.');
+    } finally {
+      setACancelarVisita(false);
     }
   };
 
@@ -231,6 +291,27 @@ const VoltaDetalhePage = () => {
             </div>
 
             <div className="d-flex align-items-center gap-2 flex-shrink-0">
+              {volta.estado === 'RASCUNHO' && (
+                <button
+                  className="btn btn-sm btn-primary d-print-none"
+                  onClick={handleConfirmarVolta}
+                  disabled={aAtualizarEstado}
+                >
+                  <i className="bi bi-check2-square"></i>
+                  <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A confirmar...' : 'Confirmar volta'}</span>
+                </button>
+              )}
+              {volta.estado !== 'CONCLUIDA' && volta.estado !== 'CANCELADA' && (
+                <button
+                  className="btn btn-sm btn-success d-print-none"
+                  onClick={handleConcluirVolta}
+                  disabled={aAtualizarEstado}
+                  title="Confirma a volta se necessário e conclui, com o horário previsto, qualquer visita ainda em falta"
+                >
+                  <i className="bi bi-flag-fill"></i>
+                  <span className="d-none d-sm-inline"> {aAtualizarEstado ? 'A concluir...' : 'Marcar como feita'}</span>
+                </button>
+              )}
               <button className="btn btn-sm btn-outline-secondary d-print-none" onClick={() => window.print()}>
                 <i className="bi bi-printer"></i>
                 <span className="d-none d-sm-inline"> Imprimir relatório</span>
@@ -341,43 +422,48 @@ const VoltaDetalhePage = () => {
             </div>
           </div>
 
-          {/* Registo de Saída Real e Regresso Real da Volta */}
-          <form onSubmit={handleGuardarHorariosVolta} className="bg-light rounded-3 p-2 px-3 mt-3 d-print-none">
-            <div className="row g-2 align-items-end">
-              <div className="col-12 col-md-4">
-                <div className="small fw-semibold text-dark">
-                  <i className="bi bi-stopwatch me-1 text-success"></i>
-                  Registo real da volta
+          {/* Registo de Saída Real e Regresso Real da Volta — só faz sentido
+              enquanto a volta ainda não está fechada; depois de concluída ou
+              cancelada, os horários reais ficam decididos e mostram-se só como
+              leitura mais acima. */}
+          {volta.estado !== 'CONCLUIDA' && volta.estado !== 'CANCELADA' && (
+            <form onSubmit={handleGuardarHorariosVolta} className="bg-light rounded-3 p-2 px-3 mt-3 d-print-none">
+              <div className="row g-2 align-items-end">
+                <div className="col-12 col-md-4">
+                  <div className="small fw-semibold text-dark">
+                    <i className="bi bi-stopwatch me-1 text-success"></i>
+                    Registo real da volta
+                  </div>
+                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>
+                    Saída posterior à prevista ajusta automaticamente visitas e regresso.
+                  </div>
                 </div>
-                <div className="text-muted" style={{ fontSize: '0.72rem' }}>
-                  Saída posterior à prevista ajusta automaticamente visitas e regresso.
+                <div className="col-6 col-md-3">
+                  <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Saída real</label>
+                  <input
+                    type="time"
+                    className="form-control form-control-sm"
+                    value={partidaRealHora}
+                    onChange={(e) => setPartidaRealHora(e.target.value)}
+                  />
+                </div>
+                <div className="col-6 col-md-3">
+                  <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Regresso real</label>
+                  <input
+                    type="time"
+                    className="form-control form-control-sm"
+                    value={regressoRealHora}
+                    onChange={(e) => setRegressoRealHora(e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-md-2">
+                  <button type="submit" className="btn btn-success btn-sm w-100" disabled={aGuardarVolta}>
+                    {aGuardarVolta ? 'A guardar...' : 'Atualizar'}
+                  </button>
                 </div>
               </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Saída real</label>
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={partidaRealHora}
-                  onChange={(e) => setPartidaRealHora(e.target.value)}
-                />
-              </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Regresso real</label>
-                <input
-                  type="time"
-                  className="form-control form-control-sm"
-                  value={regressoRealHora}
-                  onChange={(e) => setRegressoRealHora(e.target.value)}
-                />
-              </div>
-              <div className="col-12 col-md-2">
-                <button type="submit" className="btn btn-success btn-sm w-100" disabled={aGuardarVolta}>
-                  {aGuardarVolta ? 'A guardar...' : 'Atualizar'}
-                </button>
-              </div>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
 
         {/* Corpo: 3 colunas no desktop, empilhado em mobile */}
@@ -388,7 +474,7 @@ const VoltaDetalhePage = () => {
               <h6 className="fw-bold small text-uppercase text-muted mb-2">
                 Visitas ({visitas.length})
               </h6>
-              <div className="d-flex flex-column gap-2 ulsba-volta-coluna-scroll">
+              <div className="d-flex flex-column gap-2">
                 {visitas.map((visita, indice) => (
                   <button
                     key={visita.visitaId}
@@ -471,35 +557,59 @@ const VoltaDetalhePage = () => {
                     </tbody>
                   </table>
 
-                  {/* Registo real da visita (propaga atraso para visitas seguintes) */}
-                  <form onSubmit={handleGuardarHorariosVisita} className="bg-light rounded-3 p-2 mb-3 d-print-none">
-                    <div className="row g-2 align-items-end">
-                      <div className="col-6">
-                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Início real</label>
-                        <input
-                          type="time"
-                          className="form-control form-control-sm"
-                          value={visitaInicioRealHora}
-                          onChange={(e) => setVisitaInicioRealHora(e.target.value)}
-                        />
-                      </div>
-                      <div className="col-6">
-                        <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Fim real</label>
-                        <input
-                          type="time"
-                          className="form-control form-control-sm"
-                          value={visitaFimRealHora}
-                          onChange={(e) => setVisitaFimRealHora(e.target.value)}
-                        />
-                      </div>
-                      <div className="col-12">
-                        <button type="submit" className="btn btn-outline-success btn-sm w-100" disabled={aGuardarVisita}>
-                          <i className="bi bi-check2-circle me-1"></i>
-                          {aGuardarVisita ? 'A atualizar...' : 'Guardar horários reais da visita'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
+                  {/* Registo real da visita (propaga atraso para visitas seguintes) — opcional:
+                      "Marcar como feita" na volta já fecha sozinha qualquer visita em falta
+                      com o horário previsto; isto só é preciso para quem queira registar um
+                      horário real diferente. Some assim que a volta ou a própria visita já
+                      estiverem fechadas — nessa altura os horários reais já estão decididos e
+                      só fazem sentido como leitura (tabela Previsto/Real acima). */}
+                  {volta.estado !== 'CONCLUIDA' &&
+                    volta.estado !== 'CANCELADA' &&
+                    visitaSelecionada.visitaEstado !== 'CONCLUIDA' &&
+                    visitaSelecionada.visitaEstado !== 'CANCELADA' && (
+                      <form onSubmit={handleGuardarHorariosVisita} className="bg-light rounded-3 p-2 mb-3 d-print-none">
+                        <div className="row g-2 align-items-end">
+                          <div className="col-6">
+                            <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Início real</label>
+                            <input
+                              type="time"
+                              className="form-control form-control-sm"
+                              value={visitaInicioRealHora}
+                              onChange={(e) => setVisitaInicioRealHora(e.target.value)}
+                            />
+                          </div>
+                          <div className="col-6">
+                            <label className="form-label mb-1 text-muted" style={{ fontSize: '0.72rem' }}>Fim real</label>
+                            <input
+                              type="time"
+                              className="form-control form-control-sm"
+                              value={visitaFimRealHora}
+                              onChange={(e) => setVisitaFimRealHora(e.target.value)}
+                            />
+                          </div>
+                          <div className="col-12">
+                            <button type="submit" className="btn btn-outline-success btn-sm w-100" disabled={aGuardarVisita}>
+                              <i className="bi bi-check2-circle me-1"></i>
+                              {aGuardarVisita ? 'A atualizar...' : 'Guardar horários reais da visita'}
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
+
+                  {volta.estado !== 'CONCLUIDA' &&
+                    volta.estado !== 'CANCELADA' &&
+                    visitaSelecionada.visitaEstado !== 'CONCLUIDA' &&
+                    visitaSelecionada.visitaEstado !== 'CANCELADA' && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm w-100 mb-3 d-print-none"
+                        onClick={() => setVisitaParaCancelar(visitaSelecionada)}
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Cancelar visita
+                      </button>
+                    )}
 
                   <h6 className="fw-bold small text-uppercase text-muted mb-2">
                     <i className="bi bi-chat-left-text me-1"></i> Ocorrências da visita
@@ -538,7 +648,11 @@ const VoltaDetalhePage = () => {
               )}
 
               <div className="rounded-3 overflow-hidden border">
-                <MapaPercursoVolta paragens={volta.paragens} />
+                {/* key força remonte ao mudar de volta: o MapContainer do
+                    Leaflet só usa center/zoom na montagem inicial — sem
+                    isto, navegar de uma volta para outra sem recarregar a
+                    página deixava o mapa parado no sítio da volta anterior. */}
+                <MapaPercursoVolta key={volta.id} paragens={volta.paragens} />
               </div>
             </div>
           </div>
@@ -573,6 +687,36 @@ const VoltaDetalhePage = () => {
           </button>
         </div>
       </div>
+
+      <ModalConfirmacao
+        aberto={visitaParaCancelar !== null}
+        titulo="Cancelar visita"
+        mensagem={
+          visitaParaCancelar && (
+            <>
+              Cancelar a visita de <strong>{visitaParaCancelar.utenteNome}</strong>? Indica o motivo
+              (obrigatório).
+            </>
+          )
+        }
+        textoConfirmar="Cancelar visita"
+        textoAProcessar="A cancelar..."
+        aProcessar={aCancelarVisita}
+        confirmarDesabilitado={!motivoCancelamento.trim()}
+        onConfirmar={handleCancelarVisita}
+        onCancelar={() => {
+          setVisitaParaCancelar(null);
+          setMotivoCancelamento('');
+        }}
+      >
+        <textarea
+          className="form-control form-control-sm mt-2"
+          rows={2}
+          placeholder="Ex: Utente indisponível, internamento, pedido de adiamento..."
+          value={motivoCancelamento}
+          onChange={(e) => setMotivoCancelamento(e.target.value)}
+        />
+      </ModalConfirmacao>
     </div>
   );
 };

@@ -158,3 +158,21 @@ export async function alterarEquipaResponsavel(utenteId: Utente['id'], equipaId:
     body: JSON.stringify({ equipa_id: equipaId, motivo: motivo || null }),
   });
 }
+
+// Ativar/inativar são endpoints próprios (não o PUT normal) porque geram um
+// registo no histórico de transições de estado do utente.
+export async function ativarUtente(utenteId: Utente['id'], motivo: string): Promise<Utente> {
+  const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteId}/ativar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo }),
+  });
+  return mapearUtente(dto);
+}
+
+export async function inativarUtente(utenteId: Utente['id'], motivo: string): Promise<Utente> {
+  const dto = await apiFetch<UtenteDTO>(`/utentes/${utenteId}/inativar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo }),
+  });
+  return mapearUtente(dto);
+}

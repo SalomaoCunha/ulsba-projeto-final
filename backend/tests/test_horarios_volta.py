@@ -269,6 +269,54 @@ def test_totais_volta_deteta_incoerencias_de_horarios_e_distancia():
     assert any("inferior à soma dos troços" in a.lower() for a in resumo["alertas_coerencia"])
 
 
+def test_totais_volta_nao_gera_alertas_falsos_quando_visitas_partilham_o_horario_da_volta():
+    # Enquanto não existir hora por paragem (RF39/RF21), POST /voltas dá a
+    # todas as visitas o mesmo inicio_previsto/fim_previsto (o da volta
+    # toda) — isto não é um conflito real e não pode gerar "sobreposição"
+    # nem fazer a soma das durações "exceder" o total da volta.
+    janela_unica = {"inicio_previsto": _dt(9, 30), "fim_previsto": _dt(16, 0)}
+    paragens = [
+        {
+            "ordem": 1,
+            "distancia_desde_anterior_km": 10.0,
+            "visitas": [
+                {"visita_id": 1, "utente_nome": "Utente A", "visita_estado": "PLANEADA", **janela_unica},
+            ],
+        },
+        {
+            "ordem": 2,
+            "distancia_desde_anterior_km": 8.0,
+            "visitas": [
+                {"visita_id": 2, "utente_nome": "Utente B", "visita_estado": "PLANEADA", **janela_unica},
+            ],
+        },
+        {
+            "ordem": 3,
+            "distancia_desde_anterior_km": 5.0,
+            "visitas": [
+                {"visita_id": 3, "utente_nome": "Utente C", "visita_estado": "PLANEADA", **janela_unica},
+            ],
+        },
+    ]
+
+    resumo = calcular_resumo_volta(
+        data_volta=DIA,
+        partida_prevista=_dt(9, 30),
+        regresso_previsto=_dt(16, 0),
+        partida_real=None,
+        regresso_real=None,
+        distancia_estimada_km=None,
+        distancia_real_km=None,
+        paragens=paragens,
+        hora_limite_beja=time(16, 0),
+    )
+
+    assert resumo["duracao_prevista_volta_min"] == 390  # 6h30
+    assert resumo["duracao_prevista_visitas_min"] == 390  # janela única, contada uma vez
+    assert resumo["tempo_deslocacao_previsto_min"] == 0
+    assert resumo["alertas_coerencia"] == []
+
+
 # ---------------------------------------------------------------------
 # 4. Teste de integração HTTP (FastAPI TestClient sem BD externa)
 # ---------------------------------------------------------------------

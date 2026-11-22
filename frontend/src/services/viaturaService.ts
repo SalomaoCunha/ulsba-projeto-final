@@ -269,3 +269,12 @@ export async function removerBloqueioViatura(bloqueioId: number): Promise<void> 
   const atuais = lerBloqueiosLocais();
   guardarBloqueiosLocais(atuais.filter((b) => b.id !== bloqueioId));
 }
+// Sem fallback local: ao contrário das restantes funções deste serviço, uma
+// falha a apagar não deve ser escondida — o utilizador tem de saber que não
+// resultou. Se tiver voltas associadas, o backend desativa-a (INATIVA) em
+// vez de apagar fisicamente (devolve "desativada").
+export async function deleteViatura(viaturaId: number): Promise<{ apagada: boolean; desativada: boolean }> {
+  return apiFetch<{ apagada: boolean; desativada: boolean }>(`/viaturas/${viaturaId}`, {
+    method: 'DELETE',
+  });
+}

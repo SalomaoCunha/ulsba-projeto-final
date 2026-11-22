@@ -1,12 +1,15 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
+
+import psycopg
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.db import get_conn
 from app.routers.auth import get_current_user
 from app.schemas import (
     VisitaAgendaResumo,
+    VisitaCancelar,
     VisitaHorariosReaisAtualizar,
     VoltaCriar,
     VoltaHorariosReaisAtualizar,
@@ -23,6 +26,7 @@ from app.services.horarios_volta import (
 router = APIRouter(prefix="/voltas", tags=["voltas"])
 
 LISBOA = ZoneInfo("Europe/Lisbon")
+DURACAO_VISITA_PADRAO_MIN = 30
 
 
 def _obter_hora_limite_beja(conn) -> time:
@@ -247,6 +251,27 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     partida = datetime.combine(dados.data, time(9, 30), tzinfo=LISBOA)
     regresso = datetime.combine(dados.data, time(16, 0), tzinfo=LISBOA)
 
+    # Janela horária (RF19/RF39): rejeita criar uma volta cujas visitas, a
+    # DURACAO_VISITA_PADRAO_MIN cada a partir da partida, já ultrapassariam a
+    # hora-limite de regresso a Beja. Ao contrário do atraso registado numa
+    # volta já em curso (esse só avisa, nunca bloqueia — já aconteceu e tem de
+    # poder ser registado na mesma), aqui ainda há tempo de ajustar o plano
+    # antes de o confirmar, por isso faz sentido recusar já.
+    total_visitas = sum(len(utente_ids) for utente_ids in agrupado.values())
+    hora_limite = _obter_hora_limite_beja(conn)
+    limite = datetime.combine(dados.data, hora_limite, tzinfo=LISBOA)
+    fim_previsto_total = partida + timedelta(minutes=total_visitas * DURACAO_VISITA_PADRAO_MIN)
+    if fim_previsto_total > limite:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Com {total_visitas} visita(s) de {DURACAO_VISITA_PADRAO_MIN} min cada, esta volta só "
+                f"terminaria às {fim_previsto_total.strftime('%H:%M')}, depois da hora-limite de regresso "
+                f"a Beja ({hora_limite.strftime('%H:%M')}). Reduz o número de utentes ou cria mais do que "
+                f"uma volta."
+            ),
+        )
+
     volta_id = conn.execute(
         """
         INSERT INTO volta (data, equipa_id, viatura_id, partida_prevista, regresso_previsto, criada_por)
@@ -255,6 +280,28 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         """,
         (dados.data, dados.equipa_id, dados.viatura_id, partida, regresso, utilizador["id"]),
     ).fetchone()["id"]
+
+    # Escala por omissão: a composição atual da equipa (ajustável depois).
+    # Sem isto, volta_profissional fica sempre vazia e uma visita nunca
+    # consegue passar a CONCLUIDA (exige pelo menos um participante, e o
+    # participante é inferido daqui quando não é registado à mão).
+    conn.execute(
+        """
+        INSERT INTO volta_profissional (volta_id, profissional_id)
+        SELECT %s, em.profissional_id
+        FROM equipa_membro em
+        WHERE em.equipa_id = %s AND em.valido_ate IS NULL
+        """,
+        (volta_id, dados.equipa_id),
+    )
+
+    # Horário por visita: sequencial a partir da partida, DURACAO_VISITA_PADRAO_MIN
+    # cada uma (ainda não há seleção de duração por utente/paragem, RF39/RF21
+    # fora do âmbito essencial). Antes, todas as visitas ficavam com o
+    # horário da volta toda (9:30-16:00) repetido — parecia um erro a quem
+    # via a ficha ("como é que 3 visitas acontecem todas ao mesmo tempo?")
+    # e desencadeava alertas de sobreposição/soma sem sentido no resumo.
+    proximo_inicio = partida
 
     for ordem, (local_id, utente_ids) in enumerate(agrupado.items(), start=1):
         paragem_id = conn.execute(
@@ -267,15 +314,185 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
         ).fetchone()["id"]
 
         for utente_id in utente_ids:
+            inicio_visita = proximo_inicio
+            fim_visita = inicio_visita + timedelta(minutes=DURACAO_VISITA_PADRAO_MIN)
+            proximo_inicio = fim_visita
+
             conn.execute(
                 """
                 INSERT INTO visita (utente_id, paragem_id, equipa_executante_id, estado, inicio_previsto, fim_previsto, criada_por)
                 VALUES (%s, %s, %s, 'PLANEADA', %s, %s, %s)
                 """,
-                (utente_id, paragem_id, dados.equipa_id, partida, regresso, utilizador["id"]),
+                (utente_id, paragem_id, dados.equipa_id, inicio_visita, fim_visita, utilizador["id"]),
             )
 
     return {"id": volta_id}
+
+
+def _procurar_volta_em_conflito(volta_id: int, campo: str, conn):
+    # Devolve a outra volta (CONFIRMADA/EM_CURSO) que partilha a mesma
+    # viatura/equipa desta e cujo horário se sobrepõe — para a mensagem de
+    # erro poder dizer exatamente qual é o conflito, em vez de só recusar.
+    coluna = "viatura_id" if campo == "viatura" else "equipa_id"
+    return conn.execute(
+        f"""
+        SELECT v2.id, v2.partida_prevista, v2.regresso_previsto
+        FROM volta v1
+        JOIN volta v2
+            ON v2.{coluna} = v1.{coluna}
+           AND v2.id != v1.id
+           AND v2.estado IN ('CONFIRMADA', 'EM_CURSO')
+           AND tstzrange(v2.partida_prevista, v2.regresso_previsto)
+               && tstzrange(v1.partida_prevista, v1.regresso_previsto)
+        WHERE v1.id = %s
+        LIMIT 1
+        """,  # nosec: `coluna` vem só de uma constante interna, nunca de input do pedido
+        (volta_id,),
+    ).fetchone()
+
+
+def _mensagem_conflito_confirmacao(erro: psycopg.Error, volta_id: int, conn) -> str:
+    # ex_volta_viatura_sem_sobreposicao / ex_volta_equipa_sem_sobreposicao
+    # (migração 0001) só se aplicam a voltas CONFIRMADA/EM_CURSO — por isso
+    # só disparam agora, ao confirmar, não na criação em RASCUNHO. Ao
+    # contrário dos triggers DEFERRABLE INITIALLY DEFERRED, uma violação de
+    # EXCLUDE dá erro imediato no próprio INSERT/UPDATE, não só no commit.
+    texto = str(erro)
+    if "ex_volta_viatura_sem_sobreposicao" in texto:
+        campo = "viatura"
+    elif "ex_volta_equipa_sem_sobreposicao" in texto:
+        campo = "equipa"
+    else:
+        return texto.split("\n", 1)[0]
+
+    conflito = _procurar_volta_em_conflito(volta_id, campo, conn)
+    if conflito is None:
+        return f"Esta {campo} já está confirmada noutra volta com horário sobreposto nesta data."
+
+    inicio = conflito["partida_prevista"].astimezone(LISBOA).strftime("%H:%M")
+    fim = conflito["regresso_previsto"].astimezone(LISBOA).strftime("%H:%M")
+    return (
+        f"Esta {campo} já está confirmada na Volta #{conflito['id']}, das {inicio} às {fim}. "
+        f"Ajusta o horário ou escolhe outra {campo} antes de confirmar."
+    )
+
+
+def _commit_ou_erro(conn):
+    # get_conn() só faz commit quando a dependência do FastAPI é fechada, o
+    # que acontece DEPOIS da resposta HTTP já ter sido enviada ao cliente —
+    # uma falha nesse commit (p.ex. um trigger DEFERRABLE INITIALLY DEFERRED
+    # como trg_volta_validar_confirmacao, que só corre no COMMIT) fica
+    # invisível ao cliente, que recebe sempre 200 mesmo sem nada ter sido
+    # gravado. Ao comitar aqui dentro do próprio handler, uma falha é
+    # apanhada antes da resposta ser construída e devolvida como erro real.
+    try:
+        conn.commit()
+    except psycopg.Error as erro:
+        conn.rollback()
+        mensagem = str(erro).split("\n", 1)[0]
+        raise HTTPException(status_code=400, detail=mensagem) from erro
+
+
+@router.put("/{volta_id}/confirmar")
+def confirmar(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # ck_volta_confirmada_completa (migração 0001) exige confirmada_por e
+    # confirmada_em preenchidos para qualquer estado que não seja
+    # RASCUNHO/CANCELADA — sem este passo, nunca é possível avançar uma
+    # volta para CONFIRMADA/EM_CURSO/CONCLUIDA.
+    volta = conn.execute("SELECT estado FROM volta WHERE id = %s", (volta_id,)).fetchone()
+    if volta is None:
+        raise HTTPException(status_code=404, detail="Volta não encontrada")
+    if volta["estado"] != "RASCUNHO":
+        raise HTTPException(status_code=400, detail="Só é possível confirmar uma volta em rascunho")
+
+    try:
+        conn.execute(
+            """
+            UPDATE volta
+            SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+            WHERE id = %s
+            """,
+            (utilizador["id"], volta_id),
+        )
+    except psycopg.Error as erro:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro, volta_id, conn)) from erro
+
+    _commit_ou_erro(conn)
+
+    return obter(volta_id, conn, utilizador)
+
+
+def _concluir_visitas_pendentes(volta_id: int, conn) -> None:
+    # "Marcar como feita" não deve obrigar a fechar cada visita à mão
+    # primeiro: fecha aqui, com o horário previsto (assume que decorreu
+    # como planeado), qualquer visita que ainda não esteja concluída ou
+    # cancelada. Quem precisar de um horário real diferente continua a
+    # poder registá-lo antes de concluir, através do formulário da visita —
+    # isto só preenche o que ainda não foi preenchido.
+    conn.execute(
+        """
+        UPDATE visita vis
+        SET inicio_real = COALESCE(vis.inicio_real, vis.inicio_previsto),
+            fim_real = COALESCE(vis.fim_real, vis.fim_previsto),
+            estado = 'CONCLUIDA'
+        FROM paragem p
+        WHERE vis.paragem_id = p.id
+          AND p.volta_id = %s
+          AND vis.estado NOT IN ('CONCLUIDA', 'CANCELADA')
+        """,
+        (volta_id,),
+    )
+    # ck_participacao_minima (migração 0003) exige pelo menos um
+    # participante por visita concluída; usa a composição da equipa da
+    # volta para quem ainda não tinha participantes registados.
+    conn.execute(
+        """
+        INSERT INTO visita_participante (visita_id, profissional_id)
+        SELECT vis.id, vp.profissional_id
+        FROM visita vis
+        JOIN paragem p ON p.id = vis.paragem_id
+        JOIN volta_profissional vp ON vp.volta_id = p.volta_id
+        WHERE p.volta_id = %s
+          AND NOT EXISTS (SELECT 1 FROM visita_participante x WHERE x.visita_id = vis.id)
+        ON CONFLICT DO NOTHING
+        """,
+        (volta_id,),
+    )
+
+
+@router.put("/{volta_id}/concluir")
+def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Único botão para "marcar como feita": trata do que for preciso para lá
+    # chegar (confirmar se ainda estiver em rascunho, fechar visitas em
+    # falta) numa só chamada, em vez de obrigar o utilizador a saber que há
+    # 3 passos distintos antes de poder fechar a volta.
+    volta = conn.execute("SELECT estado FROM volta WHERE id = %s", (volta_id,)).fetchone()
+    if volta is None:
+        raise HTTPException(status_code=404, detail="Volta não encontrada")
+    if volta["estado"] in ("CONCLUIDA", "CANCELADA"):
+        raise HTTPException(status_code=400, detail="Esta volta já está concluída ou cancelada.")
+
+    if volta["estado"] == "RASCUNHO":
+        try:
+            conn.execute(
+                """
+                UPDATE volta
+                SET estado = 'CONFIRMADA', confirmada_por = %s, confirmada_em = now()
+                WHERE id = %s
+                """,
+                (utilizador["id"], volta_id),
+            )
+        except psycopg.Error as erro:
+            conn.rollback()
+            raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro, volta_id, conn)) from erro
+
+    _concluir_visitas_pendentes(volta_id, conn)
+
+    conn.execute("UPDATE volta SET estado = 'CONCLUIDA' WHERE id = %s", (volta_id,))
+    _commit_ou_erro(conn)
+
+    return obter(volta_id, conn, utilizador)
 
 
 @router.get("/{volta_id}")
@@ -575,5 +792,45 @@ def registar_horarios_reais_visita(
             "UPDATE volta SET regresso_previsto = %s WHERE id = %s",
             (ajuste.novo_regresso_previsto, volta_id),
         )
+
+    return obter(volta_id, conn, utilizador)
+
+
+@router.put("/{volta_id}/visitas/{visita_id}/cancelar")
+def cancelar_visita(
+    volta_id: int,
+    visita_id: int,
+    dados: VisitaCancelar,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    visita = conn.execute(
+        """
+        SELECT vis.id, vis.estado
+        FROM visita vis
+        JOIN paragem p ON p.id = vis.paragem_id
+        WHERE p.volta_id = %s AND vis.id = %s
+        """,
+        (volta_id, visita_id),
+    ).fetchone()
+    if visita is None:
+        raise HTTPException(status_code=404, detail="Visita não encontrada nesta volta")
+    if visita["estado"] in ("CONCLUIDA", "CANCELADA"):
+        raise HTTPException(
+            status_code=400,
+            detail="Só é possível cancelar uma visita planeada ou em curso",
+        )
+    if not dados.motivo.strip():
+        raise HTTPException(status_code=400, detail="Indica o motivo do cancelamento")
+
+    conn.execute(
+        "UPDATE visita SET estado = 'CANCELADA', motivo_cancelamento = %s WHERE id = %s",
+        (dados.motivo.strip(), visita_id),
+    )
+    # fn_validar_volta_atual (trigger DEFERRABLE, migração 0003) exige pelo
+    # menos uma visita não cancelada numa volta CONFIRMADA/EM_CURSO/CONCLUIDA
+    # — cancelar a última visita ativa dessas volta só é detetado aqui, no
+    # commit, daí usar o mesmo _commit_ou_erro das outras transições de estado.
+    _commit_ou_erro(conn)
 
     return obter(volta_id, conn, utilizador)

@@ -2,6 +2,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from psycopg.errors import UniqueViolation
 
 from app.db import get_conn
 from app.routers.auth import get_current_user
@@ -60,33 +61,39 @@ def criar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
-    novo_id = conn.execute(
-        """
-        INSERT INTO viatura (
-            matricula, designacao, tipo_motorizacao, lugares,
-            autonomia, unidade_autonomia, estado,
-            data_ultima_revisao, periodicidade_revisao_meses
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-        """,
-        (
-            dados.matricula,
-            dados.designacao,
-            dados.tipo_motorizacao,
-            dados.lugares,
-            dados.autonomia,
-            dados.unidade_autonomia,
-            dados.estado,
-            dados.data_ultima_revisao,
-            dados.periodicidade_revisao_meses,
-        ),
-    ).fetchone()["id"]
+    try:
+        with conn.transaction():
+            novo_id = conn.execute(
+                """
+                INSERT INTO viatura (
+                    matricula, designacao, tipo_motorizacao, lugares,
+                    autonomia, unidade_autonomia, estado,
+                    data_ultima_revisao, periodicidade_revisao_meses
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    dados.matricula,
+                    dados.designacao,
+                    dados.tipo_motorizacao,
+                    dados.lugares,
+                    dados.autonomia,
+                    dados.unidade_autonomia,
+                    dados.estado,
+                    dados.data_ultima_revisao,
+                    dados.periodicidade_revisao_meses,
+                ),
+            ).fetchone()["id"]
 
-    if dados.equipa_codigo:
-        _associar_equipa(novo_id, dados.equipa_codigo, conn)
+            if dados.equipa_codigo:
+                _associar_equipa(novo_id, dados.equipa_codigo, conn)
 
-    return _obter_viatura(novo_id, conn)
+            viatura = _obter_viatura(novo_id, conn)
+    except UniqueViolation as erro:
+        raise HTTPException(status_code=409, detail="Já existe uma viatura com esta matrícula.") from erro
+
+    return viatura
 
 
 @router.get("/bloqueios", response_model=list[BloqueioViaturaResumo])
@@ -144,40 +151,74 @@ def editar(
     conn=Depends(get_conn),
     utilizador: dict = Depends(get_current_user),
 ):
-    cursor = conn.execute(
-        """
-        UPDATE viatura
-        SET matricula = %s,
-            designacao = %s,
-            tipo_motorizacao = %s,
-            lugares = %s,
-            autonomia = %s,
-            unidade_autonomia = %s,
-            estado = %s,
-            data_ultima_revisao = %s,
-            periodicidade_revisao_meses = %s
-        WHERE id = %s
-        """,
-        (
-            dados.matricula,
-            dados.designacao,
-            dados.tipo_motorizacao,
-            dados.lugares,
-            dados.autonomia,
-            dados.unidade_autonomia,
-            dados.estado,
-            dados.data_ultima_revisao,
-            dados.periodicidade_revisao_meses,
-            viatura_id,
-        ),
-    )
+    try:
+        with conn.transaction():
+            cursor = conn.execute(
+                """
+                UPDATE viatura
+                SET matricula = %s,
+                    designacao = %s,
+                    tipo_motorizacao = %s,
+                    lugares = %s,
+                    autonomia = %s,
+                    unidade_autonomia = %s,
+                    estado = %s,
+                    data_ultima_revisao = %s,
+                    periodicidade_revisao_meses = %s
+                WHERE id = %s
+                """,
+                (
+                    dados.matricula,
+                    dados.designacao,
+                    dados.tipo_motorizacao,
+                    dados.lugares,
+                    dados.autonomia,
+                    dados.unidade_autonomia,
+                    dados.estado,
+                    dados.data_ultima_revisao,
+                    dados.periodicidade_revisao_meses,
+                    viatura_id,
+                ),
+            )
 
-    if cursor.rowcount == 0:
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Viatura não encontrada")
+
+            _associar_equipa(viatura_id, dados.equipa_codigo, conn)
+            viatura = _obter_viatura(viatura_id, conn)
+    except UniqueViolation as erro:
+        raise HTTPException(status_code=409, detail="Já existe uma viatura com esta matrícula.") from erro
+
+    return viatura
+
+
+@router.delete("/{viatura_id}", status_code=200)
+def apagar(
+    viatura_id: int,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    viatura = conn.execute("SELECT id FROM viatura WHERE id = %s", (viatura_id,)).fetchone()
+    if viatura is None:
         raise HTTPException(status_code=404, detail="Viatura não encontrada")
 
-    _associar_equipa(viatura_id, dados.equipa_codigo, conn)
+    # fk_volta_viatura_id não tem ON DELETE CASCADE: um DELETE físico falha
+    # assim que a viatura tiver qualquer volta associada (mesmo já
+    # concluída, por integridade histórica). Só apaga de facto uma viatura
+    # sem nenhuma volta; caso contrário, marca-a como INATIVA.
+    tem_voltas = conn.execute(
+        "SELECT EXISTS(SELECT 1 FROM volta WHERE viatura_id = %s) AS tem",
+        (viatura_id,),
+    ).fetchone()["tem"]
 
-    return _obter_viatura(viatura_id, conn)
+    if tem_voltas:
+        conn.execute("UPDATE viatura SET estado = 'INATIVA' WHERE id = %s", (viatura_id,))
+        return {"id": viatura_id, "apagada": False, "desativada": True}
+
+    conn.execute("UPDATE equipa SET viatura_habitual_id = NULL WHERE viatura_habitual_id = %s", (viatura_id,))
+    conn.execute("DELETE FROM viatura_bloqueio WHERE viatura_id = %s", (viatura_id,))
+    conn.execute("DELETE FROM viatura WHERE id = %s", (viatura_id,))
+    return {"id": viatura_id, "apagada": True, "desativada": False}
 
 
 @router.post("/{viatura_id}/bloqueios", response_model=BloqueioViaturaResumo, status_code=201)

@@ -22,3 +22,11 @@ export async function updateEquipa(equipaId: number, dados: DadosEquipa): Promis
     body: JSON.stringify(dados),
   });
 }
+
+// Se a equipa tiver histórico (membros, utentes atribuídos ou voltas), o
+// backend desativa-a em vez de apagar fisicamente (devolve "desativada").
+export async function deleteEquipa(equipaId: number): Promise<{ apagada: boolean; desativada: boolean }> {
+  return apiFetch<{ apagada: boolean; desativada: boolean }>(`/equipas/${equipaId}`, {
+    method: 'DELETE',
+  });
+}

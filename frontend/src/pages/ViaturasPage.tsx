@@ -5,6 +5,7 @@ import {
   getViaturas,
   createViatura,
   updateViatura,
+  deleteViatura,
   getBloqueiosViaturas,
   criarBloqueioViatura,
   removerBloqueioViatura,
@@ -21,6 +22,7 @@ import type {
 } from '../types/viatura';
 import type { Equipa } from '../types/equipa';
 import EcraCarregamento from '../components/EcraCarregamento';
+import ModalConfirmacao from '../components/ModalConfirmacao';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 const LABEL_MOTORIZACAO: Record<TipoMotorizacao, string> = {
@@ -73,6 +75,9 @@ const ViaturasPage: React.FC = () => {
   const [viaturaEmEdicao, setViaturaEmEdicao] = useState<Viatura | null>(null);
   const [modoCriacao, setModoCriacao] = useState(false);
   const [aGuardar, setAGuardar] = useState(false);
+  const [aApagarId, setAApagarId] = useState<number | null>(null);
+  const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
+  const [viaturaParaApagar, setViaturaParaApagar] = useState<Viatura | null>(null);
 
   // Modal de bloqueios por dia (impedimentos)
   const [viaturaBloqueiosModal, setViaturaBloqueiosModal] = useState<Viatura | null>(null);
@@ -83,6 +88,8 @@ const ViaturasPage: React.FC = () => {
   const [novoBloqueioMotivo, setNovoBloqueioMotivo] = useState('');
   const [erroBloqueio, setErroBloqueio] = useState<string | null>(null);
   const [aGuardarBloqueio, setAGuardarBloqueio] = useState(false);
+  const [bloqueioParaRemover, setBloqueioParaRemover] = useState<BloqueioViatura | null>(null);
+  const [aRemoverBloqueio, setARemoverBloqueio] = useState(false);
 
   const navigate = useNavigate();
 
@@ -98,7 +105,7 @@ const ViaturasPage: React.FC = () => {
 
   const codigosEquipas =
     equipas.length > 0
-      ? equipas.map((eq) => ({ codigo: eq.codigo, label: eq.designacao ? `Equipa ${eq.codigo} — ${eq.designacao}` : `Equipa ${eq.codigo}` }))
+      ? equipas.map((eq) => ({ codigo: eq.codigo, label: `Equipa ${eq.codigo}` }))
       : [
           { codigo: 'A', label: 'Equipa A' },
           { codigo: 'B', label: 'Equipa B' },
@@ -151,6 +158,31 @@ const ViaturasPage: React.FC = () => {
   const fecharModalEdicao = () => {
     setViaturaEmEdicao(null);
     setModoCriacao(false);
+  };
+
+  const apagarViatura = async (viatura: Viatura) => {
+    setAApagarId(viatura.id);
+    setAvisoApagar(null);
+    try {
+      const resultado = await deleteViatura(viatura.id);
+      if (resultado.apagada) {
+        setViaturas((atuais) => atuais.filter((v) => v.id !== viatura.id));
+      } else {
+        // Tem voltas associadas — o backend desativou-a em vez de apagar.
+        setViaturas((atuais) =>
+          atuais.map((v) => (v.id === viatura.id ? { ...v, estado: 'INATIVA' } : v)),
+        );
+        setAvisoApagar(
+          `A viatura ${viatura.matricula} tem voltas associadas e por isso foi marcada como Inativa em vez de apagada.`,
+        );
+      }
+    } catch (erro) {
+      console.error('Falha ao apagar viatura:', erro);
+      setAvisoApagar('Não foi possível apagar a viatura.');
+    } finally {
+      setAApagarId(null);
+      setViaturaParaApagar(null);
+    }
   };
 
   const abrirModalBloqueios = (viatura: Viatura) => {
@@ -220,9 +252,15 @@ const ViaturasPage: React.FC = () => {
     }
   };
 
-  const handleRemoverBloqueio = async (bloqueioId: number) => {
-    await removerBloqueioViatura(bloqueioId);
-    setBloqueios((prev) => prev.filter((b) => b.id !== bloqueioId));
+  const handleRemoverBloqueio = async (bloqueio: BloqueioViatura) => {
+    setARemoverBloqueio(true);
+    try {
+      await removerBloqueioViatura(bloqueio.id);
+      setBloqueios((prev) => prev.filter((b) => b.id !== bloqueio.id));
+    } finally {
+      setARemoverBloqueio(false);
+      setBloqueioParaRemover(null);
+    }
   };
 
   const viaturasFiltradas =
@@ -260,6 +298,13 @@ const ViaturasPage: React.FC = () => {
         </button>
       </div>
 
+      {avisoApagar && (
+        <div className="alert alert-warning alert-dismissible" role="alert">
+          {avisoApagar}
+          <button type="button" className="btn-close" onClick={() => setAvisoApagar(null)} aria-label="Fechar"></button>
+        </div>
+      )}
+
       {/* Filtros por Estado */}
       <div className="d-flex flex-wrap gap-2 mb-3">
         {(
@@ -283,86 +328,13 @@ const ViaturasPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Cartão Branco Principal */}
+      {/* Cartão Branco Principal — uma única tabela, com scroll horizontal em
+          ecrãs estreitos (table-responsive do Bootstrap); evita manter duas
+          árvores de JSX com a mesma informação e ações, que só divergem com
+          o tempo (já aconteceu: uma ação nova fica num sítio e esquece-se do
+          outro). */}
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
-        {/* Lista em cartões — só em mobile (<md) */}
-        <div className="d-md-none">
-          {viaturasFiltradas.map((viatura) => {
-            const bloqueadaHoje = viaturaBloqueadaNoDia(bloqueios, viatura.id, hojeIso);
-            const totalBloqueios = contarBloqueiosFuturos(viatura.id);
-            return (
-              <div key={viatura.id} className="d-flex align-items-center gap-2 p-3 border-bottom">
-                <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                  <div className="fw-medium text-dark text-truncate">
-                    {viatura.matricula} — {viatura.designacao ?? 'Sem modelo'}
-                  </div>
-                  <div className="text-muted small mt-1">
-                    {LABEL_MOTORIZACAO[viatura.tipo_motorizacao] ?? viatura.tipo_motorizacao}
-                    {viatura.capacidade_deposito ? ` (${viatura.capacidade_deposito})` : ''} ·{' '}
-                    {viatura.autonomia ?? '—'}{' '}
-                    {viatura.unidade_autonomia === 'KM'
-                      ? 'km'
-                      : viatura.unidade_autonomia === 'PERCENTAGEM'
-                        ? '%'
-                        : ''}{' '}
-                    · {viatura.lugares} lug.
-                  </div>
-                  <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
-                    {getBadgeEstado(viatura.estado)}
-                    {bloqueadaHoje && (
-                      <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
-                        Bloqueada hoje
-                      </span>
-                    )}
-                    {viatura.equipa_codigo ? (
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm p-0 text-decoration-none text-success small fw-medium"
-                        onClick={() => navigate('/equipas')}
-                      >
-                        {nomeDaEquipa(viatura.equipa_codigo)}
-                      </button>
-                    ) : (
-                      <span className="text-muted small">Sem equipa</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0 position-relative"
-                  title="Bloqueios / impedimentos por dia"
-                  onClick={() => abrirModalBloqueios(viatura)}
-                >
-                  <i className="bi bi-calendar-x"></i>
-                  {totalBloqueios > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                      {totalBloqueios}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
-                  title="Agendar no calendário"
-                  onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
-                >
-                  <i className="bi bi-calendar3"></i>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light text-secondary shadow-sm border flex-shrink-0"
-                  title="Editar viatura"
-                  onClick={() => abrirModalEdicao(viatura)}
-                >
-                  <i className="bi bi-pencil"></i>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Tabela de Dados — a partir de md */}
-        <div className="table-responsive flex-grow-1 d-none d-md-block">
+        <div className="table-responsive flex-grow-1">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
@@ -451,11 +423,20 @@ const ViaturasPage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        className="btn btn-sm btn-light text-secondary shadow-sm border"
+                        className="btn btn-sm btn-light text-secondary shadow-sm border me-1"
                         title="Editar viatura"
                         onClick={() => abrirModalEdicao(viatura)}
                       >
                         <i className="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-light text-danger shadow-sm border"
+                        title="Apagar viatura"
+                        disabled={aApagarId === viatura.id}
+                        onClick={() => setViaturaParaApagar(viatura)}
+                      >
+                        <i className="bi bi-trash"></i>
                       </button>
                     </td>
                   </tr>
@@ -825,7 +806,7 @@ const ViaturasPage: React.FC = () => {
                           type="button"
                           className="btn btn-sm btn-outline-danger"
                           title="Remover bloqueio"
-                          onClick={() => handleRemoverBloqueio(bloq.id)}
+                          onClick={() => setBloqueioParaRemover(bloq)}
                         >
                           <i className="bi bi-trash"></i>
                         </button>
@@ -856,6 +837,44 @@ const ViaturasPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ModalConfirmacao
+        aberto={viaturaParaApagar !== null}
+        titulo="Apagar viatura"
+        mensagem={
+          viaturaParaApagar && (
+            <>
+              Apagar a viatura <strong>{viaturaParaApagar.matricula}</strong>? Se tiver voltas associadas,
+              fica marcada como Inativa em vez de apagada.
+            </>
+          )
+        }
+        aProcessar={viaturaParaApagar !== null && aApagarId === viaturaParaApagar.id}
+        onConfirmar={() => viaturaParaApagar && apagarViatura(viaturaParaApagar)}
+        onCancelar={() => setViaturaParaApagar(null)}
+      />
+
+      <ModalConfirmacao
+        aberto={bloqueioParaRemover !== null}
+        titulo="Remover bloqueio"
+        mensagem={
+          bloqueioParaRemover && (
+            <>
+              Remover o bloqueio de{' '}
+              <strong>
+                {bloqueioParaRemover.data_inicio === bloqueioParaRemover.data_fim
+                  ? formatarDataPt(bloqueioParaRemover.data_inicio)
+                  : `${formatarDataPt(bloqueioParaRemover.data_inicio)} a ${formatarDataPt(bloqueioParaRemover.data_fim)}`}
+              </strong>
+              ? A viatura volta a ficar disponível nesse período.
+            </>
+          )
+        }
+        textoConfirmar="Remover"
+        aProcessar={aRemoverBloqueio}
+        onConfirmar={() => bloqueioParaRemover && handleRemoverBloqueio(bloqueioParaRemover)}
+        onCancelar={() => setBloqueioParaRemover(null)}
+      />
     </div>
   );
 };
