@@ -10,6 +10,7 @@ import { getViaturas } from '../services/viaturaService';
 import type { DadosEquipa, Equipa, ProfissionalEquipa } from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
+import ModalConfirmacao from '../components/ModalConfirmacao';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 interface FormularioEquipa {
@@ -35,6 +36,7 @@ const EquipasPage: React.FC = () => {
   const [aGuardar, setAGuardar] = useState(false);
   const [aApagarId, setAApagarId] = useState<number | null>(null);
   const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
+  const [equipaParaApagar, setEquipaParaApagar] = useState<Equipa | null>(null);
 
   useEffect(() => {
     comAtrasoMinimo(
@@ -78,7 +80,6 @@ const EquipasPage: React.FC = () => {
   };
 
   const apagarEquipa = async (equipa: Equipa) => {
-    if (!window.confirm(`Apagar a Equipa ${equipa.codigo}?`)) return;
     setAApagarId(equipa.id);
     setAvisoApagar(null);
     try {
@@ -99,6 +100,7 @@ const EquipasPage: React.FC = () => {
       setAvisoApagar('Não foi possível apagar a equipa.');
     } finally {
       setAApagarId(null);
+      setEquipaParaApagar(null);
     }
   };
 
@@ -224,7 +226,7 @@ const EquipasPage: React.FC = () => {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-danger"
-                    onClick={() => apagarEquipa(equipa)}
+                    onClick={() => setEquipaParaApagar(equipa)}
                     disabled={aApagarId === equipa.id}
                     aria-label={`Apagar equipa ${equipa.codigo}`}
                     title={`Apagar equipa ${equipa.codigo}`}
@@ -392,6 +394,21 @@ const EquipasPage: React.FC = () => {
         </div>
       )}
 
+      <ModalConfirmacao
+        aberto={equipaParaApagar !== null}
+        titulo="Apagar equipa"
+        mensagem={
+          equipaParaApagar && (
+            <>
+              Apagar a Equipa <strong>{equipaParaApagar.codigo}</strong>? Se tiver histórico associado
+              (membros, utentes ou voltas), fica desativada em vez de apagada.
+            </>
+          )
+        }
+        aProcessar={equipaParaApagar !== null && aApagarId === equipaParaApagar.id}
+        onConfirmar={() => equipaParaApagar && apagarEquipa(equipaParaApagar)}
+        onCancelar={() => setEquipaParaApagar(null)}
+      />
     </div>
   );
 };

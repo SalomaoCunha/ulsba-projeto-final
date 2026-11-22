@@ -22,6 +22,7 @@ import type {
 } from '../types/viatura';
 import type { Equipa } from '../types/equipa';
 import EcraCarregamento from '../components/EcraCarregamento';
+import ModalConfirmacao from '../components/ModalConfirmacao';
 import { comAtrasoMinimo } from '../utils/comAtrasoMinimo';
 
 const LABEL_MOTORIZACAO: Record<TipoMotorizacao, string> = {
@@ -76,6 +77,7 @@ const ViaturasPage: React.FC = () => {
   const [aGuardar, setAGuardar] = useState(false);
   const [aApagarId, setAApagarId] = useState<number | null>(null);
   const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
+  const [viaturaParaApagar, setViaturaParaApagar] = useState<Viatura | null>(null);
 
   // Modal de bloqueios por dia (impedimentos)
   const [viaturaBloqueiosModal, setViaturaBloqueiosModal] = useState<Viatura | null>(null);
@@ -86,6 +88,8 @@ const ViaturasPage: React.FC = () => {
   const [novoBloqueioMotivo, setNovoBloqueioMotivo] = useState('');
   const [erroBloqueio, setErroBloqueio] = useState<string | null>(null);
   const [aGuardarBloqueio, setAGuardarBloqueio] = useState(false);
+  const [bloqueioParaRemover, setBloqueioParaRemover] = useState<BloqueioViatura | null>(null);
+  const [aRemoverBloqueio, setARemoverBloqueio] = useState(false);
 
   const navigate = useNavigate();
 
@@ -157,7 +161,6 @@ const ViaturasPage: React.FC = () => {
   };
 
   const apagarViatura = async (viatura: Viatura) => {
-    if (!window.confirm(`Apagar a viatura ${viatura.matricula}?`)) return;
     setAApagarId(viatura.id);
     setAvisoApagar(null);
     try {
@@ -178,6 +181,7 @@ const ViaturasPage: React.FC = () => {
       setAvisoApagar('Não foi possível apagar a viatura.');
     } finally {
       setAApagarId(null);
+      setViaturaParaApagar(null);
     }
   };
 
@@ -248,9 +252,15 @@ const ViaturasPage: React.FC = () => {
     }
   };
 
-  const handleRemoverBloqueio = async (bloqueioId: number) => {
-    await removerBloqueioViatura(bloqueioId);
-    setBloqueios((prev) => prev.filter((b) => b.id !== bloqueioId));
+  const handleRemoverBloqueio = async (bloqueio: BloqueioViatura) => {
+    setARemoverBloqueio(true);
+    try {
+      await removerBloqueioViatura(bloqueio.id);
+      setBloqueios((prev) => prev.filter((b) => b.id !== bloqueio.id));
+    } finally {
+      setARemoverBloqueio(false);
+      setBloqueioParaRemover(null);
+    }
   };
 
   const viaturasFiltradas =
@@ -424,7 +434,7 @@ const ViaturasPage: React.FC = () => {
                         className="btn btn-sm btn-light text-danger shadow-sm border"
                         title="Apagar viatura"
                         disabled={aApagarId === viatura.id}
-                        onClick={() => apagarViatura(viatura)}
+                        onClick={() => setViaturaParaApagar(viatura)}
                       >
                         <i className="bi bi-trash"></i>
                       </button>
@@ -796,7 +806,7 @@ const ViaturasPage: React.FC = () => {
                           type="button"
                           className="btn btn-sm btn-outline-danger"
                           title="Remover bloqueio"
-                          onClick={() => handleRemoverBloqueio(bloq.id)}
+                          onClick={() => setBloqueioParaRemover(bloq)}
                         >
                           <i className="bi bi-trash"></i>
                         </button>
@@ -827,6 +837,44 @@ const ViaturasPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ModalConfirmacao
+        aberto={viaturaParaApagar !== null}
+        titulo="Apagar viatura"
+        mensagem={
+          viaturaParaApagar && (
+            <>
+              Apagar a viatura <strong>{viaturaParaApagar.matricula}</strong>? Se tiver voltas associadas,
+              fica marcada como Inativa em vez de apagada.
+            </>
+          )
+        }
+        aProcessar={viaturaParaApagar !== null && aApagarId === viaturaParaApagar.id}
+        onConfirmar={() => viaturaParaApagar && apagarViatura(viaturaParaApagar)}
+        onCancelar={() => setViaturaParaApagar(null)}
+      />
+
+      <ModalConfirmacao
+        aberto={bloqueioParaRemover !== null}
+        titulo="Remover bloqueio"
+        mensagem={
+          bloqueioParaRemover && (
+            <>
+              Remover o bloqueio de{' '}
+              <strong>
+                {bloqueioParaRemover.data_inicio === bloqueioParaRemover.data_fim
+                  ? formatarDataPt(bloqueioParaRemover.data_inicio)
+                  : `${formatarDataPt(bloqueioParaRemover.data_inicio)} a ${formatarDataPt(bloqueioParaRemover.data_fim)}`}
+              </strong>
+              ? A viatura volta a ficar disponível nesse período.
+            </>
+          )
+        }
+        textoConfirmar="Remover"
+        aProcessar={aRemoverBloqueio}
+        onConfirmar={() => bloqueioParaRemover && handleRemoverBloqueio(bloqueioParaRemover)}
+        onCancelar={() => setBloqueioParaRemover(null)}
+      />
     </div>
   );
 };

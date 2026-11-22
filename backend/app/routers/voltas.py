@@ -307,7 +307,29 @@ def criar(dados: VoltaCriar, conn=Depends(get_conn), utilizador: dict = Depends(
     return {"id": volta_id}
 
 
-def _mensagem_conflito_confirmacao(erro: psycopg.Error) -> str:
+def _procurar_volta_em_conflito(volta_id: int, campo: str, conn):
+    # Devolve a outra volta (CONFIRMADA/EM_CURSO) que partilha a mesma
+    # viatura/equipa desta e cujo horário se sobrepõe — para a mensagem de
+    # erro poder dizer exatamente qual é o conflito, em vez de só recusar.
+    coluna = "viatura_id" if campo == "viatura" else "equipa_id"
+    return conn.execute(
+        f"""
+        SELECT v2.id, v2.partida_prevista, v2.regresso_previsto
+        FROM volta v1
+        JOIN volta v2
+            ON v2.{coluna} = v1.{coluna}
+           AND v2.id != v1.id
+           AND v2.estado IN ('CONFIRMADA', 'EM_CURSO')
+           AND tstzrange(v2.partida_prevista, v2.regresso_previsto)
+               && tstzrange(v1.partida_prevista, v1.regresso_previsto)
+        WHERE v1.id = %s
+        LIMIT 1
+        """,  # nosec: `coluna` vem só de uma constante interna, nunca de input do pedido
+        (volta_id,),
+    ).fetchone()
+
+
+def _mensagem_conflito_confirmacao(erro: psycopg.Error, volta_id: int, conn) -> str:
     # ex_volta_viatura_sem_sobreposicao / ex_volta_equipa_sem_sobreposicao
     # (migração 0001) só se aplicam a voltas CONFIRMADA/EM_CURSO — por isso
     # só disparam agora, ao confirmar, não na criação em RASCUNHO. Ao
@@ -315,10 +337,22 @@ def _mensagem_conflito_confirmacao(erro: psycopg.Error) -> str:
     # EXCLUDE dá erro imediato no próprio INSERT/UPDATE, não só no commit.
     texto = str(erro)
     if "ex_volta_viatura_sem_sobreposicao" in texto:
-        return "Esta viatura já está confirmada noutra volta com horário sobreposto nesta data."
-    if "ex_volta_equipa_sem_sobreposicao" in texto:
-        return "Esta equipa já está confirmada noutra volta com horário sobreposto nesta data."
-    return texto.split("\n", 1)[0]
+        campo = "viatura"
+    elif "ex_volta_equipa_sem_sobreposicao" in texto:
+        campo = "equipa"
+    else:
+        return texto.split("\n", 1)[0]
+
+    conflito = _procurar_volta_em_conflito(volta_id, campo, conn)
+    if conflito is None:
+        return f"Esta {campo} já está confirmada noutra volta com horário sobreposto nesta data."
+
+    inicio = conflito["partida_prevista"].astimezone(LISBOA).strftime("%H:%M")
+    fim = conflito["regresso_previsto"].astimezone(LISBOA).strftime("%H:%M")
+    return (
+        f"Esta {campo} já está confirmada na Volta #{conflito['id']}, das {inicio} às {fim}. "
+        f"Ajusta o horário ou escolhe outra {campo} antes de confirmar."
+    )
 
 
 def _commit_ou_erro(conn):
@@ -360,7 +394,7 @@ def confirmar(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(
         )
     except psycopg.Error as erro:
         conn.rollback()
-        raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro)) from erro
+        raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro, volta_id, conn)) from erro
 
     _commit_ou_erro(conn)
 
@@ -429,7 +463,7 @@ def concluir(volta_id: int, conn=Depends(get_conn), utilizador: dict = Depends(g
             )
         except psycopg.Error as erro:
             conn.rollback()
-            raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro)) from erro
+            raise HTTPException(status_code=409, detail=_mensagem_conflito_confirmacao(erro, volta_id, conn)) from erro
 
     _concluir_visitas_pendentes(volta_id, conn)
 
