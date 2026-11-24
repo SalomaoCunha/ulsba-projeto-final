@@ -507,9 +507,21 @@ h1, h2, h3, h4, h5, h6 {
    Calendar/evento — uma regra !important numa folha de estilos tem
    prioridade sobre um style inline sem !important. */
 @media (max-width: 767.98px) {
+  /* Em mobile a altura NÃO pode ser fixa (65vh): as linhas do mês têm
+     min-height própria e, com um mês de 5–6 semanas, ultrapassavam a caixa
+     do calendário. Como as linhas têm overflow visível, transbordavam por
+     cima da legenda (que ficava por baixo, na posição da caixa de 65vh).
+     Com altura automática a caixa do calendário cresce com as linhas e a
+     legenda é empurrada para baixo, sem sobreposição; o scroll é o da
+     página, tal como em desktop. */
   .agenda-calendar-scroll .rbc-calendar {
-    height: 65vh !important;
-    min-height: 420px !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .agenda-calendar-scroll .rbc-month-view {
+    height: auto;
+    flex: 0 0 auto;
   }
 
   .agenda-calendar-scroll .rbc-event {
