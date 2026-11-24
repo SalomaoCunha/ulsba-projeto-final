@@ -470,6 +470,16 @@ h1, h2, h3, h4, h5, h6 {
   .agenda-evento {
     display: none;
   }
+
+  .agenda-evento-mobile-item.agenda-evento-mobile-item {
+    min-height: 56px;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .agenda-evento-mobile-data {
+    min-width: 4.5rem;
+    text-transform: capitalize;
+  }
 }
 
 /* ===== Cabeçalhos de tabela (maiúsculas pequenas) ===== */
