@@ -302,6 +302,14 @@ const ViaturasPage: React.FC = () => {
   const viaturasFiltradas =
     filtroEstado === 'TODAS' ? viaturas : viaturas.filter((v) => v.estado === filtroEstado);
 
+  // Estado de bloqueio resolvido uma única vez por viatura, para a tabela
+  // (desktop) e os cartões (mobile) partilharem os mesmos cálculos.
+  const viaturasComEstado = viaturasFiltradas.map((viatura) => ({
+    viatura,
+    bloqueadaHoje: viaturaBloqueadaNoDia(bloqueios, viatura.id, hojeIso),
+    totalBloqueios: contarBloqueiosFuturos(viatura.id),
+  }));
+
   // Bloqueios da viatura atualmente aberta no modal de impedimentos,
   // ordenados por data de início.
   const bloqueiosDaViaturaModal = viaturaBloqueiosModal
@@ -366,13 +374,132 @@ const ViaturasPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Cartão Branco Principal — uma única tabela, com scroll horizontal em
-          ecrãs estreitos (table-responsive do Bootstrap); evita manter duas
-          árvores de JSX com a mesma informação e ações, que só divergem com
-          o tempo (já aconteceu: uma ação nova fica num sítio e esquece-se do
-          outro). */}
+      {/* Cartão Branco Principal — tabela em desktop e cartões em mobile.
+          As duas vistas partilham os mesmos helpers e cálculos (viaturasComEstado). */}
       <div className="card shadow-sm border-0 flex-grow-1 bg-white d-flex flex-column overflow-hidden ulsba-table-card-shell">
-        <div className="table-responsive flex-grow-1">
+
+        {/* Cartões — só em mobile (<md): leitura e toque sem scroll horizontal */}
+        <div className="d-md-none">
+          {viaturasComEstado.length === 0 ? (
+            <div className="p-3 text-muted small">Sem viaturas para mostrar.</div>
+          ) : (
+            viaturasComEstado.map(({ viatura, bloqueadaHoje, totalBloqueios }) => (
+              <div key={viatura.id} className="p-3 border-bottom">
+                <div className="d-flex justify-content-between align-items-start gap-2">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="fw-semibold text-dark text-truncate">{viatura.matricula}</div>
+                    <div className="small text-muted text-truncate">{viatura.designacao ?? 'Sem modelo'}</div>
+                  </div>
+                  <div className="d-flex flex-wrap justify-content-end gap-1 flex-shrink-0">
+                    {getBadgeEstado(viatura.estado)}
+                    {bloqueadaHoje && (
+                      <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2">
+                        Bloqueada hoje
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="d-flex flex-wrap gap-3 mt-2 small text-muted">
+                  <span>
+                    <i className="bi bi-fuel-pump me-1"></i>
+                    {LABEL_MOTORIZACAO[viatura.tipo_motorizacao] ?? viatura.tipo_motorizacao}
+                    {viatura.capacidade_deposito ? ` (${viatura.capacidade_deposito})` : ''}
+                  </span>
+                  <span>
+                    <i className="bi bi-speedometer2 me-1"></i>
+                    {viatura.autonomia ?? '—'}{' '}
+                    {viatura.unidade_autonomia === 'KM'
+                      ? 'km'
+                      : viatura.unidade_autonomia === 'PERCENTAGEM'
+                        ? '%'
+                        : ''}
+                  </span>
+                  <span>
+                    <i className="bi bi-people me-1"></i>
+                    {viatura.lugares} lugares
+                  </span>
+                </div>
+
+                <div className="d-flex flex-wrap gap-3 mt-1 small text-muted">
+                  <span>
+                    <i className="bi bi-people-fill me-1"></i>
+                    {viatura.equipa_codigo ? (
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm p-0 text-decoration-none text-success fw-medium"
+                        onClick={() => navigate('/equipas')}
+                      >
+                        {nomeDaEquipa(viatura.equipa_codigo)}
+                      </button>
+                    ) : (
+                      <span>Sem equipa atribuída</span>
+                    )}
+                  </span>
+                  <span>
+                    <i className="bi bi-calendar-check me-1"></i>
+                    Próxima revisão: {calcularProximaRevisao(viatura)}
+                  </span>
+                </div>
+
+                {totalBloqueios > 0 && (
+                  <div className="mt-1">
+                    <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">
+                      {totalBloqueios} {totalBloqueios === 1 ? 'bloqueio' : 'bloqueios'}
+                    </span>
+                  </div>
+                )}
+
+                <div className="viaturas-mobile-actions d-flex flex-wrap gap-2 mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light border text-danger flex-fill py-2"
+                    title="Gerir bloqueios / impedimentos por dia"
+                    aria-label={`Gerir bloqueios de ${viatura.matricula}`}
+                    onClick={() => abrirModalBloqueios(viatura)}
+                  >
+                    <i className="bi bi-calendar-x me-1"></i>
+                    <span className="d-none d-sm-inline">Bloqueios</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light border text-secondary flex-fill py-2"
+                    title="Agendar no calendário"
+                    aria-label={`Agendar ${viatura.matricula} no calendário`}
+                    onClick={() => navigate(`/agenda?viaturaId=${viatura.id}`)}
+                  >
+                    <i className="bi bi-calendar3 me-1"></i>
+                    <span className="d-none d-sm-inline">Calendário</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light border text-secondary flex-fill py-2"
+                    title="Editar viatura"
+                    aria-label={`Editar ${viatura.matricula}`}
+                    onClick={() => abrirModalEdicao(viatura)}
+                  >
+                    <i className="bi bi-pencil me-1"></i>
+                    <span className="d-none d-sm-inline">Editar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light border text-danger flex-fill py-2"
+                    title="Apagar viatura"
+                    aria-label={`Apagar ${viatura.matricula}`}
+                    disabled={aApagarId === viatura.id}
+                    onClick={() => setViaturaParaApagar(viatura)}
+                  >
+                    <i className="bi bi-trash me-1"></i>
+                    <span className="d-none d-sm-inline">Apagar</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tabela — a partir de md */}
+        <div className="table-responsive flex-grow-1 d-none d-md-block">
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light text-muted small">
               <tr>
@@ -388,13 +515,7 @@ const ViaturasPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="border-top-0">
-              {viaturasFiltradas.map((viatura) => {
-                // bloqueadaHoje: a viatura tem um bloqueio a cobrir o dia de hoje
-                // (badge vermelho "Bloqueada hoje"). totalBloqueios: contagem de
-                // bloqueios atuais/futuros, mostrada como link para o modal de impedimentos.
-                const bloqueadaHoje = viaturaBloqueadaNoDia(bloqueios, viatura.id, hojeIso);
-                const totalBloqueios = contarBloqueiosFuturos(viatura.id);
-
+              {viaturasComEstado.map(({ viatura, bloqueadaHoje, totalBloqueios }) => {
                 return (
                   <tr key={viatura.id}>
                     <td className="ps-4 py-3 fw-medium text-dark">{viatura.matricula}</td>

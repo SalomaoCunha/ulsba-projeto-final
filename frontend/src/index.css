@@ -309,6 +309,10 @@ h1, h2, h3, h4, h5, h6 {
     overflow: visible !important;
   }
 
+  .viaturas-mobile-actions .btn {
+    min-height: 44px;
+  }
+
   .dashboard-row {
     overflow: visible !important;
   }
@@ -335,8 +339,12 @@ h1, h2, h3, h4, h5, h6 {
     max-height: none !important;
   }
 
+  /* 420px (não 380px) para corresponder ao min-height:420px do cartão do
+     MapaLeaflet (ver MapaLeaflet.tsx) — com a coluna mais baixa do que esse
+     mínimo, o overflow:hidden de .dashboard-col (acima) recortava ~40px do
+     fundo do mapa (incluindo controlos), sem barra de scroll a avisar. */
   .dashboard-col-mapa.dashboard-col-mapa {
-    height: 380px !important;
+    height: 420px !important;
   }
 
   .dashboard-col-prioridades.dashboard-col-prioridades {
