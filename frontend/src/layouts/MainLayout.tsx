@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { getUtilizadorAtual, logout } from '../services/authService';
 import type { UtilizadorAtual } from '../services/authService';
@@ -40,11 +40,92 @@ const MainLayout: React.FC = () => {
   const [menuAberto, setMenuAberto] = useState(false); // menu lateral aberto em ecrãs pequenos (mobile)
   const [perfilAberto, setPerfilAberto] = useState(false); // dropdown do perfil (canto superior direito) aberto
   const [utilizador, setUtilizador] = useState<UtilizadorAtual | null>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const menuEstavaAberto = useRef(false);
 
   // Carrega o utilizador autenticado uma única vez, ao montar o layout.
   useEffect(() => {
     getUtilizadorAtual().then(setUtilizador).catch((erro) => console.error('Falha ao carregar utilizador autenticado:', erro));
   }, []);
+
+  // Fecha o drawer ao passar para desktop, para não deixar um "dialog" ativo
+  // (com scroll bloqueado) sobre um menu que aí já é fixo e visível.
+  useEffect(() => {
+    const ecraLargo = window.matchMedia('(min-width: 992px)');
+    const aoMudarEcra = () => {
+      if (ecraLargo.matches) setMenuAberto(false);
+    };
+    ecraLargo.addEventListener('change', aoMudarEcra);
+    return () => ecraLargo.removeEventListener('change', aoMudarEcra);
+  }, []);
+
+  // Comportamento do drawer acessível: foco inicial no menu, Escape para
+  // fechar, Tab preso aos controlos do drawer, scroll do body bloqueado e
+  // devolução do foco ao botão que abriu.
+  useEffect(() => {
+    const estavaAberto = menuEstavaAberto.current;
+    menuEstavaAberto.current = menuAberto;
+
+    if (!menuAberto) {
+      if (estavaAberto && menuBtnRef.current && menuBtnRef.current.getClientRects().length > 0) {
+        menuBtnRef.current.focus();
+      }
+      return;
+    }
+
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawer.focus();
+
+    const focaveis = () =>
+      Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.getClientRects().length > 0);
+
+    const aoPremirTecla = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') {
+        evento.preventDefault();
+        setMenuAberto(false);
+        return;
+      }
+      if (evento.key !== 'Tab') return;
+
+      const lista = focaveis();
+      if (lista.length === 0) {
+        evento.preventDefault();
+        drawer.focus();
+        return;
+      }
+      const primeiro = lista[0];
+      const ultimo = lista[lista.length - 1];
+      const ativo = document.activeElement as HTMLElement | null;
+
+      if (!ativo || !drawer.contains(ativo) || ativo === drawer) {
+        evento.preventDefault();
+        (evento.shiftKey ? ultimo : primeiro).focus();
+        return;
+      }
+      if (evento.shiftKey && ativo === primeiro) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && ativo === ultimo) {
+        evento.preventDefault();
+        primeiro.focus();
+      }
+    };
+
+    document.addEventListener('keydown', aoPremirTecla);
+    return () => {
+      document.removeEventListener('keydown', aoPremirTecla);
+      document.body.style.overflow = overflowAnterior;
+    };
+  }, [menuAberto]);
 
   // Destaca visualmente o item do menu correspondente à rota atual.
   const getMenuClass = (path: string) => {
@@ -55,10 +136,28 @@ const MainLayout: React.FC = () => {
     <div className="d-flex vh-100 bg-light">
 
       {/* Fundo escurecido atrás do menu, só visível em mobile com o menu aberto */}
-      {menuAberto && <div className="side-backdrop" onClick={() => setMenuAberto(false)} />}
+      {menuAberto && <div className="side-backdrop" onClick={() => setMenuAberto(false)} aria-hidden="true" />}
 
-      {/* Menu Lateral (Sidebar) — fixo em ecrãs largos, retrátil abaixo de 992px */}
-      <aside className={`side-panel ${menuAberto ? 'side-panel-aberto' : ''}`}>
+      {/* Menu Lateral (Sidebar) — fixo em ecrãs largos, retrátil abaixo de 992px.
+          Só recebe semântica de dialog/modal enquanto está aberto em mobile. */}
+      <aside
+        id="ulsba-menu-lateral"
+        ref={drawerRef}
+        className={`side-panel ${menuAberto ? 'side-panel-aberto' : ''}`}
+        role={menuAberto ? 'dialog' : undefined}
+        aria-modal={menuAberto ? true : undefined}
+        aria-label={menuAberto ? 'Menu de navegação' : undefined}
+        tabIndex={menuAberto ? -1 : undefined}
+      >
+        <button
+          type="button"
+          className="side-drawer-fechar d-lg-none"
+          onClick={() => setMenuAberto(false)}
+          aria-label="Fechar menu"
+        >
+          <i className="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+
         <div className="brand-lockup">
           <div className="brand-symbol">
             <i className="bi bi-heart-pulse"></i>
@@ -92,11 +191,15 @@ const MainLayout: React.FC = () => {
         <header className="bg-white border-bottom d-flex align-items-center justify-content-between px-3 px-md-4 py-3 py-md-2 shadow-sm ulsba-topbar">
           <div className="d-flex align-items-center gap-2 gap-md-3">
             <button
+              ref={menuBtnRef}
+              type="button"
               className="d-lg-none d-flex align-items-center justify-content-center flex-shrink-0 border-0 ulsba-menu-btn"
               onClick={() => setMenuAberto(true)}
               aria-label="Abrir menu"
+              aria-expanded={menuAberto}
+              aria-controls="ulsba-menu-lateral"
             >
-              <i className="bi bi-list"></i>
+              <i className="bi bi-list" aria-hidden="true"></i>
             </button>
 
             <nav aria-label="breadcrumb" className="d-none d-md-block">

@@ -240,6 +240,36 @@ h1, h2, h3, h4, h5, h6 {
   padding: 18px 17px 23px;
 }
 
+/* Botão Fechar do drawer — só visível no modo retrátil (<992px).
+   Alvo de toque de 44x44 e anel de foco visível sobre o fundo escuro. */
+.side-drawer-fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef4f1;
+  font-size: 18px;
+  z-index: 1;
+}
+
+.side-drawer-fechar:hover,
+.side-drawer-fechar:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.side-drawer-fechar:focus-visible {
+  outline: 2px solid #89d6ab;
+  outline-offset: 2px;
+}
+
 .side-foot {
   color: #6f9385;
   text-align: center;
@@ -256,12 +286,26 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     z-index: 1045;
     transform: translateX(-100%);
-    transition: transform 0.22s ease;
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
   }
 
   .side-panel.side-panel-aberto {
     transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.22s ease, visibility 0s;
+  }
+
+  /* Foco programático no painel (ao abrir o drawer) sem anel no contentor;
+     os controlos mantêm os seus próprios indicadores de foco. */
+  .side-panel:focus {
+    outline: none;
+  }
+
+  /* Espaço para o botão Fechar não sobrepor a marca. */
+  .brand-lockup {
+    padding-right: 68px;
   }
 }
 
@@ -395,11 +439,12 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Botão do menu — valores tirados do CSS da referência (.mobile-menu) */
+/* Botão do menu — valores tirados do CSS da referência (.mobile-menu).
+   44x44 para cumprir o alvo de toque mínimo em mobile. */
 .ulsba-menu-btn {
-  width: 34px;
-  height: 34px;
-  padding: 8px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
   border-radius: 8px;
   background: var(--ulsba-verde-claro);
   color: var(--ulsba-verde-claro-texto);
@@ -410,6 +455,11 @@ h1, h2, h3, h4, h5, h6 {
 .ulsba-menu-btn:hover {
   background: var(--ulsba-verde-claro);
   color: var(--ulsba-verde-claro-texto);
+}
+
+.ulsba-menu-btn:focus-visible {
+  outline: 2px solid #2d755d;
+  outline-offset: 2px;
 }
 
 /* ===== Calendário de voltas (Agenda) — responsividade ===== */

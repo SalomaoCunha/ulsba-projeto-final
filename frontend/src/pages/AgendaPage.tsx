@@ -167,11 +167,23 @@ function EventoCalendario({ event }: EventProps<EventoAgenda>) {
 function BarraCalendario({ label, onNavigate }: ToolbarProps<EventoAgenda>) {
   return (
     <div className="d-flex align-items-center justify-content-center gap-3 mb-3">
-      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => onNavigate('PREV')}>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary"
+        aria-label="Mês anterior"
+        style={{ minWidth: '44px', minHeight: '44px' }}
+        onClick={() => onNavigate('PREV')}
+      >
         <i className="bi bi-chevron-left"></i>
       </button>
       <span className="fw-medium text-capitalize">{label}</span>
-      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => onNavigate('NEXT')}>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary"
+        aria-label="Mês seguinte"
+        style={{ minWidth: '44px', minHeight: '44px' }}
+        onClick={() => onNavigate('NEXT')}
+      >
         <i className="bi bi-chevron-right"></i>
       </button>
     </div>
@@ -544,11 +556,13 @@ const AgendaPage = () => {
       </div>
 
       {/* Separadores de perspetiva: Unidade / Profissional / Utente (RF19) */}
-      <ul className="nav nav-pills mb-3">
+      <ul className="nav nav-pills flex-wrap gap-2 mb-3" aria-label="Perspetiva da agenda">
         <li className="nav-item">
           <button
             type="button"
             className={`nav-link ${vista === 'unidade' ? 'active' : ''}`}
+            aria-pressed={vista === 'unidade'}
+            style={{ minHeight: '44px' }}
             onClick={() => mudarVista('unidade')}
           >
             Unidade
@@ -558,6 +572,8 @@ const AgendaPage = () => {
           <button
             type="button"
             className={`nav-link ${vista === 'profissional' ? 'active' : ''}`}
+            aria-pressed={vista === 'profissional'}
+            style={{ minHeight: '44px' }}
             onClick={() => mudarVista('profissional')}
           >
             Profissional
@@ -567,6 +583,8 @@ const AgendaPage = () => {
           <button
             type="button"
             className={`nav-link ${vista === 'utente' ? 'active' : ''}`}
+            aria-pressed={vista === 'utente'}
+            style={{ minHeight: '44px' }}
             onClick={() => mudarVista('utente')}
           >
             Utente
