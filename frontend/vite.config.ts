@@ -16,4 +16,10 @@ export default defineConfig({
       usePolling: true,
     },
   },
+  test: {
+    // e2e/ contém specs do Playwright (test.beforeEach do @playwright/test),
+    // que o vitest não consegue executar; sem este exclude, "npm run test"
+    // tenta correr e2e/*.spec.ts e falha com erro de suite.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+  },
 })

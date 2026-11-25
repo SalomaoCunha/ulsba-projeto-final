@@ -246,8 +246,11 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 44px;
-  height: 44px;
+  /* 45px, não 44px: a 44px exatos o arredondamento de subpixel do browser
+     (device pixel ratio fracionário) às vezes mede 43.99...px, falhando o
+     requisito de alvo de toque >=44px nos testes de acessibilidade. */
+  width: 45px;
+  height: 45px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
