@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUtente } from '../services/utenteService';
 import { createLocal, getConcelhos, getLocais } from '../services/localService';
+import { geocodeMorada } from '../services/geocodingService';
 import MapaLeaflet from '../components/MapaLeaflet';
 import { coordenadasEmPortugalContinental } from '../utils/coordenadasPortugal';
 import type { Concelho, Local, NovoLocalPayload, TipoLocalCodigo } from '../types/local';
+
+// Tempo de espera após a última tecla antes de pedir uma sugestão de
+// coordenadas ao Nominatim — evita um pedido por cada caractere escrito.
+const ATRASO_GEOCODING_MS = 700;
 
 const LABEL_GENERO: Record<string, string> = {
   FEMININO: 'Feminino',
@@ -56,6 +61,17 @@ const NovoUtentePage: React.FC = () => {
   // O pino do mapa começa por não estar confirmado: é preciso o utilizador
   // clicar/arrastar no mapa para validar a localização antes de poder guardar.
   const [pontoLocalConfirmado, setPontoLocalConfirmado] = useState(false);
+  // Estado da sugestão automática de coordenadas (Nominatim/OpenStreetMap) a
+  // partir da morada escrita — independente da confirmação do utilizador.
+  const [aSugerirCoordenadas, setASugerirCoordenadas] = useState(false);
+  const [semSugestaoGeocoding, setSemSugestaoGeocoding] = useState(false);
+  // true quando a sugestão atual não é da morada exata, mas sim do centro da
+  // localidade/concelho (fallback usado quando o Nominatim não conhece a rua) —
+  // precisa de mais atenção do utilizador ao confirmar/corrigir o pino.
+  const [sugestaoAproximada, setSugestaoAproximada] = useState(false);
+  // Identifica o pedido de geocodificação mais recente, para ignorar respostas
+  // de pedidos anteriores que cheguem fora de ordem (morada mudou entretanto).
+  const pedidoGeocodingIdRef = useRef(0);
   const [dadosLocal, setDadosLocal] = useState<DadosLocalFormulario>({
     tipo: 'DOMICILIO',
     nome: '',
@@ -86,6 +102,13 @@ const NovoUtentePage: React.FC = () => {
         setLocais(locaisCarregados);
         setConcelhos(concelhosCarregados);
         if (locaisCarregados.length === 0) setModoCriarLocal(true);
+        // Beja é a sede da ULSBA e o concelho mais comum nos locais — pré-seleciona-o
+        // por omissão (o utilizador pode sempre escolher outro) em vez de obrigar a
+        // escolher sempre manualmente.
+        const beja = concelhosCarregados.find((concelho) => concelho.nome === 'Beja');
+        if (beja) {
+          setDadosLocal((atual) => (atual.concelhoId ? atual : { ...atual, concelhoId: String(beja.id) }));
+        }
       })
       .catch((erroCarregamento) => {
         console.error('Falha ao carregar locais e concelhos:', erroCarregamento);
@@ -93,6 +116,14 @@ const NovoUtentePage: React.FC = () => {
       })
       .finally(() => setCarregandoReferencias(false));
   }, []);
+
+  // Lista de concelhos para o select, com Beja (sede da ULSBA) sempre em
+  // primeiro lugar e os restantes por ordem alfabética.
+  const concelhosOrdenados = [...concelhos].sort((a, b) => {
+    if (a.nome === 'Beja') return -1;
+    if (b.nome === 'Beja') return 1;
+    return a.nome.localeCompare(b.nome, 'pt');
+  });
 
   // Atualiza um campo genérico dos dados do utente (inputs/selects/textarea
   // partilham este handler porque o `name` do elemento coincide com a chave do estado).
@@ -114,6 +145,7 @@ const NovoUtentePage: React.FC = () => {
     setErroLocal(null);
     if (['morada', 'codigoPostal', 'localidade', 'concelhoId'].includes(name)) {
       setPontoLocalConfirmado(false);
+      setSugestaoAproximada(false);
     }
   };
 
@@ -123,8 +155,94 @@ const NovoUtentePage: React.FC = () => {
     setModoCriarLocal(true);
     setPontoLocal(PONTO_INICIAL);
     setPontoLocalConfirmado(false);
+    setSemSugestaoGeocoding(false);
+    setSugestaoAproximada(false);
     setErroLocal(null);
   };
+
+  // Monta as consultas a enviar ao Nominatim a partir dos campos atuais do
+  // novo local: a morada completa e, como fallback, só "localidade, concelho"
+  // — muitas ruas rurais do Baixo Alentejo não estão mapeadas no OpenStreetMap,
+  // mas a localidade/concelho normalmente está, dando pelo menos um ponto de
+  // partida próximo em vez de ficar preso no centro inicial (Beja).
+  const construirConsultasGeocoding = (): { completa: string; aproximada: string | null } | null => {
+    const morada = dadosLocal.morada.trim();
+    const localidade = dadosLocal.localidade.trim();
+    if (!morada || !localidade) return null;
+    const concelhoNome = concelhos.find((c) => c.id === Number(dadosLocal.concelhoId))?.nome ?? '';
+    const completa = [morada, dadosLocal.codigoPostal.trim(), localidade, concelhoNome, 'Portugal']
+      .filter(Boolean)
+      .join(', ');
+    const aproximada = [localidade, concelhoNome, 'Portugal'].filter(Boolean).join(', ');
+    return { completa, aproximada: aproximada !== completa ? aproximada : null };
+  };
+
+  // Pede ao Nominatim uma sugestão de coordenadas para a morada completa e,
+  // se não encontrar nada, tenta o fallback aproximado (localidade/concelho) —
+  // partilhado entre a sugestão automática (debounced) e o botão "Procurar".
+  // O pino sugerido fica sempre por confirmar; o utilizador tem de o validar
+  // ou arrastar para o corrigir antes de poder guardar (RF04).
+  const executarGeocoding = (consultas: { completa: string; aproximada: string | null }) => {
+    const idPedido = ++pedidoGeocodingIdRef.current;
+    setASugerirCoordenadas(true);
+    geocodeMorada(consultas.completa)
+      .then(async (sugestaoExata) => {
+        if (sugestaoExata) return { ponto: sugestaoExata, aproximado: false };
+        if (idPedido !== pedidoGeocodingIdRef.current || !consultas.aproximada) return null;
+        const sugestaoAproximadaPonto = await geocodeMorada(consultas.aproximada);
+        return sugestaoAproximadaPonto ? { ponto: sugestaoAproximadaPonto, aproximado: true } : null;
+      })
+      .then((resultado) => {
+        if (idPedido !== pedidoGeocodingIdRef.current) return; // morada já mudou, ignora
+        if (resultado) {
+          setPontoLocal(resultado.ponto);
+          setPontoLocalConfirmado(false);
+          setSemSugestaoGeocoding(false);
+          setSugestaoAproximada(resultado.aproximado);
+        } else {
+          setSemSugestaoGeocoding(true);
+          setSugestaoAproximada(false);
+        }
+      })
+      .finally(() => {
+        if (idPedido === pedidoGeocodingIdRef.current) setASugerirCoordenadas(false);
+      });
+  };
+
+  // Botão explícito "Procurar morada": pede a sugestão imediatamente, sem
+  // esperar pelo debounce — mais intuitivo do que confiar só na escrita.
+  const procurarMoradaManualmente = () => {
+    const consultas = construirConsultasGeocoding();
+    if (!consultas) {
+      setErroLocal('Preenche pelo menos a morada e a localidade antes de procurar.');
+      return;
+    }
+    setErroLocal(null);
+    executarGeocoding(consultas);
+  };
+
+  // Sempre que a morada (ou campos relacionados) do novo local muda, sugere
+  // automaticamente coordenadas ao fim de um curto intervalo sem escrever
+  // (RF09), complementar ao botão "Procurar morada" acima.
+  useEffect(() => {
+    if (!modoCriarLocal) {
+      // Saiu do modo "criar local" (ou nunca entrou) — invalida qualquer
+      // pedido de geocoding já em curso para a sua resposta não reaparecer
+      // mais tarde a mexer num pino que já não está visível/editável.
+      pedidoGeocodingIdRef.current += 1;
+      return;
+    }
+
+    const consultas = construirConsultasGeocoding();
+    if (!consultas) {
+      setSemSugestaoGeocoding(false);
+      return;
+    }
+
+    const temporizador = setTimeout(() => executarGeocoding(consultas), ATRASO_GEOCODING_MS);
+
+    return () => clearTimeout(temporizador);
+  }, [modoCriarLocal, dadosLocal.morada, dadosLocal.codigoPostal, dadosLocal.localidade, dadosLocal.concelhoId, concelhos]);
 
   // Validação do formulário de novo local antes de submeter — cobre os
   // campos obrigatórios e garante que a localização no mapa foi confirmada
@@ -425,7 +543,7 @@ const NovoUtentePage: React.FC = () => {
                         required
                       >
                         <option value="">Selecionar concelho</option>
-                        {concelhos.map((concelho) => (
+                        {concelhosOrdenados.map((concelho) => (
                           <option key={concelho.id} value={concelho.id}>{concelho.nome}</option>
                         ))}
                       </select>
@@ -442,11 +560,24 @@ const NovoUtentePage: React.FC = () => {
                         onChange={handleLocalChange}
                       />
                     </div>
+                    <div className="col-12 d-flex justify-content-end">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={procurarMoradaManualmente}
+                        disabled={aGuardar || aSugerirCoordenadas}
+                      >
+                        <i className="bi bi-search me-1"></i>
+                        {aSugerirCoordenadas ? 'A procurar...' : 'Procurar morada no mapa'}
+                      </button>
+                    </div>
                   </div>
                   <div className="alert alert-info small mt-3 mb-2">
-                    A morada não é enviada a serviços de geocodificação. O mapa usa tiles públicos do
-                    OpenStreetMap, que podem revelar a área visualizada ao fornecedor. Clique no mapa ou
-                    arraste o pino para definir e confirmar as coordenadas.
+                    A morada escrita é enviada ao serviço gratuito de geocodificação Nominatim
+                    (OpenStreetMap) para sugerir automaticamente a localização no mapa. O mapa usa tiles
+                    públicos do OpenStreetMap, que podem revelar a área visualizada ao fornecedor. A
+                    sugestão nunca é usada sem confirmação — clique no mapa ou arraste o pino para
+                    confirmar ou corrigir manualmente as coordenadas antes de guardar.
                   </div>
                   {/* Altura explícita: o MapaLeaflet tem um .card com h-100, que não
                       resolve percentagem nenhuma dentro de uma <section> sem altura
@@ -460,6 +591,12 @@ const NovoUtentePage: React.FC = () => {
                       pontoEdicaoValido={pontoLocalValido}
                       pontoEdicaoConfirmado={pontoLocalConfirmado}
                       onSelecionarPonto={(lat, lng) => {
+                        // Invalida qualquer sugestão de geocoding pendente — a
+                        // correção manual do utilizador nunca pode ser substituída
+                        // por uma resposta do Nominatim que chegue mais tarde.
+                        pedidoGeocodingIdRef.current += 1;
+                        setASugerirCoordenadas(false);
+                        setSugestaoAproximada(false);
                         setPontoLocal({ lat, lng });
                         setPontoLocalConfirmado(true);
                         setErroLocal(null);
@@ -474,6 +611,22 @@ const NovoUtentePage: React.FC = () => {
                     ) : pontoLocalConfirmado ? (
                       <span className="text-danger">
                         Ponto fora de Portugal continental. Escolhe uma localização dentro do território.
+                      </span>
+                    ) : aSugerirCoordenadas ? (
+                      <span className="text-muted">
+                        <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />
+                        A procurar sugestão de localização para esta morada...
+                      </span>
+                    ) : sugestaoAproximada ? (
+                      <span className="text-warning">
+                        <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                        Não encontrámos a morada exata — este pino está apenas no centro da
+                        localidade/concelho. Arrasta-o para o local correto antes de confirmar.
+                      </span>
+                    ) : semSugestaoGeocoding ? (
+                      <span className="text-muted">
+                        Não foi possível sugerir automaticamente a localização desta morada. Clica no
+                        mapa ou arrasta o pino para a definir manualmente.
                       </span>
                     ) : (
                       <span className="text-muted">
