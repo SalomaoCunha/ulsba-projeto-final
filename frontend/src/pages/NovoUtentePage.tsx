@@ -235,7 +235,11 @@ const NovoUtentePage: React.FC = () => {
 
     const consultas = construirConsultasGeocoding();
     if (!consultas) {
-      setSemSugestaoGeocoding(false);
+      // Ainda não há morada/localidade suficientes para pesquisar — não há
+      // nada a limpar aqui: "semSugestaoGeocoding" só é tocado pelo próprio
+      // fluxo de geocoding (handler assíncrono), nunca de forma síncrona
+      // dentro do efeito. O JSX usa `construirConsultasGeocoding() === null`
+      // diretamente para distinguir "faltam dados" de "sem sugestão encontrada".
       return;
     }
 
@@ -623,7 +627,7 @@ const NovoUtentePage: React.FC = () => {
                         Não encontrámos a morada exata — este pino está apenas no centro da
                         localidade/concelho. Arrasta-o para o local correto antes de confirmar.
                       </span>
-                    ) : semSugestaoGeocoding ? (
+                    ) : semSugestaoGeocoding && construirConsultasGeocoding() ? (
                       <span className="text-muted">
                         Não foi possível sugerir automaticamente a localização desta morada. Clica no
                         mapa ou arrasta o pino para a definir manualmente.
