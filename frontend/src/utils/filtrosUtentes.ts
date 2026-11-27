@@ -7,7 +7,12 @@ export interface FiltrosUtentes {
   estado: string | null;
   equipa: string | null;
   // Várias localidades selecionáveis em simultâneo (OR entre elas); vazio = todas.
+  // "Localidade" é o texto livre da morada (ex.: freguesia/povoação); é
+  // diferente de "concelho" (abaixo), que é o concelho administrativo —
+  // várias localidades distintas podem pertencer ao mesmo concelho.
   localidades: string[];
+  // Vários concelhos selecionáveis em simultâneo (OR entre eles); vazio = todos.
+  concelhos: string[];
   dataDe: string;
   dataAte: string;
 }
@@ -19,6 +24,7 @@ export const filtrosVazios: FiltrosUtentes = {
   estado: null,
   equipa: null,
   localidades: [],
+  concelhos: [],
   dataDe: '',
   dataAte: '',
 };
@@ -41,6 +47,9 @@ export function filtrarUtentes(utentes: Utente[], filtros: FiltrosUtentes): Uten
       return false;
     }
     if (filtros.localidades.length > 0 && !filtros.localidades.includes(u.localidade)) {
+      return false;
+    }
+    if (filtros.concelhos.length > 0 && !filtros.concelhos.includes(u.concelho)) {
       return false;
     }
 

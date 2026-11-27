@@ -28,13 +28,29 @@ const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) =
   // Lista de localidades únicas presentes nos utentes, ordenada
   // alfabeticamente (locale 'pt' para respeitar acentos/ordem portuguesa).
   // Recalculada só quando `utentes` muda, para não reordenar a cada render.
-  const localidadesDisponiveis = useMemo(
-    () =>
-      Array.from(new Set(utentes.map((u) => u.localidade).filter(Boolean))).sort((a, b) =>
-        a.localeCompare(b, 'pt'),
-      ),
-    [utentes],
-  );
+  // Opções de localidade ficam restringidas aos concelhos já selecionados
+  // (se houver) — selecionar um concelho estreita logo as localidades
+  // mostradas às que pertencem a esse concelho, em vez de continuar a
+  // mostrar todas as localidades do sistema.
+  const localidadesDisponiveis = useMemo(() => {
+    const base = filtros.concelhos.length > 0
+      ? utentes.filter((u) => filtros.concelhos.includes(u.concelho))
+      : utentes;
+    return Array.from(new Set(base.map((u) => u.localidade).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'pt'),
+    );
+  }, [utentes, filtros.concelhos]);
+
+  // Simétrico ao de cima: selecionar uma ou mais localidades estreita as
+  // opções de concelho às que essas localidades realmente têm.
+  const concelhosDisponiveis = useMemo(() => {
+    const base = filtros.localidades.length > 0
+      ? utentes.filter((u) => filtros.localidades.includes(u.localidade))
+      : utentes;
+    return Array.from(new Set(base.map((u) => u.concelho).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'pt'),
+    );
+  }, [utentes, filtros.localidades]);
 
   // Filtro de localidade é multi-seleção (checkboxes), por isso adiciona/
   // remove da lista em vez de substituir um único valor como os outros filtros.
@@ -45,6 +61,17 @@ const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) =
       localidades: atuais.includes(localidade)
         ? atuais.filter((item) => item !== localidade)
         : [...atuais, localidade],
+    });
+  };
+
+  // Equivalente a alternarLocalidade, mas para o filtro de concelho.
+  const alternarConcelho = (concelho: string) => {
+    const atuais = filtros.concelhos;
+    onChange({
+      ...filtros,
+      concelhos: atuais.includes(concelho)
+        ? atuais.filter((item) => item !== concelho)
+        : [...atuais, concelho],
     });
   };
 
@@ -132,6 +159,37 @@ const FiltrosUtentesPainel: React.FC<Props> = ({ utentes, filtros, onChange }) =
                   label={localidade}
                   checked={filtros.localidades.includes(localidade)}
                   onChange={() => alternarLocalidade(localidade)}
+                />
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+
+        <div>
+          <label className="form-label text-muted small fw-medium mb-1 d-block">Concelho</label>
+          <Dropdown autoClose="outside">
+            <Dropdown.Toggle variant="outline-secondary" size="sm" aria-label="Filtrar por concelho">
+              {filtros.concelhos.length === 0
+                ? 'Todos'
+                : `${filtros.concelhos.length} selecionado(s)`}
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="p-2" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+              <Form.Check
+                id="filtro-utentes-todos-concelhos"
+                type="checkbox"
+                label="Todos"
+                checked={filtros.concelhos.length === 0}
+                onChange={() => onChange({ ...filtros, concelhos: [] })}
+              />
+              <hr className="my-2" />
+              {concelhosDisponiveis.map((concelho) => (
+                <Form.Check
+                  key={concelho}
+                  id={`filtro-utentes-concelho-${concelho}`}
+                  type="checkbox"
+                  label={concelho}
+                  checked={filtros.concelhos.includes(concelho)}
+                  onChange={() => alternarConcelho(concelho)}
                 />
               ))}
             </Dropdown.Menu>
