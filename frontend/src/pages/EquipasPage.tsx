@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   createEquipa,
+  createProfissional,
   deleteEquipa,
   getEquipas,
+  getFuncoesProfissional,
   getProfissionaisEquipa,
   updateEquipa,
 } from '../services/equipaService';
 import { getViaturas } from '../services/viaturaService';
-import type { DadosEquipa, Equipa, ProfissionalEquipa } from '../types/equipa';
+import type {
+  DadosEquipa,
+  Equipa,
+  FuncaoProfissional,
+  ProfissionalEquipa,
+} from '../types/equipa';
 import type { Viatura } from '../types/viatura';
 import EcraCarregamento from '../components/EcraCarregamento';
 import ModalConfirmacao from '../components/ModalConfirmacao';
@@ -26,6 +33,7 @@ const EquipasPage: React.FC = () => {
   const [equipas, setEquipas] = useState<Equipa[]>([]);
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [profissionais, setProfissionais] = useState<ProfissionalEquipa[]>([]);
+  const [funcoes, setFuncoes] = useState<FuncaoProfissional[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
   const [equipaEditandoId, setEquipaEditandoId] = useState<number | null>(null);
@@ -40,6 +48,17 @@ const EquipasPage: React.FC = () => {
   const [aApagarId, setAApagarId] = useState<number | null>(null);
   const [avisoApagar, setAvisoApagar] = useState<string | null>(null);
   const [equipaParaApagar, setEquipaParaApagar] = useState<Equipa | null>(null);
+
+  // Formulário inline de "Novo profissional", dentro do modal de equipa —
+  // até agora os profissionais só existiam via seed da base de dados.
+  const [modoCriarProfissional, setModoCriarProfissional] = useState(false);
+  const [dadosNovoProfissional, setDadosNovoProfissional] = useState({
+    nome: '',
+    funcaoId: '',
+    contactoTelefonico: '',
+  });
+  const [aGuardarProfissional, setAGuardarProfissional] = useState(false);
+  const [erroNovoProfissional, setErroNovoProfissional] = useState<string | null>(null);
 
   // Carrega em paralelo as equipas, as viaturas (para as associar por
   // equipa_codigo) e a lista de profissionais disponíveis para seleção de
@@ -56,6 +75,9 @@ const EquipasPage: React.FC = () => {
             console.error('Falha ao carregar profissionais:', erro);
             setErroProfissionais('Não foi possível carregar a lista de profissionais.');
           }),
+        getFuncoesProfissional()
+          .then(setFuncoes)
+          .catch((erro) => console.error('Falha ao carregar funções clínicas:', erro)),
       ]),
     ).finally(() => setCarregando(false));
   }, []);
@@ -76,6 +98,7 @@ const EquipasPage: React.FC = () => {
     setEquipaEditandoId(null);
     setDadosFormulario({ codigo: '', designacao: '', membros: [] });
     setErroEquipa(null);
+    fecharFormularioNovoProfissional();
     setModalAberto(true);
   };
 
@@ -89,6 +112,7 @@ const EquipasPage: React.FC = () => {
       membros: equipa.membros.map((membro) => membro.id),
     });
     setErroEquipa(null);
+    fecharFormularioNovoProfissional();
     setModalAberto(true);
   };
 
@@ -126,6 +150,7 @@ const EquipasPage: React.FC = () => {
     if (aGuardar) return;
     setModalAberto(false);
     setErroEquipa(null);
+    fecharFormularioNovoProfissional();
   };
 
   // Adiciona ou remove um profissional da lista de membros selecionados no
@@ -137,6 +162,49 @@ const EquipasPage: React.FC = () => {
         ? [...atual.membros, profissionalId]
         : atual.membros.filter((id) => id !== profissionalId),
     }));
+  };
+
+  // Repõe o formulário de "novo profissional" ao estado inicial e esconde-o.
+  const fecharFormularioNovoProfissional = () => {
+    setModoCriarProfissional(false);
+    setDadosNovoProfissional({ nome: '', funcaoId: '', contactoTelefonico: '' });
+    setErroNovoProfissional(null);
+  };
+
+  // Cria um profissional de raiz (não existia nenhuma via de o fazer na app —
+  // só entravam pelo seed da base de dados) e, uma vez criado, já o
+  // adiciona à lista local e marca-o automaticamente como membro desta
+  // equipa, poupando um segundo passo imediato a seguir.
+  const criarProfissionalInline = async () => {
+    const nome = dadosNovoProfissional.nome.trim();
+    if (!nome) {
+      setErroNovoProfissional('Indica o nome do profissional.');
+      return;
+    }
+    if (!dadosNovoProfissional.funcaoId) {
+      setErroNovoProfissional('Seleciona a função clínica do profissional.');
+      return;
+    }
+
+    setErroNovoProfissional(null);
+    setAGuardarProfissional(true);
+    try {
+      const criado = await createProfissional({
+        nome,
+        funcaoId: Number(dadosNovoProfissional.funcaoId),
+        contactoTelefonico: dadosNovoProfissional.contactoTelefonico.trim() || null,
+      });
+      setProfissionais((atuais) => [...atuais, criado].sort((a, b) => a.nome.localeCompare(b.nome, 'pt')));
+      setDadosFormulario((atual) => ({ ...atual, membros: [...atual.membros, criado.id] }));
+      fecharFormularioNovoProfissional();
+    } catch (erro) {
+      console.error('Falha ao criar profissional:', erro);
+      setErroNovoProfissional(
+        erro instanceof Error ? erro.message : 'Não foi possível criar o profissional.',
+      );
+    } finally {
+      setAGuardarProfissional(false);
+    }
   };
 
   // Valida e submete o formulário: normaliza o código (maiúsculas, sem
@@ -368,7 +436,95 @@ const EquipasPage: React.FC = () => {
                       />
                     </div>
                     <div className="col-12">
-                      <p className="form-label mb-2">Membros</p>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <p className="form-label mb-0">Membros</p>
+                        {!modoCriarProfissional && (
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm px-0"
+                            onClick={() => setModoCriarProfissional(true)}
+                            disabled={aGuardar}
+                          >
+                            <i className="bi bi-plus-circle me-1"></i>
+                            Novo profissional
+                          </button>
+                        )}
+                      </div>
+                      {modoCriarProfissional && (
+                        <div className="border rounded p-3 mb-3 bg-light-subtle">
+                          <div className="row g-2 align-items-end">
+                            <div className="col-12 col-md-5">
+                              <label htmlFor="novo-profissional-nome" className="form-label small text-muted mb-1">
+                                Nome *
+                              </label>
+                              <input
+                                id="novo-profissional-nome"
+                                className="form-control form-control-sm"
+                                value={dadosNovoProfissional.nome}
+                                onChange={(evento) =>
+                                  setDadosNovoProfissional((atual) => ({ ...atual, nome: evento.target.value }))
+                                }
+                                placeholder="Ex.: Enf. Rita Fonseca"
+                              />
+                            </div>
+                            <div className="col-12 col-md-3">
+                              <label htmlFor="novo-profissional-funcao" className="form-label small text-muted mb-1">
+                                Função *
+                              </label>
+                              <select
+                                id="novo-profissional-funcao"
+                                className="form-select form-select-sm"
+                                value={dadosNovoProfissional.funcaoId}
+                                onChange={(evento) =>
+                                  setDadosNovoProfissional((atual) => ({ ...atual, funcaoId: evento.target.value }))
+                                }
+                              >
+                                <option value="">Selecionar...</option>
+                                {funcoes.map((funcao) => (
+                                  <option key={funcao.id} value={funcao.id}>{funcao.designacao}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="col-12 col-md-4">
+                              <label htmlFor="novo-profissional-contacto" className="form-label small text-muted mb-1">
+                                Telefone
+                              </label>
+                              <input
+                                id="novo-profissional-contacto"
+                                className="form-control form-control-sm"
+                                value={dadosNovoProfissional.contactoTelefonico}
+                                onChange={(evento) =>
+                                  setDadosNovoProfissional((atual) => ({
+                                    ...atual,
+                                    contactoTelefonico: evento.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+                          {erroNovoProfissional && (
+                            <div className="alert alert-danger small mt-2 mb-0 py-1">{erroNovoProfissional}</div>
+                          )}
+                          <div className="d-flex justify-content-end gap-2 mt-2">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={fecharFormularioNovoProfissional}
+                              disabled={aGuardarProfissional}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-success"
+                              onClick={criarProfissionalInline}
+                              disabled={aGuardarProfissional}
+                            >
+                              {aGuardarProfissional ? 'A criar...' : 'Criar profissional'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {profissionais.length > 0 ? (
                         <div className="border rounded p-3 d-flex flex-column gap-2">
                           {profissionais.map((profissional) => {

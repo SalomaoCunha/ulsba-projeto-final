@@ -29,3 +29,17 @@ export interface DadosEquipa {
   designacao: string | null;
   membros: number[];
 }
+
+// Função clínica de referência (médico, enfermeiro, …), para o seletor ao
+// criar um novo profissional.
+export interface FuncaoProfissional {
+  id: number;
+  designacao: string;
+}
+
+// Dados enviados ao criar um novo profissional de raiz.
+export interface DadosProfissional {
+  nome: string;
+  funcaoId: number;
+  contactoTelefonico: string | null;
+}

@@ -1,9 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg.errors import UniqueViolation
+from psycopg.errors import ForeignKeyViolation, UniqueViolation
 
 from app.db import get_conn
 from app.routers.auth import get_current_user
-from app.schemas import EquipaCriarEditar, EquipaResumo, ProfissionalEquipaResumo
+from app.schemas import (
+    EquipaCriarEditar,
+    EquipaResumo,
+    FuncaoProfissionalResumo,
+    ProfissionalCriar,
+    ProfissionalEquipaResumo,
+)
 
 router = APIRouter(prefix="/equipas", tags=["equipas"])
 
@@ -184,6 +190,46 @@ def listar_profissionais(conn=Depends(get_conn), utilizador: dict = Depends(get_
         ORDER BY p.ativo DESC, p.nome
         """
     ).fetchall()
+
+
+@router.get("/funcoes", response_model=list[FuncaoProfissionalResumo])
+def listar_funcoes(conn=Depends(get_conn), utilizador: dict = Depends(get_current_user)):
+    # Funções clínicas de referência (médico, enfermeiro, …), para preencher
+    # o seletor ao criar um novo profissional.
+    return conn.execute(
+        "SELECT id, designacao FROM funcao_profissional WHERE ativo ORDER BY designacao"
+    ).fetchall()
+
+
+@router.post("/profissionais", response_model=ProfissionalEquipaResumo, status_code=201)
+def criar_profissional(
+    dados: ProfissionalCriar,
+    conn=Depends(get_conn),
+    utilizador: dict = Depends(get_current_user),
+):
+    # Cria um profissional de raiz — até agora só existiam via seed da base
+    # de dados; esta é a primeira via de introdução a partir da aplicação.
+    try:
+        novo_id = conn.execute(
+            """
+            INSERT INTO profissional (nome, funcao_id, contacto_telefonico)
+            VALUES (%s, %s, %s)
+            RETURNING id
+            """,
+            (dados.nome.strip(), dados.funcao_id, dados.contacto_telefonico),
+        ).fetchone()["id"]
+    except ForeignKeyViolation as erro:
+        raise HTTPException(status_code=400, detail="Função clínica inválida.") from erro
+
+    return conn.execute(
+        """
+        SELECT p.id, p.nome, f.designacao AS funcao, p.ativo
+        FROM profissional p
+        JOIN funcao_profissional f ON f.id = p.funcao_id
+        WHERE p.id = %s
+        """,
+        (novo_id,),
+    ).fetchone()
 
 
 @router.post("", response_model=EquipaResumo, status_code=201)

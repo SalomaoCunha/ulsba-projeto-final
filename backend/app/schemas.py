@@ -174,6 +174,20 @@ class ProfissionalEquipaResumo(MembroEquipa):
     ativo: bool
 
 
+# Função clínica de referência (médico, enfermeiro, …), para preencher o
+# seletor ao criar um novo profissional.
+class FuncaoProfissionalResumo(BaseModel):
+    id: int
+    designacao: str
+
+
+# Corpo para criar um novo profissional de raiz.
+class ProfissionalCriar(BaseModel):
+    nome: str = Field(min_length=1, max_length=120)
+    funcao_id: int
+    contacto_telefonico: Optional[str] = Field(default=None, max_length=20)
+
+
 # Viaturas
 # Resposta de listagem/detalhe de viatura.
 class ViaturaResumo(BaseModel):
